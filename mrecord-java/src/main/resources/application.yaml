@@ -1,6 +1,9 @@
 # 服务配置
 server:
   port: 2333
+  servlet:
+    # 请求前缀
+    contextPath: /api/v2
 
 # 数据源配置
 spring:
