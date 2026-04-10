@@ -71,6 +71,12 @@
             <version>0.13.0</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.13.0</version>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Excel导出依赖 -->
         <dependency>
