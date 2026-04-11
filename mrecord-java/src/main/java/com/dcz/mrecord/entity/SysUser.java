@@ -37,6 +37,12 @@ public class SysUser extends BaseEntity {
     private String nickname;
 
     /**
+     * 是否管理员（0-正常用户，1-管理员）
+     */
+    @Column(value = "MR_ADMIN")
+    private Integer admin;
+
+    /**
      * 状态（0-正常，1-停用，2-注销待生效，3-已注销）
      */
     @Column(value = "MR_STATUS")
