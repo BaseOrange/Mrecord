@@ -22,8 +22,11 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/api/v2/**")
                 .excludePathPatterns(
+                        // 注册、登录、忘记密码、重置密码放行
                         "/api/v2/user/register",
-                        "/api/v2/user/login"
+                        "/api/v2/user/login",
+                        "/api/v2/user/forgotPassword",
+                        "/api/v2/user/resetPassword"
                 );
     }
 }
