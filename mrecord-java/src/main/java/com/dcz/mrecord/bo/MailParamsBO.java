@@ -42,7 +42,7 @@ public class MailParamsBO {
     /**
      * 当前年
      */
-    private String currYear;
+    private String currYear = DateUtil.format(LocalDateTime.now(), "yyyy");
 
     /**
      * 网站地址
