@@ -27,6 +27,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      * 缓存邮件配置
      */
     private static EmailConfigBo EMAIL_CONFIG = null;
+
+    /**
+     * 网站站点
+     */
+    private static String WEB_SITE = null;
+
     @Resource
     private SysConfigMapper sysConfigMapper;
 
@@ -36,6 +42,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     @Override
     public void refreshCache() {
         EMAIL_CONFIG = null;
+        WEB_SITE = null;
     }
 
     /**
@@ -110,5 +117,29 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         EMAIL_CONFIG = emailConfigBo;
         return emailConfigBo;
+    }
+
+    /**
+     * 获取网站站点
+     *
+     * @return 网站站点
+     */
+    @Override
+    public String getWebSite() {
+        if (WEB_SITE != null){
+            return WEB_SITE;
+        }
+
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq(SysConfig::getKey, "webSite");
+        List<SysConfig> sysConfigs = sysConfigMapper.selectListByQuery(queryWrapper);
+
+        if (sysConfigs == null || sysConfigs.isEmpty()) {
+            log.warn("管理员未配置站点地址参数，返回空站点配置信息。");
+            return null;
+        }
+
+        WEB_SITE = sysConfigs.get(0).getValue();
+        return WEB_SITE;
     }
 }

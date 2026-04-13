@@ -22,4 +22,11 @@ public interface SysConfigService extends IService<SysConfig> {
      * @return 邮件配置
      */
     EmailConfigBo getEmailConfig();
+
+    /**
+     * 获取网站地址
+     *
+     * @return 网站地址
+     */
+    String getWebSite();
 }
