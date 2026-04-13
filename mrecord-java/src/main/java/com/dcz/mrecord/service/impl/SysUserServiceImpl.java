@@ -102,5 +102,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         mailParamsBO.setUserName(user.getNickname());
         mailParamsBO.setUserEmail(user.getEmail());
         mailParamsBO.setWebSite(sysConfigService.getWebSite());
+        return mailParamsBO;
     }
 }
