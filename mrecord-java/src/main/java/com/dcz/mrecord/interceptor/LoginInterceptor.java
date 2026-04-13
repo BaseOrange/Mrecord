@@ -2,6 +2,7 @@ package com.dcz.mrecord.interceptor;
 
 import com.dcz.mrecord.common.UserContext;
 import com.dcz.mrecord.util.JwtUtil;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 @RequiredArgsConstructor
 public class LoginInterceptor implements HandlerInterceptor {
+
+    @Resource
+    private JwtUtil jwtUtil;
 
     /**
      * 请求处理之前执行
@@ -38,7 +42,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         }
 
         String realToken = token.substring(7);
-        String userId = JwtUtil.getUserId(realToken);
+        String userId = jwtUtil.getUserId(realToken);
 
         if (userId == null) {
             response.setStatus(401);

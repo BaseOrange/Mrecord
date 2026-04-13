@@ -8,6 +8,7 @@ import cn.hutool.crypto.digest.BCrypt;
 import cn.hutool.crypto.symmetric.AES;
 import com.dcz.mrecord.bo.MailParamsBO;
 import com.dcz.mrecord.common.ResCode;
+import com.dcz.mrecord.config.MrConf;
 import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
 import com.dcz.mrecord.exception.MrecordException;
@@ -39,14 +40,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Resource
     private EmailService emailService;
-
     @Resource
     private SysConfigService sysConfigService;
 
-    /**
-     * 重置密码令牌key
-     */
-    private static final String RE_PASSWORD_TOKEN_KEY = "30125059-f7ff-4482-b91c-1d1b21d2a5e7";
+    @Resource
+    private JwtUtil jwtUtil;
+    @Resource
+    private MrConf mrConf;
 
     /**
      * 用户注册
@@ -131,7 +131,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             throw new MrecordException(ResCode.USER_STATUS_ERROR);
         }
 
-        return JwtUtil.createToken(sysUser.getId());
+        return jwtUtil.createToken(sysUser.getId());
     }
 
     /**
@@ -201,7 +201,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         String plainText = userId + "_" + expireTime + "_" + randomStr;
 
         // AES加密
-        String token = SecureUtil.aes(RE_PASSWORD_TOKEN_KEY.getBytes()).encryptBase64(plainText);
+        String token = SecureUtil.aes(mrConf.getResetPwdTokenSecret().getBytes()).encryptBase64(plainText);
 
         return sysConfigService.getWebSite() + "reset-password?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
     }
@@ -215,7 +215,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private SysUser checkRePasswordToken(String token) {
         try {
             // 解密
-            AES aes = SecureUtil.aes(RE_PASSWORD_TOKEN_KEY.getBytes());
+            AES aes = SecureUtil.aes(mrConf.getResetPwdTokenSecret().getBytes());
             String plainText = aes.decryptStr(token);
 
             // 拆分三部分：主键、过期时间、防伪造随机串

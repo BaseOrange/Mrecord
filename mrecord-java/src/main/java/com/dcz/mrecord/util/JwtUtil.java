@@ -1,8 +1,10 @@
 package com.dcz.mrecord.util;
 
+import com.dcz.mrecord.config.MrConf;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -18,35 +20,31 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    /**
-     * 密钥
-     * TODO 后续考虑移入配置项中
-     */
-    private static final String SECRET = "156e578e-7727-4951-afb2-1b77ad6a0497";
-    private final static SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
-
-    /**
-     * 过期时间 7天
-     * TODO 后续考虑移入配置项中
-     */
-    private static final long EXPIRE = 7 * 24 * 60 * 60 * 1000L;
+    @Resource
+    private MrConf mrConf;
 
     /**
      * 生成 token，只存 userId
+     * @param userId userId
+     * @return  token
      */
-    public static String createToken(String userId) {
+    public String createToken(String userId) {
         if (userId == null || userId.isEmpty()) {
             return null;
         }
 
-        return Jwts.builder().subject(userId).expiration(new Date(System.currentTimeMillis() + EXPIRE)).signWith(key).compact();
+        SecretKey key = Keys.hmacShaKeyFor(mrConf.getJwtSecret().getBytes(StandardCharsets.UTF_8));
+        return Jwts.builder().subject(userId).expiration(new Date(System.currentTimeMillis() + mrConf.getJwtExpire())).signWith(key).compact();
     }
 
     /**
      * 解析 userId
+     * @param token  token
+     * @return userId
      */
-    public static String getUserId(String token) {
+    public String getUserId(String token) {
         try {
+            SecretKey key = Keys.hmacShaKeyFor(mrConf.getJwtSecret().getBytes(StandardCharsets.UTF_8));
             Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
             return claims.getSubject();
         } catch (Exception e) {
