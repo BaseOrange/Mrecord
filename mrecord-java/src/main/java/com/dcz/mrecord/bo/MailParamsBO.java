@@ -1,6 +1,8 @@
 package com.dcz.mrecord.bo;
 
 import cn.hutool.core.date.DateUtil;
+import com.dcz.mrecord.service.SysConfigService;
+import jakarta.annotation.Resource;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -14,6 +16,10 @@ import java.util.Map;
  */
 @Data
 public class MailParamsBO {
+
+    @Resource
+    private SysConfigService sysConfigService;
+
     /**
      * 接收者邮箱
      */
@@ -47,7 +53,7 @@ public class MailParamsBO {
     /**
      * 网站地址
      */
-    private String webSite;
+    private String webSite = sysConfigService.getWebSite();
 
     /**
      * 忘记密码找回地址
@@ -57,7 +63,7 @@ public class MailParamsBO {
     /**
      * 管理员邮箱
      */
-    private String adminMail;
+    private String adminMail = sysConfigService.getAdminMail();
 
     /**
      * 获取邮件参数

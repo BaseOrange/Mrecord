@@ -24,4 +24,9 @@ public class UserDTO {
      * 昵称
      */
     private String nickname;
+
+    /**
+     * 重置密码token
+     */
+    private String rePasswordToken;
 }

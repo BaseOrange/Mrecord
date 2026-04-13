@@ -29,4 +29,11 @@ public interface SysConfigService extends IService<SysConfig> {
      * @return 网站地址
      */
     String getWebSite();
+
+    /**
+     * 获取管理员邮箱
+     *
+     * @return 管理员邮箱
+     */
+    String getAdminMail();
 }

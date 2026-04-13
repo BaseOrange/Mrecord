@@ -58,4 +58,47 @@ public class SysUserController {
         String email = sysUserService.login(params);
         return Result.success(email);
     }
+
+    /**
+     * 用户退出登录
+     *
+     * @return 退出登录结果
+     */
+    @PostMapping("/logout")
+    public Result<String> logout() {
+        // 无状态 JWT，后端无需任何处理 前端只需要删除本地 token 就等于退出
+        return Result.success();
+    }
+
+    /**
+     * 忘记密码
+     *
+     * @return 请求响应
+     */
+    @PostMapping("/forgotPassword")
+    public Result<String> forgotPassword(UserDTO params) {
+        // 数据脱敏后打印日志
+        UserDTO clone = ObjUtil.clone(params);
+        clone.setPassword(DesensitizedUtil.password(params.getPassword()));
+        log.info("忘记密码[/user/forgotPassword]请求传参：{}", clone);
+
+        sysUserService.forgotPassword(params);
+        return Result.success();
+    }
+
+    /**
+     * 重置密码
+     *
+     * @return 请求响应
+     */
+    @PostMapping("/resetPassword")
+    public Result<String> resetPassword(UserDTO params) {
+        // 数据脱敏后打印日志
+        UserDTO clone = ObjUtil.clone(params);
+        clone.setPassword(DesensitizedUtil.password(params.getPassword()));
+        log.info("重置密码[/user/resetPassword]请求传参：{}", clone);
+
+        sysUserService.resetPassword(params);
+        return Result.success();
+    }
 }

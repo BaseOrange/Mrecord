@@ -27,4 +27,18 @@ public interface SysUserService extends IService<SysUser> {
      * @return token值
      */
     String login(UserDTO params);
+
+    /**
+     * 忘记密码
+     *
+     * @param params 忘记密码参数
+     */
+    void forgotPassword(UserDTO params) throws Exception;
+
+    /**
+     * 重置密码
+     *
+     * @param params 重置密码参数
+     */
+    void resetPassword(UserDTO params);
 }

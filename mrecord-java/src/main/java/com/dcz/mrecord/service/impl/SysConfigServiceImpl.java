@@ -33,6 +33,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      */
     private static String WEB_SITE = null;
 
+    /**
+     * 管理员邮箱
+     */
+    private static String ADMIN_MAIL = null;
+
     @Resource
     private SysConfigMapper sysConfigMapper;
 
@@ -43,6 +48,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     public void refreshCache() {
         EMAIL_CONFIG = null;
         WEB_SITE = null;
+        ADMIN_MAIL = null;
     }
 
     /**
@@ -141,5 +147,29 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         WEB_SITE = sysConfigs.get(0).getValue();
         return WEB_SITE;
+    }
+
+    /**
+     * 获取管理员邮箱
+     *
+     * @return 管理员邮箱
+     */
+    @Override
+    public String getAdminMail() {
+        if (ADMIN_MAIL != null) {
+            return ADMIN_MAIL;
+        }
+
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq(SysConfig::getKey, "adminMail");
+        List<SysConfig> sysConfigs = sysConfigMapper.selectListByQuery(queryWrapper);
+
+        if (sysConfigs == null || sysConfigs.isEmpty()) {
+            log.warn("管理员未配置管理员邮箱参数，返回空管理员邮箱配置信息。");
+            return null;
+        }
+
+        ADMIN_MAIL = sysConfigs.get(0).getValue();
+        return ADMIN_MAIL;
     }
 }

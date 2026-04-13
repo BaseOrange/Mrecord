@@ -19,14 +19,22 @@ public enum ResCode {
      * 客户端错误
      */
     PARAM_ERROR("10001", "请求参数错误"),
-    UNAUTHORIZED("10002", "用户邮箱已存在，注册失败"),
-    LOGIN_INFO_ERROR("10003", "账号或密码错误"),
-    LOGIN_EXPIR("10004", "登录过期"),
-    NO_PERMISSION("10005", "无操作权限"),
-    DATA_NOT_EXIST("10006", "数据不存在"),
-    DATA_DUPLICATION("10007", "数据重复，操作失败"),
-    ASYNC_PROCESS("10008", "异步任务处理中"),
-    OPERATION_FAIL("10009", "操作执行失败"),
+
+    // 用户错误
+    UNAUTHORIZED("11001", "用户邮箱已存在，注册失败"),
+    LOGIN_INFO_ERROR("11002", "账号或密码错误"),
+    LOGIN_EXPIR("11003", "登录过期"),
+    NO_PERMISSION("11004", "无操作权限"),
+    USER_STATUS_ERROR("11005", "用户状态异常"),
+
+    // 数据错误
+    DATA_NOT_EXIST("12001", "数据不存在"),
+    DATA_DUPLICATION("12002", "数据重复，操作失败"),
+
+    // 异步处理错误
+    ASYNC_PROCESS("13008", "异步任务处理中"),
+    OPERATION_FAIL("13009", "操作执行失败"),
+
 
     /**
      * 服务端错误
