@@ -175,9 +175,12 @@ public class SysUserController {
      */
     @CheckAdmin
     @PostMapping("/adminResetPassword")
-    public Result<String> adminResetPassword(String userId) {
-        log.info("管理员重置密码[/user/adminResetPassword]请求传参：{}", userId);
-        sysUserService.adminResetPassword(userId);
+    public Result<String> adminResetPassword(UserDTO params) {
+        // 数据脱敏后打印日志
+        UserDTO clone = ObjUtil.clone(params);
+        clone.setPassword(DesensitizedUtil.password(params.getPassword()));
+        log.info("管理员重置密码[/user/adminResetPassword]请求传参：{}", clone);
+        sysUserService.adminResetPassword(params);
         return Result.success();
     }
 

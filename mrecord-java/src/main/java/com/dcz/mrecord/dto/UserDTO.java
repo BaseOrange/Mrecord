@@ -10,6 +10,12 @@ import lombok.Data;
  */
 @Data
 public class UserDTO {
+
+    /**
+     * id
+     */
+    private String id;
+
     /**
      * 邮箱
      */

@@ -255,6 +255,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
      */
     @Override
     public SysUser queryUserInfo(String userId) {
+        if (StrUtil.isBlankIfStr(userId)) {
+            return null;
+        }
         SysUser sysUser = userMapper.selectOneById(userId);
         if (sysUser != null) {
             sysUser.setPassword(null);
@@ -286,16 +289,24 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     /**
      * 重置用户密码【管理员可用】
      *
-     * @param userId 用户ID
+     * @param params 重置密码参数
      */
     @Override
-    public void adminResetPassword(String userId) {
-        SysUser sysUser = userMapper.selectOneById(userId);
+    public void adminResetPassword(UserDTO params) {
+        if (StrUtil.isBlankIfStr(params.getId())) {
+            return;
+        }
+        String password = params.getPassword();
+        if (StrUtil.isBlankIfStr(password)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "密码不能为空");
+        }
+
+        SysUser sysUser = userMapper.selectOneById(params.getId());
         if (sysUser == null) {
             throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户不存在");
         }
-        sysUser.setPassword(BCrypt.hashpw(sysUser.getEmail(), BCrypt.gensalt()));
-        userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(userId));
+        sysUser.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
+        userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(params.getId()));
     }
 
     /**
@@ -305,6 +316,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
      */
     @Override
     public void deleteUser(Set<String> userIdList) {
+        if (userIdList == null || userIdList.isEmpty()) {
+            return;
+        }
         userMapper.deleteBatchByIds(userIdList);
     }
 
@@ -315,14 +329,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
      */
     @Override
     public void enableOrDisableUser(Set<String> userIdList) {
+        if (userIdList == null || userIdList.isEmpty()){
+            return;
+        }
+
         List<SysUser> sysUsers = userMapper.selectListByIds(userIdList);
         if (sysUsers == null || sysUsers.isEmpty()) {
             return;
         }
 
-        sysUsers.forEach(sysUser -> {
-            sysUser.setStatus(sysUser.getStatus() == 0 ? 1 : 0);
-        });
+        sysUsers.forEach(sysUser -> sysUser.setStatus(sysUser.getStatus() == 0 ? 1 : 0));
         // 批量更新
         Db.updateEntitiesBatch(sysUsers, 1000);
     }

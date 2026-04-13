@@ -84,9 +84,9 @@ public interface SysUserService extends IService<SysUser> {
     /**
      * 管理员重置密码
      *
-     * @param userId 用户ID
+     * @param params 重置密码参数
      */
-    void adminResetPassword(String userId);
+    void adminResetPassword(UserDTO params);
 
     /**
      * 删除用户
