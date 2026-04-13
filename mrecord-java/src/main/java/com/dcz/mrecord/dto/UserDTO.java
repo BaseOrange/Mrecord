@@ -3,13 +3,13 @@ package com.dcz.mrecord.dto;
 import lombok.Data;
 
 /**
- * 用户注册 DTO
+ * 用户注册、登录 DTO
  *
  * @author dcz
  * @since 2026/04/11
  */
 @Data
-public class UserRegisterDTO {
+public class UserDTO {
     /**
      * 邮箱
      */

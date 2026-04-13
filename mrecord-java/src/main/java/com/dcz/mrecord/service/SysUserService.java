@@ -1,6 +1,6 @@
 package com.dcz.mrecord.service;
 
-import com.dcz.mrecord.dto.UserRegisterDTO;
+import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
 import com.mybatisflex.core.service.IService;
 
@@ -18,5 +18,13 @@ public interface SysUserService extends IService<SysUser> {
      * @param params 注册参数
      * @return 注册结果
      */
-    String userRegister(UserRegisterDTO params);
+    String userRegister(UserDTO params);
+
+    /**
+     * 用户登录
+     *
+     * @param params 登录参数
+     * @return token值
+     */
+    String login(UserDTO params);
 }

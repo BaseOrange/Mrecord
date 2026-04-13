@@ -20,8 +20,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @RequiredArgsConstructor
 public class LoginInterceptor implements HandlerInterceptor {
 
-    private final JwtUtil jwtUtil;
-
     /**
      * 请求处理之前执行
      *
@@ -40,7 +38,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         }
 
         String realToken = token.substring(7);
-        String userId = jwtUtil.getUserId(realToken);
+        String userId = JwtUtil.getUserId(realToken);
 
         if (userId == null) {
             response.setStatus(401);

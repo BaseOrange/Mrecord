@@ -6,13 +6,14 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.dcz.mrecord.bo.MailParamsBO;
 import com.dcz.mrecord.common.ResCode;
-import com.dcz.mrecord.dto.UserRegisterDTO;
+import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.SysUserMapper;
 import com.dcz.mrecord.service.EmailService;
 import com.dcz.mrecord.service.SysConfigService;
 import com.dcz.mrecord.service.SysUserService;
+import com.dcz.mrecord.util.JwtUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -42,7 +43,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
      * @return 注册结果
      */
     @Override
-    public String userRegister(UserRegisterDTO params) {
+    public String userRegister(UserDTO params) {
         // 邮箱验证
         String email = params.getEmail();
         if (StrUtil.isBlankIfStr(email)) {
@@ -89,6 +90,31 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 发送注册成功邮件
         emailService.sendRegisterSuccessEmail(getRegisterSuccessEmailParam(user));
         return user.getEmail();
+    }
+
+    /**
+     * 用户登录
+     *
+     * @param params 登录参数
+     * @return 登录结果
+     */
+    @Override
+    public String login(UserDTO params) {
+        String email = params.getEmail();
+
+        // 邮箱验证
+        SysUser sysUser = userMapper.selectOneByQuery(QueryWrapper.create().and(SysUser::getEmail).eq(email));
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.LOGIN_INFO_ERROR);
+        }
+
+        // 密码验证
+        String password = params.getPassword();
+        if (!BCrypt.checkpw(password, sysUser.getPassword())) {
+            throw new MrecordException(ResCode.LOGIN_INFO_ERROR);
+        }
+
+        return JwtUtil.createToken(sysUser.getId());
     }
 
     /**
