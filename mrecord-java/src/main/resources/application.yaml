@@ -34,3 +34,12 @@ logging:
     com.mybatis-flex: warn
   pattern:
     console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 月衡配置项
+mr:
+  # 这里需要自行填写jwt生成密钥，确定后不要修改，否则会导致所有登录失败
+  jwtSecret:
+  # jwt过期时间，默认7天(7 * 24 * 60 * 60 * 1000)
+  jwtExpire: 604800000
+  # 重置密码令牌生成密钥，确定后不要修改，否则会导致15分钟前的找回密码链接失效
+  resetPwdTokenSecret:
