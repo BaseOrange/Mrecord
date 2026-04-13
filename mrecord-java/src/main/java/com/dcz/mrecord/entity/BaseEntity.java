@@ -49,6 +49,6 @@ public class BaseEntity {
     /**
      * 逻辑删除标识（0-正常，1-已删除）
      */
-    @Column(value = "MR_IS_DELETED")
+    @Column(value = "MR_IS_DELETED", isLogicDelete = true)
     private Integer isDeleted;
 }
