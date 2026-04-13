@@ -8,7 +8,10 @@ import cn.hutool.crypto.digest.BCrypt;
 import cn.hutool.crypto.symmetric.AES;
 import com.dcz.mrecord.bo.MailParamsBO;
 import com.dcz.mrecord.common.ResCode;
+import com.dcz.mrecord.common.UserContext;
 import com.dcz.mrecord.config.MrConf;
+import com.dcz.mrecord.constant.UserStatusConst;
+import com.dcz.mrecord.dto.QueryUserDTO;
 import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
 import com.dcz.mrecord.exception.MrecordException;
@@ -17,7 +20,9 @@ import com.dcz.mrecord.service.EmailService;
 import com.dcz.mrecord.service.SysConfigService;
 import com.dcz.mrecord.service.SysUserService;
 import com.dcz.mrecord.util.JwtUtil;
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +30,9 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 /**
  * 用户服务实现
@@ -183,6 +191,140 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         sysUser.setPassword(hashedPassword);
         userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(sysUser.getId()));
+    }
+
+    /**
+     * 查询当前用户信息
+     *
+     * @return 当前用户信息
+     */
+    @Override
+    public SysUser queryMyUserInfo() {
+        String userId = UserContext.getUserId();
+        SysUser sysUser = userMapper.selectOneById(userId);
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户不存在");
+        }
+        sysUser.setPassword(null);
+        return sysUser;
+    }
+
+    /**
+     * 修改当前用户信息
+     *
+     * @param params 修改参数
+     * @return 修改结果
+     */
+    @Override
+    public SysUser updateMyUserInfo(UserDTO params) {
+        SysUser sysUser = new SysUser();
+        sysUser.setId(UserContext.getUserId());
+        sysUser.setNickname(params.getNickname());
+        sysUser.setRemindEnabled(params.getRemindEnabled());
+        sysUser.setRemindDay(params.getRemindDay());
+
+        userMapper.update(sysUser);
+
+        return queryMyUserInfo();
+    }
+
+    /**
+     * 注销当前用户
+     */
+    @Override
+    public void canceledMyUser() {
+        String userId = UserContext.getUserId();
+
+        SysUser sysUser = userMapper.selectOneById(userId);
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.USER_STATUS_ERROR);
+        }
+
+        // 设置状态
+        sysUser.setStatus(UserStatusConst.CANCELED_WAIT);
+        sysUser.setCancelTime(new Date());
+        userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(userId));
+        // 后续会有单独的定时任务，定时扫描待注销状态的用户。
+    }
+
+    /**
+     * 查询用户信息
+     *
+     * @param userId 用户ID
+     * @return 用户信息
+     */
+    @Override
+    public SysUser queryUserInfo(String userId) {
+        SysUser sysUser = userMapper.selectOneById(userId);
+        if (sysUser != null) {
+            sysUser.setPassword(null);
+        }
+        return sysUser;
+    }
+
+    /**
+     * 查询所有用户信息
+     *
+     * @param params 查询参数
+     * @return 用户信息列表
+     */
+    @Override
+    public Page<SysUser> queryAll(QueryUserDTO params) {
+        // 构建查询参数
+        QueryWrapper eq = QueryWrapper.create()
+                .and(SysUser::getIsDeleted).eq(0)
+                .and(SysUser::getStatus).eq(0)
+                .and(SysUser::getNickname).like(params.getNickname())
+                .and(SysUser::getEmail).like(params.getEmail())
+                .and(SysUser::getAdmin).eq(params.getIsAdmin())
+                .and(SysUser::getStatus).eq(params.getStatus());
+
+        // 分页查询
+        return userMapper.paginate(params.getPageNum(), params.getPageSize(), eq);
+    }
+
+    /**
+     * 重置用户密码【管理员可用】
+     *
+     * @param userId 用户ID
+     */
+    @Override
+    public void adminResetPassword(String userId) {
+        SysUser sysUser = userMapper.selectOneById(userId);
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户不存在");
+        }
+        sysUser.setPassword(BCrypt.hashpw(sysUser.getEmail(), BCrypt.gensalt()));
+        userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(userId));
+    }
+
+    /**
+     * 删除用户【管理员可用】
+     *
+     * @param userIdList 用户ID列表
+     */
+    @Override
+    public void deleteUser(Set<String> userIdList) {
+        userMapper.deleteBatchByIds(userIdList);
+    }
+
+    /**
+     * 启用或禁用用户【管理员可用】
+     *
+     * @param userIdList 用户ID列表
+     */
+    @Override
+    public void enableOrDisableUser(Set<String> userIdList) {
+        List<SysUser> sysUsers = userMapper.selectListByIds(userIdList);
+        if (sysUsers == null || sysUsers.isEmpty()) {
+            return;
+        }
+
+        sysUsers.forEach(sysUser -> {
+            sysUser.setStatus(sysUser.getStatus() == 0 ? 1 : 0);
+        });
+        // 批量更新
+        Db.updateEntitiesBatch(sysUsers, 1000);
     }
 
     /**

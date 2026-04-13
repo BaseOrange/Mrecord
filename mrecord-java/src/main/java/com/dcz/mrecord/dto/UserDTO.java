@@ -26,6 +26,16 @@ public class UserDTO {
     private String nickname;
 
     /**
+     * 邮件提醒功能是否启用（0-关闭，1-开启）
+     */
+    private Integer remindEnabled;
+
+    /**
+     * 月度提醒日期（取值1-31，无对应日期取月末）
+     */
+    private Integer remindDay;
+
+    /**
      * 重置密码token
      */
     private String rePasswordToken;
