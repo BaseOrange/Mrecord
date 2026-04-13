@@ -19,7 +19,7 @@ public enum ResCode {
      * 客户端错误
      */
     PARAM_ERROR("10001", "请求参数错误"),
-    UNAUTHORIZED("10002", "用户已存在，注册失败"),
+    UNAUTHORIZED("10002", "用户邮箱已存在，注册失败"),
     LOGIN_INFO_ERROR("10003", "账号或密码错误"),
     LOGIN_EXPIR("10004", "登录过期"),
     NO_PERMISSION("10005", "无操作权限"),
