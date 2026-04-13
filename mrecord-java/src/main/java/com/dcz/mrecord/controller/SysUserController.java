@@ -76,7 +76,7 @@ public class SysUserController {
      * @return 请求响应
      */
     @PostMapping("/forgotPassword")
-    public Result<String> forgotPassword(UserDTO params) {
+    public Result<String> forgotPassword(UserDTO params) throws Exception {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
