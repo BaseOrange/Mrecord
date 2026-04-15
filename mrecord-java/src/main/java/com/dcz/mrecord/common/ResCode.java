@@ -35,6 +35,14 @@ public enum ResCode {
     ASYNC_PROCESS("13008", "异步任务处理中"),
     OPERATION_FAIL("13009", "操作执行失败"),
 
+    // 账簿错误
+    FIN_BOOK_NOT_FOUND("14101", "账簿不存在"),
+    FIN_BOOK_TYPE_UPDATE("14102", "账簿类型禁止修改，如需修改请删除后重新创建，或创建新账簿"),
+    FIN_BOOK_YEAR_UPDATE("14103", "账簿年份禁止修改，如需修改请删除后重新创建，或创建新账簿"),
+
+    // 账目错误
+    FIN_ITEM_NOT_FOUND("14201", "账目不存在"),
+
 
     /**
      * 服务端错误
