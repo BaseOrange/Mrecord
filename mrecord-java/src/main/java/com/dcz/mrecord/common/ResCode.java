@@ -43,6 +43,12 @@ public enum ResCode {
     // 账目错误
     FIN_ITEM_NOT_FOUND("14201", "账目不存在"),
 
+    // 账目模板错误
+    FIN_ITEM_TEMP_IS_NOT("14301", "账目模板不存在"),
+    FIN_ITEM_TEMP_NAME_IS_NOT("14302", "账目模板项名称不能为空"),
+    FIN_ITEM_TEMP_TYPE_IS_NOT("14303", "账目模板项类型不能为空"),
+    FIN_ITEM_TEMP_TYPE_ERROR("14304", "账目模板项类型错误"),
+    FIN_ITEM_TEMP_UPDATE_ERROR("14305", "账目模板项仅支持修改名称、图标、顺序，无法进行修改类型、删除模板项操作"),
 
     /**
      * 服务端错误

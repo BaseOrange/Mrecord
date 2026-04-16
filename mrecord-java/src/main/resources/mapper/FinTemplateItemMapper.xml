@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dcz.mrecord.mapper.FinTemplateItemMapper">
+
+    <select id="selectListByBookIdAndUserId" resultType="com.dcz.mrecord.entity.FinTemplateItem">
+        SELECT fti.*
+        FROM FIN_BOOK fb
+                 LEFT JOIN FIN_TEMPLATE_ITEM fti ON fb.ID = fti.BOOK_ID
+        WHERE fb.USER_ID = #{userId}
+          AND fb.ID = #{finBookId}
+    </select>
+</mapper>
