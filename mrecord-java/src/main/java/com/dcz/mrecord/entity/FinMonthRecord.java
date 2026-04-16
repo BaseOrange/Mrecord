@@ -72,4 +72,10 @@ public class FinMonthRecord extends BaseEntity {
      */
     @Column(value = "MR_YEAR_ON_YEAR")
     private BigDecimal yearOnYear;
+
+    /**
+     * 用户本月汇总备注
+     */
+    @Column(value = "MR_NOTE")
+    private String note;
 }

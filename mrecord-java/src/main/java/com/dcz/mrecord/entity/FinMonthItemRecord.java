@@ -20,10 +20,22 @@ import java.math.BigDecimal;
 public class FinMonthItemRecord extends BaseEntity {
 
     /**
-     * 关联月度汇总ID，FIN_MONTH_RECORD.MR_ID
+     * 统计年份
      */
-    @Column(value = "MR_RECORD_ID")
-    private String recordId;
+    @Column(value = "MR_YEAR")
+    private Integer year;
+
+    /**
+     * 统计月份
+     */
+    @Column(value = "MR_MONTH")
+    private Integer month;
+
+    /**
+     * 关联账簿 ID，FIN_BOOK.MR_ID
+     */
+    @Column(value = "MR_BOOK_ID")
+    private String bookId;
 
     /**
      * 关联模板项ID，FIN_TEMPLATE_ITEM.MR_ID

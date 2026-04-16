@@ -21,7 +21,9 @@ CREATE TABLE `fin_book` (
 
 CREATE TABLE `fin_month_item_record` (
   `MR_ID` varchar(32) NOT NULL COMMENT '明细ID，32位UUID字符串',
-  `MR_RECORD_ID` varchar(32) NOT NULL COMMENT '关联月度汇总ID，FIN_MONTH_RECORD.MR_ID',
+  `MR_YEAR` int NOT NULL COMMENT '统计年份',
+  `MR_MONTH` int NOT NULL COMMENT '统计月份',
+  `MR_RECORD_ID` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关联账簿 ID，FIN_BOOK.MR_ID',
   `MR_TEMPLATE_ITEM_ID` varchar(32) NOT NULL COMMENT '关联模板项ID，FIN_TEMPLATE_ITEM.MR_ID',
   `MR_ITEM_VALUE` decimal(18,2) DEFAULT '0.00' COMMENT '当月该记账项实际金额',
   `MR_CREATE_BY` varchar(32) NOT NULL COMMENT '创建人ID，用户MR_ID',
@@ -30,7 +32,7 @@ CREATE TABLE `fin_month_item_record` (
   `MR_UPDATE_TIME` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `MR_IS_DELETED` tinyint DEFAULT '0' COMMENT '逻辑删除标识：0-正常，1-已删除',
   PRIMARY KEY (`MR_ID`),
-  UNIQUE KEY `UK_RECORD_ITEM` (`MR_RECORD_ID`,`MR_TEMPLATE_ITEM_ID`),
+  UNIQUE KEY `UK_RECORD_ITEM` (`MR_YEAR`,`MR_MONTH`,`MR_RECORD_ID`,`MR_TEMPLATE_ITEM_ID`),
   KEY `IDX_RECORD_ID` (`MR_RECORD_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='月度财务明细项表';
 
@@ -48,6 +50,7 @@ CREATE TABLE `fin_month_record` (
   `MR_NET_ASSET` decimal(18,2) DEFAULT '0.00' COMMENT '当月净资产，总资产-总负债',
   `MR_MONTH_ON_MONTH` decimal(18,2) DEFAULT NULL COMMENT '环比增长/下跌金额，对比上月',
   `MR_YEAR_ON_YEAR` decimal(18,2) DEFAULT NULL COMMENT '同比增长/下跌金额，对比去年同月',
+  `MR_NOTE` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '用户本月汇总备注',
   `MR_CREATE_BY` varchar(32) NOT NULL COMMENT '创建人ID，用户MR_ID',
   `MR_CREATE_TIME` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `MR_UPDATE_BY` varchar(32) NOT NULL COMMENT '更新人ID，用户MR_ID',
@@ -94,14 +97,16 @@ CREATE TABLE `sys_backup_book` (
   `MR_IS_DELETED` tinyint DEFAULT '0' COMMENT '逻辑删除标识：0-正常，1-已删除',
   PRIMARY KEY (`MR_ID`),
   KEY `IDX_USER_ID` (`MR_USER_ID`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='财务账簿表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='财务账簿备份表';
 
 
 -- mrecord.sys_backup_month_item_record definition
 
 CREATE TABLE `sys_backup_month_item_record` (
   `MR_ID` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '明细ID，32位UUID字符串',
-  `MR_RECORD_ID` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关联月度汇总ID，FIN_MONTH_RECORD.MR_ID',
+  `MR_YEAR` int NOT NULL COMMENT '统计年份',
+  `MR_MONTH` int NOT NULL COMMENT '统计月份',
+  `MR_BOOK_ID` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关联账簿 ID，FIN_BOOK.MR_ID',
   `MR_TEMPLATE_ITEM_ID` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关联模板项ID，FIN_TEMPLATE_ITEM.MR_ID',
   `MR_ITEM_VALUE` decimal(18,2) DEFAULT '0.00' COMMENT '当月该记账项实际金额',
   `MR_CREATE_BY` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '创建人ID，用户MR_ID',
@@ -110,9 +115,9 @@ CREATE TABLE `sys_backup_month_item_record` (
   `MR_UPDATE_TIME` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `MR_IS_DELETED` tinyint DEFAULT '0' COMMENT '逻辑删除标识：0-正常，1-已删除',
   PRIMARY KEY (`MR_ID`),
-  UNIQUE KEY `UK_RECORD_ITEM` (`MR_RECORD_ID`,`MR_TEMPLATE_ITEM_ID`),
-  KEY `IDX_RECORD_ID` (`MR_RECORD_ID`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='月度财务明细项表';
+  UNIQUE KEY `UK_RECORD_ITEM` (`MR_YEAR`,`MR_MONTH`,`MR_BOOK_ID`,`MR_TEMPLATE_ITEM_ID`),
+  KEY `IDX_RECORD_ID` (`MR_BOOK_ID`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='月度财务明细项备份表';
 
 
 -- mrecord.sys_backup_month_record definition
@@ -128,6 +133,7 @@ CREATE TABLE `sys_backup_month_record` (
   `MR_NET_ASSET` decimal(18,2) DEFAULT '0.00' COMMENT '当月净资产，总资产-总负债',
   `MR_MONTH_ON_MONTH` decimal(18,2) DEFAULT NULL COMMENT '环比增长/下跌金额，对比上月',
   `MR_YEAR_ON_YEAR` decimal(18,2) DEFAULT NULL COMMENT '同比增长/下跌金额，对比去年同月',
+  `MR_NOTE` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '用户本月汇总备注',
   `MR_CREATE_BY` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '创建人ID，用户MR_ID',
   `MR_CREATE_TIME` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `MR_UPDATE_BY` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '更新人ID，用户MR_ID',
@@ -136,7 +142,7 @@ CREATE TABLE `sys_backup_month_record` (
   PRIMARY KEY (`MR_ID`),
   UNIQUE KEY `UK_BOOK_YEAR_MONTH` (`MR_BOOK_ID`,`MR_YEAR`,`MR_MONTH`),
   KEY `IDX_USER_ID` (`MR_USER_ID`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='月度财务汇总表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='月度财务汇总备份表';
 
 
 -- mrecord.sys_backup_template_item definition
@@ -155,7 +161,7 @@ CREATE TABLE `sys_backup_template_item` (
   `MR_IS_DELETED` tinyint DEFAULT '0' COMMENT '逻辑删除标识：0-正常，1-已删除',
   PRIMARY KEY (`MR_ID`),
   KEY `IDX_BOOK_ID` (`MR_BOOK_ID`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='记账模板明细表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='记账模板明细备份表';
 
 
 -- mrecord.sys_backup_user definition
