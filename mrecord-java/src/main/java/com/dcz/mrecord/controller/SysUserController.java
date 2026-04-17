@@ -150,10 +150,10 @@ public class SysUserController {
      * @return 所有用户分页集合
      */
     @CheckAdmin
-    @PostMapping("/queryAll")
+    @PostMapping("/list")
     public Result<Page<SysUser>> queryAll(QueryUserDTO params) {
-        log.info("管理员查询所有用户[/user/queryAll]请求传参：{}", params);
-        return Result.success(sysUserService.queryAll(params));
+        log.info("管理员查询所有用户[/user/list]请求传参：{}", params);
+        return Result.success(sysUserService.queryList(params));
     }
 
     /**

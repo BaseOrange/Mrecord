@@ -79,7 +79,7 @@ public interface SysUserService extends IService<SysUser> {
      *
      * @return 用户列表
      */
-    Page<SysUser> queryAll(QueryUserDTO params);
+    Page<SysUser> queryList(QueryUserDTO params);
 
     /**
      * 管理员重置密码

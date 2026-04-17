@@ -272,7 +272,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
      * @return 用户信息列表
      */
     @Override
-    public Page<SysUser> queryAll(QueryUserDTO params) {
+    public Page<SysUser> queryList(QueryUserDTO params) {
         // 构建查询参数
         QueryWrapper eq = QueryWrapper.create()
                 .and(SysUser::getIsDeleted).eq(0)
