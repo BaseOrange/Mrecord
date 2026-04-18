@@ -13,6 +13,7 @@ import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.EmailConstants;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
+import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 
 import java.io.InputStreamReader;
@@ -27,6 +28,7 @@ import java.util.Map;
  * @since 2026/04/11
  */
 @Slf4j
+@Service
 public class EmailServiceImpl implements EmailService {
 
     @Resource

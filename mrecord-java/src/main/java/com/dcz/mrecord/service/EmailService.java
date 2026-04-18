@@ -11,7 +11,6 @@ import java.util.List;
  * @author dcz
  * @since 2026/04/11
  */
-@Service
 public interface EmailService {
 
     /**
