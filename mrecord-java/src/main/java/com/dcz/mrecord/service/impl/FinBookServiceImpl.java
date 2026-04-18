@@ -10,6 +10,7 @@ import com.dcz.mrecord.entity.FinBook;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinBookMapper;
 import com.dcz.mrecord.service.FinBookService;
+import com.dcz.mrecord.service.FinMonthItemRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -35,6 +36,8 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
 
     @Resource
     private FinTemplateItemService finTemplateItemService;
+    @Resource
+    private FinMonthItemRecordService finMonthItemRecordService;
 
     /**
      * 创建账簿
@@ -105,7 +108,8 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
         // 检查账簿是否存在及其归属
         checkUpdateMyFinBook(id, userId);
 
-        // TODO 删除账目数据
+        // 删除账目数据
+        finMonthItemRecordService.deleteByBookId(id);
 
         // 删除模板数据
         finTemplateItemService.deleteByFinBookId(id);
