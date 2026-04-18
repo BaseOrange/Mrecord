@@ -78,6 +78,8 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
      */
     @Override
     public void deleteByFinBookId(String finBookId) {
+        // TODO 是否考虑此处做一个查询，确认账簿下是否有数据
+
         // 这里不再校验，前置方法删除账簿已经进行校验
         QueryWrapper queryWrapper = QueryWrapper.create();
         queryWrapper.eq(FinTemplateItem::getBookId, finBookId);

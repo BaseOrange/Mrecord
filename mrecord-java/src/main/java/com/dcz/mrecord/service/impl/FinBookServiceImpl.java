@@ -10,6 +10,7 @@ import com.dcz.mrecord.entity.FinBook;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinBookMapper;
 import com.dcz.mrecord.service.FinBookService;
+import com.dcz.mrecord.service.FinTemplateItemService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -31,6 +32,9 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
 
     @Resource
     private FinBookMapper finBookMapper;
+
+    @Resource
+    private FinTemplateItemService finTemplateItemService;
 
     /**
      * 创建账簿
@@ -103,7 +107,8 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
 
         // TODO 删除账目数据
 
-        // TODO 删除模板数据
+        // 删除模板数据
+        finTemplateItemService.deleteByFinBookId(id);
 
         // 删除账簿
         finBookMapper.deleteById(id);
