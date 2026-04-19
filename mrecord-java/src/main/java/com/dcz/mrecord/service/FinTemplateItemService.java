@@ -37,6 +37,13 @@ public interface FinTemplateItemService extends IService<FinTemplateItem> {
     List<FinTemplateItem> updateFinTemplateItemList(FinTempItemDTO param);
 
     /**
+     * 复制记账模板
+     *
+     * @param param 复制月度明细DTO
+     */
+    List<FinTemplateItem> copyTemplateItem(FinTempItemDTO param);
+
+    /**
      * 根据账簿ID查询记账模板明细【对外，校验账本权限】
      *
      * @param finBookId 账簿ID

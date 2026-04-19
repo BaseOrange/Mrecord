@@ -13,10 +13,16 @@ import java.util.List;
  */
 @Data
 public class FinTempItemDTO {
+
     /**
      * 账本ID
      */
     private String bookId;
+
+    /**
+     * 旧账簿ID
+     */
+    private String oldBookId;
 
     /**
      * 账本模板项

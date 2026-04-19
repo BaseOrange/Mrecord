@@ -52,6 +52,19 @@ public class FinTemplateItemController {
     }
 
     /**
+     * 复制账本模板项
+     *
+     * @param param 复制账本模板项参数
+     * @return 账本模板项列表
+     */
+    @PostMapping("/copy")
+    public Result<List<FinTemplateItem>> copyFinTemplateItem(FinTempItemDTO param) {
+        log.info("复制账本模板项[/tempItem/copy]请求传参：{}", param);
+        List<FinTemplateItem> resList = finTemplateItemService.copyTemplateItem(param);
+        return Result.success(resList);
+    }
+
+    /**
      * 查询账本模板项列表
      *
      * @param param 查询账本模板项列表参数

@@ -17,6 +17,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -134,6 +135,35 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
         }
 
         return finTemplateItemList;
+    }
+
+    /**
+     * 复制记账模板
+     *
+     * @param param 复制月度明细DTO
+     */
+    @Override
+    public List<FinTemplateItem> copyTemplateItem(FinTempItemDTO param) {
+        String oldBookId = param.getOldBookId();
+        if (StrUtil.isBlankIfStr(oldBookId)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "原账簿ID不能为空");
+        }
+        String newBookId = param.getBookId();
+        if (StrUtil.isBlankIfStr(newBookId)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "新账簿ID不能为空");
+        }
+
+        List<FinTemplateItem> finTemplateItems = selectByFinBookId(oldBookId);
+        if (finTemplateItems == null || finTemplateItems.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        for (FinTemplateItem finTemplateItem : finTemplateItems) {
+            finTemplateItem.setId(IdUtil.simpleUUID());
+            finTemplateItem.setBookId(newBookId);
+        }
+        finTemplateItemMapper.insertBatch(finTemplateItems);
+        return finTemplateItems;
     }
 
     /**
