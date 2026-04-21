@@ -4,7 +4,6 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.common.UserContext;
-import com.dcz.mrecord.constant.FinbookTypeConst;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
 import com.dcz.mrecord.exception.MrecordException;
@@ -54,20 +53,6 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
             throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿名称不能为空");
         }
 
-        String bookType = finBook.getBookType();
-        if (StrUtil.isBlankIfStr(bookType)) {
-            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿类型不能为空");
-        }
-        if (!FinbookTypeConst.YEARLY.equals(bookType) && !FinbookTypeConst.CATEGORY.equals(bookType)) {
-            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿类型错误");
-        }
-        if (StrUtil.isBlankIfStr(finBook.getYear())) {
-            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿年份不能为空");
-        }
-        if (yearlyBookRepeatCheck(userId, finBook.getYear())) {
-            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿已存在");
-        }
-
         finBook.setId(IdUtil.simpleUUID());
         finBookMapper.insert(finBook);
         return finBook;
@@ -81,18 +66,7 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
      */
     @Override
     public FinBook updateFinBook(FinBook finBook) {
-        String userId = UserContext.getUserId();
-        FinBook dbFinBook = checkUpdateMyFinBook(finBook.getId(), userId);
-        if (!Objects.equals(dbFinBook.getBookType(), finBook.getBookType())) {
-            log.info("用户 {} 尝试更新账簿 {} 的账簿类型", userId, finBook.getId());
-            throw new MrecordException(ResCode.FIN_BOOK_TYPE_UPDATE);
-        }
-        if (!Objects.equals(dbFinBook.getYear(), finBook.getYear())) {
-            log.info("用户 {} 尝试更新账簿 {} 的账簿年份", userId, finBook.getId());
-            throw new MrecordException(ResCode.FIN_BOOK_YEAR_UPDATE);
-        }
-
-        finBookMapper.update(finBook);
+        finBookMapper.insertOrUpdateSelective(finBook);
         return finBook;
     }
 
@@ -133,45 +107,8 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
         if (StrUtil.isNotBlank(name)) {
             qw.like(FinBook::getBookName, name);
         }
-        String type = param.getType();
-        if (StrUtil.isNotBlank(type)) {
-            qw.eq(FinBook::getBookType, type);
-        }
-        String year = param.getYear();
-        if (StrUtil.isNotBlank(year)) {
-            qw.eq(FinBook::getYear, year);
-        }
         qw.eq(FinBook::getUserId, UserContext.getUserId());
         return finBookMapper.paginate(page, qw);
-    }
-
-    /**
-     * 根据用户ID和年份获取年度账簿
-     *
-     * @param userId 用户ID
-     * @param year   年份
-     * @return 账簿
-     */
-    @Override
-    public FinBook getYearlyBookByYearAndUserId(String userId, Integer year) {
-        QueryWrapper qw = QueryWrapper.create();
-        qw.eq(FinBook::getUserId, userId)
-                .eq(FinBook::getBookType, FinbookTypeConst.YEARLY)
-                .eq(FinBook::getYear, year);
-        return finBookMapper.selectOneByQuery(qw);
-    }
-
-    /**
-     * 年度账簿重复检查
-     *
-     * @param userId 用户ID
-     * @param year   账簿年份
-     * @return 是否重复
-     */
-    private boolean yearlyBookRepeatCheck(String userId, String year) {
-        QueryWrapper qw = QueryWrapper.create();
-        qw.eq(FinBook::getUserId, userId).eq(FinBook::getBookType, FinbookTypeConst.YEARLY).eq(FinBook::getYear, year);
-        return finBookMapper.selectCountByQuery(qw) > 0;
     }
 
     /**

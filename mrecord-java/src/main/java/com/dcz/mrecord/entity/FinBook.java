@@ -28,22 +28,4 @@ public class FinBook extends BaseEntity {
      */
     @Column(value = "MR_BOOK_NAME")
     private String bookName;
-
-    /**
-     * 账簿类型（YEARLY-年度，CATEGORY-分类）
-     */
-    @Column(value = "MR_BOOK_TYPE")
-    private String bookType;
-
-    /**
-     * 年度账簿对应年份，分类账簿为空
-     */
-    @Column(value = "MR_YEAR")
-    private String year;
-
-    /**
-     * 复制模板源账簿ID，新建年度账簿时关联上一年
-     */
-    @Column(value = "MR_COPY_FROM_BOOK_ID")
-    private String copyFromBookId;
 }

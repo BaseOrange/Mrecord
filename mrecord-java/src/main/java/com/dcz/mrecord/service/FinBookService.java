@@ -43,13 +43,4 @@ public interface FinBookService extends IService<FinBook> {
      * @return 账簿列表
      */
     Page<FinBook> getMyFinBook(QueryFinBookDTO param);
-
-    /**
-     * 根据年份和用户ID获取年度账簿
-     *
-     * @param userId 用户ID
-     * @param year   年份
-     * @return 账簿
-     */
-    FinBook getYearlyBookByYearAndUserId(String userId, Integer year);
 }
