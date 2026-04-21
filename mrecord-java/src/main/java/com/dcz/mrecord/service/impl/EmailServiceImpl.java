@@ -10,6 +10,7 @@ import com.dcz.mrecord.service.SysConfigService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.mail.DefaultAuthenticator;
+import org.apache.commons.mail.EmailAttachment;
 import org.apache.commons.mail.EmailConstants;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
@@ -110,8 +111,30 @@ public class EmailServiceImpl implements EmailService {
     }
 
     /**
+     * 发送账簿导出完成邮件
+     *
+     * @param to         接收者邮箱
+     * @param params     邮件参数
+     * @param attachment 附件文件
+     */
+    @Override
+    public void sendExportSuccessEmail(String to, java.util.Map<String, String> params, java.io.File attachment) {
+        try {
+            HtmlEmail mailClient = getMailClient();
+            if (mailClient == null) {
+                log.warn("管理员未配置邮件参数，无法发送导出完成邮件");
+                return;
+            }
+            sendHtmlMailWithAttachment(mailClient, to, "【MRecord｜月衡】账簿导出完成", "mail/mr-export.html", params, attachment);
+        } catch (Exception e) {
+            log.error("导出完成邮件发送失败", e);
+        }
+    }
+
+    /**
      * 发送HTML邮件
      *
+     * @param email    邮件客户端
      * @param to       接收者邮箱
      * @param subject  邮件主题
      * @param tempPath 邮件模板路径
@@ -119,6 +142,21 @@ public class EmailServiceImpl implements EmailService {
      * @throws Exception 邮件发送异常
      */
     private void sendHtmlMail(HtmlEmail email, String to, String subject, String tempPath, Map<String, String> params) throws Exception {
+        sendHtmlMailWithAttachment(email, to, subject, tempPath, params, null);
+    }
+
+    /**
+     * 发送HTML邮件（支持附件）
+     *
+     * @param email          邮件客户端
+     * @param to             接收者邮箱
+     * @param subject        邮件主题
+     * @param tempPath       邮件模板路径
+     * @param params         邮件参数
+     * @param attachmentFile 附件文件
+     * @throws Exception 邮件发送异常
+     */
+    private void sendHtmlMailWithAttachment(HtmlEmail email, String to, String subject, String tempPath, Map<String, String> params, java.io.File attachmentFile) throws Exception {
         if (email == null) {
             log.warn("管理员未配置邮件参数，跳过邮件发送逻辑。");
             return;
@@ -127,6 +165,13 @@ public class EmailServiceImpl implements EmailService {
         email.addTo(to);
         email.setSubject(subject);
         email.setHtmlMsg(readTemplate(tempPath, params));
+        if (attachmentFile != null && attachmentFile.exists()) {
+            EmailAttachment attachment = new EmailAttachment();
+            attachment.setPath(attachmentFile.getAbsolutePath());
+            attachment.setDisposition(EmailAttachment.ATTACHMENT);
+            attachment.setName(attachmentFile.getName());
+            email.attach(attachment);
+        }
         email.send();
     }
 

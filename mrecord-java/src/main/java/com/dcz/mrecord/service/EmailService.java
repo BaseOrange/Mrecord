@@ -1,7 +1,6 @@
 package com.dcz.mrecord.service;
 
 import com.dcz.mrecord.bo.MailParamsBO;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -40,4 +39,13 @@ public interface EmailService {
      * @param paramsList 邮件参数集合
      */
     void sendNewYearReminderEmail(List<MailParamsBO> paramsList);
+
+    /**
+     * 发送账簿导出完成邮件
+     *
+     * @param to         接收者邮箱
+     * @param params     邮件参数
+     * @param attachment 附件文件
+     */
+    void sendExportSuccessEmail(String to, java.util.Map<String, String> params, java.io.File attachment);
 }
