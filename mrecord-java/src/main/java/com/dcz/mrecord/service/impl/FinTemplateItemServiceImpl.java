@@ -78,7 +78,7 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
      * @param finBookId 账簿ID
      */
     @Override
-    public void deleteByFinBookId(String finBookId) {
+    public void deleteByBookId(String finBookId) {
         // TODO 是否考虑此处做一个查询，确认账簿下是否有数据
 
         // 这里不再校验，前置方法删除账簿已经进行校验

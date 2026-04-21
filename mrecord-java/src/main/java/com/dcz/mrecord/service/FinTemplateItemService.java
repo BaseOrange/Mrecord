@@ -26,7 +26,7 @@ public interface FinTemplateItemService extends IService<FinTemplateItem> {
      *
      * @param finBookId 账簿ID
      */
-    void deleteByFinBookId(String finBookId);
+    void deleteByBookId(String finBookId);
 
     /**
      * 更新记账模板明细

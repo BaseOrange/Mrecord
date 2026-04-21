@@ -82,13 +82,13 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
         // 检查账簿是否存在及其归属
         checkUpdateMyFinBook(id, userId);
 
-        // 删除账目数据
+        // 删除账目数据 TODO 还需增加数据归档
         finMonthItemRecordService.deleteByBookId(id);
 
-        // 删除模板数据
-        finTemplateItemService.deleteByFinBookId(id);
+        // 删除模板数据 TODO 还需增加数据归档
+        finTemplateItemService.deleteByBookId(id);
 
-        // 删除账簿
+        // 删除账簿 TODO 还需增加数据归档
         finBookMapper.deleteById(id);
     }
 
