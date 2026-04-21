@@ -26,9 +26,9 @@ public interface FinMonthRecordService extends IService<FinMonthRecord> {
     /**
      * 删除月度财务汇总【仅内部调用，不对外开放接口】
      *
-     * @param monthItemDTO 月度项目DTO
+     * @param bookId 账簿ID
      */
-    void deleteFinMonthRecord(MonthItemDTO monthItemDTO);
+    void deleteByBookId(String bookId);
 
     /**
      * 更新后重新计算月度财务汇总【修复某月数据时，进行计算】

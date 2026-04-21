@@ -102,11 +102,10 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     /**
      * 删除月度财务汇总【仅内部调用，不对外开放接口】
      *
-     * @param monthItemDTO 月度项目DTO
+     * @param bookId 账簿ID
      */
     @Override
-    public void deleteFinMonthRecord(MonthItemDTO monthItemDTO) {
-        String bookId = monthItemDTO.getBookId();
+    public void deleteByBookId(String bookId) {
         if (StrUtil.isBlankIfStr(bookId)) {
             throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿ID不能为空");
         }

@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.dto.MonthItemDTO;
+import com.dcz.mrecord.dto.MonthRecordDTO;
 import com.dcz.mrecord.entity.FinMonthItemRecord;
 import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.exception.MrecordException;
@@ -103,7 +104,12 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
         Db.updateEntitiesBatch(monthItemDTO.getItemList(), 1000);
 
         // 重计算月度汇总数据
-        finMonthRecordService.calculateFinMonthRecord(monthItemDTO);
+        MonthRecordDTO monthRecordDTO = new MonthRecordDTO();
+        monthRecordDTO.setBookId(monthItemDTO.getBookId());
+        monthRecordDTO.setYear(monthItemDTO.getYear());
+        monthRecordDTO.setMonth(monthItemDTO.getMonth());
+        monthRecordDTO.setNote(monthItemDTO.getNote());
+        finMonthRecordService.recalculateFinMonthRecord(monthRecordDTO);
         return monthItemDTO.getItemList();
     }
 
