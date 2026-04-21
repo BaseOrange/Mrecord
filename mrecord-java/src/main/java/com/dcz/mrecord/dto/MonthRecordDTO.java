@@ -1,18 +1,15 @@
 package com.dcz.mrecord.dto;
 
-import com.dcz.mrecord.entity.FinMonthItemRecord;
 import lombok.Data;
 
-import java.util.List;
-
 /**
- * 月度明细DTO
+ * 月度汇总DTO
  *
  * @author dcz
- * @date 2026/04/18
+ * @date 2026/04/19
  */
 @Data
-public class MonthItemDTO {
+public class MonthRecordDTO {
 
     /**
      * 账簿ID
@@ -28,11 +25,6 @@ public class MonthItemDTO {
      * 月份
      */
     private Integer month;
-
-    /**
-     * 明细列表
-     */
-    private List<FinMonthItemRecord> itemList;
 
     /**
      * 备注

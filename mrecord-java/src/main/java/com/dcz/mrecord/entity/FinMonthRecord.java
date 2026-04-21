@@ -47,7 +47,7 @@ public class FinMonthRecord extends BaseEntity {
      * 当月总资产，所有资产项之和
      */
     @Column(value = "MR_TOTAL_ASSET")
-    private String totalAsset;
+    private BigDecimal totalAsset;
 
     /**
      * 当月总负债，所有负债项之和
