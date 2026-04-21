@@ -9,6 +9,7 @@ import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinMonthItemRecordMapper;
 import com.dcz.mrecord.service.FinMonthItemRecordService;
+import com.dcz.mrecord.service.FinMonthRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.row.Db;
@@ -36,6 +37,8 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
 
     @Resource
     private FinTemplateItemService finTemplateItemService;
+    @Resource
+    private FinMonthRecordService finMonthRecordService;
 
     /**
      * 插入月度财务账目
@@ -61,6 +64,9 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
 
         // 批量插入记账账目
         finMonthItemRecordMapper.insertBatch(finMonthItemRecords);
+
+        // 计算月度汇总数据
+        finMonthRecordService.calculateFinMonthRecord(monthItemDTO);
         return finMonthItemRecords;
     }
 
@@ -95,6 +101,9 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
 
         // 批量更新记账账目
         Db.updateEntitiesBatch(monthItemDTO.getItemList(), 1000);
+
+        // 重计算月度汇总数据
+        finMonthRecordService.calculateFinMonthRecord(monthItemDTO);
         return monthItemDTO.getItemList();
     }
 
