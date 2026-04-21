@@ -146,6 +146,22 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
     }
 
     /**
+     * 根据用户ID和年份获取年度账簿
+     *
+     * @param userId 用户ID
+     * @param year   年份
+     * @return 账簿
+     */
+    @Override
+    public FinBook getYearlyBookByYearAndUserId(String userId, Integer year) {
+        QueryWrapper qw = QueryWrapper.create();
+        qw.eq(FinBook::getUserId, userId)
+                .eq(FinBook::getBookType, FinbookTypeConst.YEARLY)
+                .eq(FinBook::getYear, year);
+        return finBookMapper.selectOneByQuery(qw);
+    }
+
+    /**
      * 年度账簿重复检查
      *
      * @param userId 用户ID
