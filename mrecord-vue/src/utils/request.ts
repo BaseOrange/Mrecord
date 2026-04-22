@@ -2,6 +2,7 @@ import axios, {
     AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse,
     type InternalAxiosRequestConfig
 } from 'axios'
+import {useUserStore} from '@/stores/user'
 
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
@@ -15,10 +16,9 @@ const request: AxiosInstance = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        // TODO: 从 pinia store 或 localStorage 获取 token
-        const token = localStorage.getItem('token')
-        if (token && config.headers) {
-            config.headers.Authorization = `Bearer ${token}`
+        const userStore = useUserStore()
+        if (userStore.token && config.headers) {
+            config.headers.Authorization = `Bearer ${userStore.token}`
         }
         return config
     },
@@ -49,8 +49,7 @@ request.interceptors.response.use(
             switch (status) {
                 case 401:
                     message = '登录已过期，请重新登录'
-                    // TODO: 清除 token 并跳转登录页
-                    localStorage.removeItem('token')
+                    useUserStore().logout()
                     window.location.href = '/login'
                     break
                 case 403:
