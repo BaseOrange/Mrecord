@@ -45,8 +45,6 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     private FinMonthRecordMapper finMonthRecordMapper;
 
     @Resource
-    private FinBookService finBookService;
-    @Resource
     private FinTemplateItemService finTemplateItemService;
     @Resource
     private SysBackupMonthRecordService sysBackupMonthRecordService;
