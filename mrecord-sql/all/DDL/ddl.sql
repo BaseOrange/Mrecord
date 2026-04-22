@@ -158,25 +158,6 @@ CREATE TABLE `sys_backup_template_item` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='记账模板明细备份表';
 
 
--- mrecord.sys_backup_user definition
-
-CREATE TABLE `sys_backup_user` (
-  `MR_ID` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户ID，32位UUID字符串',
-  `MR_EMAIL` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '登录邮箱，唯一不重复',
-  `MR_PASSWORD` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户登录密码，BCrypt加密存储',
-  `MR_NICKNAME` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '用户自定义昵称',
-  `MR_STATUS` tinyint NOT NULL DEFAULT '0' COMMENT '账号状态：0-正常，1-停用，2-注销待生效，3-已注销',
-  `MR_CANCEL_TIME` datetime DEFAULT NULL COMMENT '账号注销申请时间，用于计算15天冷静期',
-  `MR_REMIND_ENABLED` tinyint DEFAULT '0' COMMENT '月度邮件提醒开关：0-关闭，1-开启',
-  `MR_REMIND_DAY` int DEFAULT '1' COMMENT '月度提醒日期，取值1-31，无对应日期取月末',
-  `MR_CREATE_BY` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '创建人ID，对应用户MR_ID',
-  `MR_CREATE_TIME` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `MR_UPDATE_BY` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '更新人ID，对应用户MR_ID',
-  `MR_UPDATE_TIME` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `MR_IS_DELETED` tinyint DEFAULT '0' COMMENT '逻辑删除标识：0-正常，1-已删除'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
-
-
 -- mrecord.sys_config definition
 
 CREATE TABLE `sys_config` (
