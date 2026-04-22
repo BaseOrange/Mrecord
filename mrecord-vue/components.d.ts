@@ -10,8 +10,14 @@ export {}
 
 /* prettier-ignore */
 declare module 'vue' {
-  export interface GlobalComponents {
-    HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
-    VarButton: typeof import('@varlet/ui')['_ButtonComponent']
-  }
+    export interface GlobalComponents {
+        HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
+        RouterLink: typeof import('vue-router')['RouterLink']
+        RouterView: typeof import('vue-router')['RouterView']
+        VarAppBar: typeof import('@varlet/ui')['_AppBarComponent']
+        VarButton: typeof import('@varlet/ui')['_ButtonComponent']
+        VarIcon: typeof import('@varlet/ui')['_IconComponent']
+        VarInput: typeof import('@varlet/ui')['_InputComponent']
+        VarSpace: typeof import('@varlet/ui')['_SpaceComponent']
+    }
 }
