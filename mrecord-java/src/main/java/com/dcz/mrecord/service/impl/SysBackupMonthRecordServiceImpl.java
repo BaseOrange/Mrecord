@@ -14,4 +14,13 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class SysBackupMonthRecordServiceImpl extends ServiceImpl<SysBackupMonthRecordMapper, SysBackupMonthRecord> implements SysBackupMonthRecordService {
+    /**
+     * 备份
+     *
+     * @param bookId 账簿ID
+     */
+    @Override
+    public void backup(String bookId) {
+        this.mapper.backupByBookId(bookId);
+    }
 }

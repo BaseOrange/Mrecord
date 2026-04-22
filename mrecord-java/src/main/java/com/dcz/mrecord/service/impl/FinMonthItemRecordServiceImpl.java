@@ -12,6 +12,7 @@ import com.dcz.mrecord.mapper.FinMonthItemRecordMapper;
 import com.dcz.mrecord.service.FinMonthItemRecordService;
 import com.dcz.mrecord.service.FinMonthRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
+import com.dcz.mrecord.service.SysBackupMonthItemRecordService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -40,6 +41,8 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
     private FinTemplateItemService finTemplateItemService;
     @Resource
     private FinMonthRecordService finMonthRecordService;
+    @Resource
+    private SysBackupMonthItemRecordService sysBackupMonthItemRecordService;
 
     /**
      * 插入月度财务账目
@@ -78,10 +81,9 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
      */
     @Override
     public void deleteByBookId(String bookId) {
-        // 检查账簿ID
-        if (StrUtil.isBlankIfStr(bookId)) {
-            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿ID不能为空");
-        }
+        // 备份
+        sysBackupMonthItemRecordService.backup(bookId);
+        // 删除
         QueryWrapper qw = new QueryWrapper();
         qw.eq(FinMonthItemRecord::getBookId, bookId);
         finMonthItemRecordMapper.deleteByQuery(qw);

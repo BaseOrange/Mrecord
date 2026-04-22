@@ -10,6 +10,7 @@ import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinTemplateItemMapper;
 import com.dcz.mrecord.service.FinTemplateItemService;
+import com.dcz.mrecord.service.SysBackupTemplateItemService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -32,6 +33,9 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
 
     @Resource
     private FinTemplateItemMapper finTemplateItemMapper;
+
+    @Resource
+    private SysBackupTemplateItemService sysBackupTemplateItemService;
 
     /**
      * 创建记账模板
@@ -79,8 +83,8 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
      */
     @Override
     public void deleteByBookId(String finBookId) {
-        // TODO 是否考虑此处做一个查询，确认账簿下是否有数据
-
+        // 备份
+        sysBackupTemplateItemService.backup(finBookId);
         // 这里不再校验，前置方法删除账簿已经进行校验
         QueryWrapper queryWrapper = QueryWrapper.create();
         queryWrapper.eq(FinTemplateItem::getBookId, finBookId);
