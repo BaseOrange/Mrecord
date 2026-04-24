@@ -21,9 +21,8 @@ const onLoginReal = async () => {
   }
   loading.value = true
   try {
-    const res = await login({username: email.value, password: password.value})
-    userStore.setToken(res.token)
-    userStore.setUserInfo(res.userInfo)
+    const res = await login({email: email.value, password: password.value})
+    userStore.setToken(res)
     // @ts-ignore
     Snackbar.success('登录成功')
     router.replace('/home')

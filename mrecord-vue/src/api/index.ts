@@ -1,4 +1,5 @@
 // API 统一入口
+export * from './types'
 export * from './modules/user'
 export * from './modules/book'
 export * from './modules/tempItem'

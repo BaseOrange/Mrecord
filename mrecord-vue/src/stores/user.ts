@@ -1,11 +1,11 @@
 import {defineStore} from 'pinia'
 import {ref, computed} from 'vue'
-import type {UserInfo} from '@/api'
+import type {SysUser} from '@/api'
 
 export const useUserStore = defineStore('user', () => {
     // ==================== State ====================
     const token = ref<string>(localStorage.getItem('token') || '')
-    const userInfo = ref<UserInfo | null>(null)
+    const userInfo = ref<SysUser | null>(null)
 
     // ==================== Getters ====================
     const isLoggedIn = computed(() => !!token.value)
@@ -25,7 +25,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     /** 设置用户信息 */
-    function setUserInfo(info: UserInfo) {
+    function setUserInfo(info: SysUser) {
         userInfo.value = info
     }
 

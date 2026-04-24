@@ -1,54 +1,52 @@
 import {post} from '@/utils/request'
+import type {BaseEntity} from '@/api/types'
 
 // ==================== 类型定义 ====================
 
-export interface MonthRecordInfo {
-    month: string
-    year: number
-    monthNum: number
-    bookId?: number | string
-    totalIncome: number
-    totalExpense: number
-    totalBalance: number
-    itemCount: number
-    categoryStats?: Record<string, number>
+/** 月度财务汇总记录 */
+export interface FinMonthRecord extends BaseEntity {
+    /** 所属用户ID */
+    userId?: string
+    /** 所属账簿ID */
+    bookId?: string
+    /** 统计年份 */
+    year?: number
+    /** 统计月份 */
+    month?: number
+    /** 当月总资产 */
+    totalAsset?: number
+    /** 当月总负债 */
+    totalLiability?: number
+    /** 当月净资产（总资产-总负债） */
+    netAsset?: number
+    /** 环比增长/下跌金额（对比上月） */
+    monthOnMonth?: number
+    /** 同比增长/下跌金额（对比去年同月） */
+    yearOnYear?: number
+    /** 用户本月汇总备注 */
+    note?: string
 }
 
-export interface YearRecordItem {
-    month: string
-    year: number
-    monthNum: number
-    totalIncome: number
-    totalExpense: number
-    totalBalance: number
-}
-
-export interface GetMonthRecordParams {
-    bookId?: number | string
-    month: string
-}
-
-export interface GetYearRecordListParams {
-    bookId?: number | string
-    year: number
-}
-
-export interface GetYearRecordListResult {
-    list: YearRecordItem[]
-    year: number
-    totalIncome: number
-    totalExpense: number
-    totalBalance: number
+/** 月度/年度汇总查询传参 */
+export interface MonthRecordParams {
+    /** 账簿ID */
+    bookId?: string
+    /** 年份 */
+    year?: number
+    /** 月份 */
+    month?: number
+    /** 备注 */
+    note?: string
 }
 
 // ==================== 接口方法 ====================
 
 /** 获取月度财务汇总 */
-export function getMonthRecord(data: GetMonthRecordParams) {
-    return post<MonthRecordInfo>('/monthRecord/getMonthRecord', data)
+export function getMonthRecord(data: MonthRecordParams) {
+    return post<FinMonthRecord>('/monthRecord/getMonthRecord', data)
 }
 
 /** 获取年度财务汇总列表 */
-export function getYearRecordList(data: GetYearRecordListParams) {
-    return post<GetYearRecordListResult>('/monthRecord/getYearRecordList', data)
+export function getYearRecordList(data: MonthRecordParams) {
+    return post<FinMonthRecord[]>('/monthRecord/getYearRecordList', data)
 }

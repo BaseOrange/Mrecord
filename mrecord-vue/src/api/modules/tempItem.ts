@@ -1,77 +1,50 @@
 import {post} from '@/utils/request'
+import type {BaseEntity} from '@/api/types'
 
 // ==================== 类型定义 ====================
 
-export interface TempItemInfo {
-    id: number | string
-    bookId: number | string
-    name: string
-    type?: number
-    amount?: number
-    category?: string
+/** 账本模板项 */
+export interface FinTemplateItem extends BaseEntity {
+    /** 所属账簿ID */
+    bookId?: string
+    /** 记账项名称，如招行储蓄卡、花呗 */
+    itemName?: string
+    /** 账簿类型：-1负债，0不统计仅记录，1资产 */
+    itemType?: number
+    /** 图标标识 */
     icon?: string
-    sort?: number
-    status?: number
-    createTime?: string
-    updateTime?: string
+    /** 展示排序号，数值越小越靠前 */
+    sort?: string
 }
 
-export interface CreateTempItemParams {
-    bookId: number | string
-    name: string
-    type?: number
-    amount?: number
-    category?: string
-    icon?: string
-}
-
-export interface UpdateTempItemParams {
-    id: number | string
-    bookId?: number | string
-    name?: string
-    type?: number
-    amount?: number
-    category?: string
-    icon?: string
-}
-
-export interface CopyTempItemParams {
-    id: number | string
-    targetBookId?: number | string
-}
-
-export interface ListTempItemsParams {
-    bookId?: number | string
-    page?: number
-    pageSize?: number
-    status?: number
-}
-
-export interface ListTempItemsResult {
-    list: TempItemInfo[]
-    total: number
-    page: number
-    pageSize: number
+/** 创建/更新/复制/查询模板项传参 */
+export interface SaveTempItemParams {
+    /** 账本ID */
+    bookId?: string
+    /** 旧账簿ID */
+    oldBookId?: string
+    /** 账本模板项列表 */
+    itemList?: FinTemplateItem[]
 }
 
 // ==================== 接口方法 ====================
 
 /** 创建账本模板项 */
-export function createTempItem(data: CreateTempItemParams) {
-    return post<TempItemInfo>('/tempItem/create', data)
+export function createTempItem(data: SaveTempItemParams) {
+    return post<FinTemplateItem[]>('/tempItem/create', data)
 }
 
 /** 更新账本模板项 */
-export function updateTempItem(data: UpdateTempItemParams) {
-    return post<TempItemInfo>('/tempItem/update', data)
+export function updateTempItem(data: SaveTempItemParams) {
+    return post<FinTemplateItem[]>('/tempItem/update', data)
 }
 
 /** 复制账本模板项 */
-export function copyTempItem(data: CopyTempItemParams) {
-    return post<TempItemInfo>('/tempItem/copy', data)
+export function copyTempItem(data: SaveTempItemParams) {
+    return post<FinTemplateItem[]>('/tempItem/copy', data)
 }
 
 /** 查询账本模板项列表 */
-export function listTempItems(data?: ListTempItemsParams) {
-    return post<ListTempItemsResult>('/tempItem/list', data)
+export function listTempItems(data?: SaveTempItemParams) {
+    return post<FinTemplateItem[]>('/tempItem/list', data)
 }

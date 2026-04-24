@@ -27,18 +27,28 @@ request.interceptors.request.use(
     }
 )
 
+// 后端统一响应格式
+interface Result<T = unknown> {
+    code: string
+    message: string
+    data: T
+}
+
+// 业务成功码
+const SUCCESS_CODE = '00000'
+
 // 响应拦截器
 request.interceptors.response.use(
-    (response: AxiosResponse) => {
-        const {data} = response
-        // 根据后端约定的响应格式处理
-        // 例如: { code: 0, data: ..., message: '...' }
-        if (data.code !== undefined && data.code !== 0) {
+    (response: AxiosResponse<Result>) => {
+        const res = response.data
+        // 业务失败：弹出错误提示并 reject
+        if (res.code !== SUCCESS_CODE) {
             // @ts-ignore
-            Snackbar.error(data.message || '请求失败')
-            return Promise.reject(new Error(data.message || '请求失败'))
+            Snackbar.error(res.message || '请求失败')
+            return Promise.reject(new Error(res.message || '请求失败'))
         }
-        return data
+        // 业务成功：自动解包，直接返回 data
+        return res.data as any
     },
     (error: AxiosError) => {
         const {response} = error
