@@ -50,6 +50,12 @@ const router = createRouter({
             meta: {title: '注册'}
         },
         {
+            path: '/forgot-password',
+            name: 'ForgotPassword',
+            component: () => import('@/views/ForgotPassword.vue'),
+            meta: {title: '找回密码'}
+        },
+        {
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
             component: () => import('@/views/NotFound.vue'),
