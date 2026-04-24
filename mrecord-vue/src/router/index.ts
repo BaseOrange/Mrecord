@@ -5,9 +5,37 @@ const router = createRouter({
     routes: [
         {
             path: '/',
-            name: 'Home',
-            component: () => import('@/views/Home.vue'),
-            meta: {title: '首页'}
+            redirect: '/login'
+        },
+        {
+            path: '/',
+            component: () => import('@/views/Layout.vue'),
+            children: [
+                {
+                    path: 'home',
+                    name: 'Home',
+                    component: () => import('@/views/HomePage.vue'),
+                    meta: {title: '首页'}
+                },
+                {
+                    path: 'stats',
+                    name: 'Stats',
+                    component: () => import('@/views/StatsPage.vue'),
+                    meta: {title: '统计'}
+                },
+                {
+                    path: 'book',
+                    name: 'Book',
+                    component: () => import('@/views/BookPage.vue'),
+                    meta: {title: '账簿'}
+                },
+                {
+                    path: 'profile',
+                    name: 'Profile',
+                    component: () => import('@/views/ProfilePage.vue'),
+                    meta: {title: '我的'}
+                },
+            ]
         },
         {
             path: '/login',

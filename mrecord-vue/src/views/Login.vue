@@ -13,7 +13,7 @@ const password = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
 
-const onLogin = async () => {
+const onLoginReal = async () => {
   if (!email.value || !password.value) {
     // @ts-ignore
     Snackbar.warning('请输入邮箱和密码')
@@ -26,13 +26,18 @@ const onLogin = async () => {
     userStore.setUserInfo(res.userInfo)
     // @ts-ignore
     Snackbar.success('登录成功')
-    router.replace('/')
+    router.replace('/home')
   } catch (e: any) {
     // @ts-ignore
     Snackbar.error(e?.message || '登录失败')
   } finally {
     loading.value = false
   }
+}
+
+// 临时：跳过登录直接进入主页
+const onLogin = () => {
+  router.replace('/home')
 }
 
 const onForgotPassword = () => {
