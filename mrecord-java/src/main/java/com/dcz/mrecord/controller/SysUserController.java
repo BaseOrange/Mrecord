@@ -55,14 +55,14 @@ public class SysUserController {
      * @return token
      */
     @PostMapping("/login")
-    public Result<String> regiloginster(UserDTO params) {
+    public Result<String> login(UserDTO params) {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
         log.info("用户登录[/user/login]请求传参：{}", clone);
 
-        String email = sysUserService.login(params);
-        return Result.success(email);
+        String token = sysUserService.login(params);
+        return Result.success(token);
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.dcz.mrecord.service;
 
+import com.dcz.mrecord.dto.PageInfoDTO;
 import com.dcz.mrecord.entity.SysExportTask;
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.service.IService;
 
 import java.util.List;
@@ -27,8 +29,9 @@ public interface SysExportTaskService extends IService<SysExportTask> {
     /**
      * 查询当前用户的导出任务列表（按创建时间倒序）
      *
-     * @param userId 用户ID
+     * @param userId      用户ID
+     * @param pageInfoDTO
      * @return 任务列表
      */
-    List<SysExportTask> listMyTasks(String userId);
+    Page<SysExportTask> listMyTasks(String userId, PageInfoDTO pageInfoDTO);
 }

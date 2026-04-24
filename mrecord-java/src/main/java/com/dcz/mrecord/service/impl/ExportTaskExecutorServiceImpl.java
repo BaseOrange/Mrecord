@@ -78,7 +78,7 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
      */
     @Override
     @Async("exportTaskExecutor")
-    public void executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth) {
+    public SysExportTask executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth) {
         // 更新状态为执行中
         SysExportTask runningTask = new SysExportTask();
         runningTask.setId(taskId);
@@ -143,6 +143,7 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
                 excelFile.delete();
             }
         }
+        return runningTask;
     }
 
     /**

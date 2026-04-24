@@ -1,5 +1,7 @@
 package com.dcz.mrecord.service;
 
+import com.dcz.mrecord.entity.SysExportTask;
+
 /**
  * 导出任务异步执行服务
  *
@@ -17,5 +19,5 @@ public interface ExportTaskExecutorService {
      * @param startYearMonth 起始年月yyyyMM（可选）
      * @param endYearMonth   结束年月yyyyMM（可选）
      */
-    void executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth);
+    SysExportTask executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth);
 }
