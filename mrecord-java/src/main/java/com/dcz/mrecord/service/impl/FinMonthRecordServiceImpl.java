@@ -382,12 +382,13 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
      * @return 年度同比增长
      */
     private BigDecimal getYearOnYearVal(FinMonthRecord lastYearRecord, FinMonthRecord currMonthRecord) {
-        if (lastYearRecord != null && lastYearRecord.getNetAsset() != null) {
+        if (lastYearRecord != null && lastYearRecord.getNetAsset() != null
+                && lastYearRecord.getNetAsset().compareTo(BigDecimal.ZERO) != 0) {
             BigDecimal lastYearNetAsset = lastYearRecord.getNetAsset();
             BigDecimal netAsset = currMonthRecord.getNetAsset();
-            return netAsset
-                    .divide(lastYearNetAsset, 4, RoundingMode.HALF_UP)
-                    .subtract(BigDecimal.ONE)
+            // (本期 - 上期) / |上期| * 100，用绝对值做分母避免负数导致增长方向反转
+            return netAsset.subtract(lastYearNetAsset)
+                    .divide(lastYearNetAsset.abs(), 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100))
                     .setScale(2, RoundingMode.HALF_UP);
         }
@@ -402,13 +403,12 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
      * @return 月度环比增长
      */
     private BigDecimal getMonthOnMonthVal(FinMonthRecord lastMonthRecord, FinMonthRecord currMonthRecord) {
-        if (lastMonthRecord != null && lastMonthRecord.getNetAsset() != null) {
+        if (lastMonthRecord != null && lastMonthRecord.getNetAsset() != null && lastMonthRecord.getNetAsset().compareTo(BigDecimal.ZERO) != 0) {
             BigDecimal lastMonthNetAsset = lastMonthRecord.getNetAsset();
             BigDecimal netAsset = currMonthRecord.getNetAsset();
-            // 本月除以上月 减去1再乘以100 得到环比增长
-            return netAsset
-                    .divide(lastMonthNetAsset, 4, RoundingMode.HALF_UP)
-                    .subtract(BigDecimal.ONE)
+            // (本月 - 上月) / |上月| * 100，用绝对值做分母避免负数导致增长方向反转
+            return netAsset.subtract(lastMonthNetAsset)
+                    .divide(lastMonthNetAsset.abs(), 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100))
                     .setScale(2, RoundingMode.HALF_UP);
         }
