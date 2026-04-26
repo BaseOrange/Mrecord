@@ -1,4 +1,8 @@
 import {createRouter, createWebHistory} from 'vue-router'
+import {useUserStore} from '@/stores/user'
+
+// 无需登录即可访问的页面
+const PUBLIC_PAGES = ['/login', '/register', '/forgot-password', '/reset-password']
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -73,7 +77,19 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
     // 设置页面标题
     document.title = to.meta.title ? `${to.meta.title} | 月衡 Mrecord` : '月衡 Mrecord'
-    next()
+
+    const userStore = useUserStore()
+    const isPublic = PUBLIC_PAGES.includes(to.path)
+
+    if (userStore.token && isPublic) {
+        // 已登录访问公开页面 → 跳转首页
+        next('/home')
+    } else if (!userStore.token && !isPublic) {
+        // 未登录访问需认证页面 → 跳转登录
+        next('/login')
+    } else {
+        next()
+    }
 })
 
 export default router
