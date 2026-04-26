@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.common.UserContext;
+import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
 import com.dcz.mrecord.exception.MrecordException;
@@ -81,13 +82,14 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
     /**
      * 删除账簿
      *
-     * @param id 账簿ID
+     * @param idDto 账簿ID
      * @return 账簿
      */
     @Override
-    public void deleteFinBook(String id) {
+    public void deleteFinBook(IdDto idDto) {
         String userId = UserContext.getUserId();
         // 检查账簿是否存在及其归属
+        String id = idDto.getId();
         checkUpdateMyFinBook(id, userId);
 
         // 删除账目数据

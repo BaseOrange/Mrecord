@@ -1,5 +1,6 @@
 package com.dcz.mrecord.service;
 
+import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
 import com.mybatisflex.core.paginate.Page;
@@ -34,7 +35,7 @@ public interface FinBookService extends IService<FinBook> {
      * @param id 账簿ID
      * @return 账簿
      */
-    void deleteFinBook(String id);
+    void deleteFinBook(IdDto id);
 
     /**
      * 获取我的账簿

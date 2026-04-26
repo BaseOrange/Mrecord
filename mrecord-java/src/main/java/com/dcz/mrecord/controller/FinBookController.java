@@ -1,6 +1,7 @@
 package com.dcz.mrecord.controller;
 
 import com.dcz.mrecord.common.Result;
+import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
 import com.dcz.mrecord.service.FinBookService;
@@ -57,7 +58,7 @@ public class FinBookController {
      * @return 删除结果
      */
     @PostMapping("/delete")
-    public Result<String> delete(@RequestBody String id) {
+    public Result<String> delete(@RequestBody IdDto id) {
         log.info("删除账簿[/book/delete]请求传参：{}", id);
         finBookService.deleteFinBook(id);
         return Result.success();
