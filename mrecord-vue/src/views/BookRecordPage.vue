@@ -58,12 +58,12 @@ const getChangeColor = (val?: number) => {
   return val > 0 ? '#34c759' : '#ff3b30'
 }
 
-// 环比文字
+// 环比文字（百分比显示）
 const getChangeText = (val?: number) => {
   if (val === undefined || val === null) return '--'
   if (val === 0) return '持平'
   const prefix = val > 0 ? '+' : ''
-  return prefix + formatMoney(val)
+  return prefix + val.toFixed(2) + '%'
 }
 
 // 开始记账

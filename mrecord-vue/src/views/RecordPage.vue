@@ -545,7 +545,7 @@ const handleSave = async () => {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  color: #666;
+  color: #FF6500;
 }
 .item-icon-placeholder {
   width: 22px;
@@ -554,7 +554,7 @@ const handleSave = async () => {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: #999;
+  color: #FF6500;
   flex-shrink: 0;
 }
 .item-name {
