@@ -105,7 +105,9 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
         checkFinItemList(monthItemDTO, false);
 
         // 批量更新记账账目
-        Db.updateEntitiesBatch(monthItemDTO.getItemList(), 1000);
+        for (FinMonthItemRecord finMonthItemRecord : monthItemDTO.getItemList()) {
+            finMonthItemRecordMapper.insertOrUpdateSelective(finMonthItemRecord);
+        }
 
         // 重计算月度汇总数据
         MonthRecordDTO monthRecordDTO = new MonthRecordDTO();
