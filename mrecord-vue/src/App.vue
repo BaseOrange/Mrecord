@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const transitionName = computed(() => {
+  return (route.meta.transition as string) || 'fade'
+})
 </script>
 
 <template>
   <router-view v-slot="{ Component }">
-    <transition name="fade" mode="out-in">
+    <transition :name="transitionName" mode="out-in">
       <component :is="Component"/>
     </transition>
   </router-view>

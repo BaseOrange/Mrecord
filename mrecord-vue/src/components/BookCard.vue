@@ -7,11 +7,12 @@ defineProps<{
 
 defineEmits<{
   more: [book: BookInfo]
+  click: [book: BookInfo]
 }>()
 </script>
 
 <template>
-  <div class="book-card">
+  <div class="book-card" @click="$emit('click', book)">
     <!-- 3D 立体书本 -->
     <div class="book-3d">
       <div class="spine"></div>

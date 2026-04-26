@@ -72,6 +72,18 @@ const router = createRouter({
             meta: {title: '编辑账目模板'}
         },
         {
+            path: '/book/:bookId/records',
+            name: 'BookRecord',
+            component: () => import('@/views/BookRecordPage.vue'),
+            meta: {title: '账簿记录', transition: 'slide-up'}
+        },
+        {
+            path: '/book/:bookId/record',
+            name: 'Record',
+            component: () => import('@/views/RecordPage.vue'),
+            meta: {title: '记账', transition: 'slide-up'}
+        },
+        {
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
             component: () => import('@/views/NotFound.vue'),

@@ -96,6 +96,15 @@ const handleCreate = async () => {
   }
 }
 
+// ---- 卡片点击跳转 ----
+const onBookClick = (book: BookInfo) => {
+  router.push({
+    name: 'BookRecord',
+    params: { bookId: book.id },
+    query: { name: book.bookName }
+  })
+}
+
 // ---- 操作菜单 ----
 const activeBook = ref<BookInfo | null>(null)
 const showActionMenu = ref(false)
@@ -213,6 +222,7 @@ const handleDelete = async () => {
           v-for="book in books"
           :key="book.id"
           :book="book"
+          @click="onBookClick"
           @more="openActionMenu"
         />
       </div>
