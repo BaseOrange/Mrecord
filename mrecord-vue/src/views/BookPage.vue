@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { createBook, updateBook, deleteBook, listBooks } from '@/api/modules/book'
 import type { BookInfo } from '@/api/modules/book'
 import BookCard from '@/components/BookCard.vue'
+
+const router = useRouter()
 
 // ---- 账簿列表（懒加载） ----
 const PAGE_SIZE = 10
@@ -100,6 +103,20 @@ const showActionMenu = ref(false)
 const openActionMenu = (book: BookInfo) => {
   activeBook.value = book
   showActionMenu.value = true
+}
+
+const onActionSelect = (action: any) => {
+  if (action.name === '修改名称') {
+    openRenameDialog()
+  } else if (action.name === '编辑账目模板') {
+    showActionMenu.value = false
+    router.push({
+      path: `/book/${activeBook.value?.id}/template`,
+      query: { name: activeBook.value?.bookName }
+    })
+  } else if (action.name === '删除账簿') {
+    openDeleteConfirm()
+  }
 }
 
 // ---- 重命名弹窗 ----
@@ -232,10 +249,11 @@ const handleDelete = async () => {
     <var-action-sheet
       v-model:show="showActionMenu"
       :actions="[
+        { name: '编辑账目模板', icon: 'notebook' },
         { name: '修改名称', icon: 'wrench' },
         { name: '删除账簿', icon: 'delete', color: '#e74c3c' }
       ]"
-      @select="(action: any) => action.name === '修改名称' ? openRenameDialog() : openDeleteConfirm()"
+      @select="onActionSelect"
     />
 
     <!-- 重命名弹窗 -->

@@ -66,6 +66,12 @@ const router = createRouter({
             meta: {title: '重置密码'}
         },
         {
+            path: '/book/:bookId/template',
+            name: 'TempItemEditor',
+            component: () => import('@/views/TempItemEditor.vue'),
+            meta: {title: '编辑账目模板'}
+        },
+        {
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
             component: () => import('@/views/NotFound.vue'),
