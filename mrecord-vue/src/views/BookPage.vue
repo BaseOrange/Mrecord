@@ -106,15 +106,15 @@ const openActionMenu = (book: BookInfo) => {
 }
 
 const onActionSelect = (action: any) => {
-  if (action.name === '修改名称') {
+  if (action.key === 'rename') {
     openRenameDialog()
-  } else if (action.name === '编辑账目模板') {
+  } else if (action.key === 'editTemplate') {
     showActionMenu.value = false
     router.push({
       path: `/book/${activeBook.value?.id}/template`,
       query: { name: activeBook.value?.bookName }
     })
-  } else if (action.name === '删除账簿') {
+  } else if (action.key === 'delete') {
     openDeleteConfirm()
   }
 }
@@ -249,9 +249,9 @@ const handleDelete = async () => {
     <var-action-sheet
       v-model:show="showActionMenu"
       :actions="[
-        { name: '编辑账目模板', icon: 'notebook' },
-        { name: '修改名称', icon: 'wrench' },
-        { name: '删除账簿', icon: 'delete', color: '#e74c3c' }
+        { name: '编辑账目模板', icon: 'notebook', key: 'editTemplate' } as any,
+        { name: '修改账簿名称', icon: 'wrench', key: 'rename' } as any,
+        { name: '删除当前账簿', icon: 'delete', color: '#e74c3c', key: 'delete' } as any
       ]"
       @select="onActionSelect"
     />
