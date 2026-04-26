@@ -19,7 +19,7 @@ const onSubmit = async () => {
 
   loading.value = true
   try {
-    await forgotPassword({username: email.value})
+    await forgotPassword({email: email.value})
     submitted.value = true
   } catch (e: any) {
     // @ts-ignore

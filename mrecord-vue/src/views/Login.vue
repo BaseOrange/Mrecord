@@ -3,6 +3,7 @@ import {ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {useUserStore} from '@/stores/user'
 import {login} from '@/api'
+import {md5} from 'js-md5'
 import loginBg from '@/assets/login_bg.png'
 
 const router = useRouter()
@@ -21,7 +22,7 @@ const onLoginReal = async () => {
   }
   loading.value = true
   try {
-    const res = await login({email: email.value, password: password.value})
+    const res = await login({email: email.value, password: md5(password.value)})
     userStore.setToken(res)
     // @ts-ignore
     Snackbar.success('登录成功')

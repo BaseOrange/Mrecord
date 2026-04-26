@@ -2,6 +2,7 @@
 import {ref, computed} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
 import {resetPassword} from '@/api'
+import {md5} from 'js-md5'
 import loginBg from '@/assets/login_bg.png'
 
 const router = useRouter()
@@ -36,7 +37,7 @@ const onSubmit = async () => {
 
   loading.value = true
   try {
-    await resetPassword({token: token.value, newPassword: password.value})
+    await resetPassword({password: md5(password.value)})
     success.value = true
   } catch (e: any) {
     // @ts-ignore

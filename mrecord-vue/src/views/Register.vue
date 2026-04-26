@@ -2,6 +2,7 @@
 import {ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {register} from '@/api'
+import {md5} from 'js-md5'
 import loginBg from '@/assets/login_bg.png'
 
 const router = useRouter()
@@ -45,8 +46,8 @@ const onRegister = async () => {
   loading.value = true
   try {
     await register({
-      username: email.value,
-      password: password.value,
+      email: email.value,
+      password: md5(password.value),
       nickname: nickname.value,
     })
     registered.value = true
