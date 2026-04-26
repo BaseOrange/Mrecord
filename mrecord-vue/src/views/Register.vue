@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {useRouter} from 'vue-router'
+import {Snackbar} from '@varlet/ui'
 import {register} from '@/api'
 import {md5} from 'js-md5'
 import loginBg from '@/assets/login_bg.png'
@@ -18,27 +19,22 @@ const registered = ref(false)
 
 const onRegister = async () => {
   if (!email.value) {
-    // @ts-ignore
     Snackbar.warning('请输入邮箱')
     return
   }
   if (!nickname.value) {
-    // @ts-ignore
     Snackbar.warning('请输入昵称')
     return
   }
   if (!password.value) {
-    // @ts-ignore
     Snackbar.warning('请输入密码')
     return
   }
   if (password.value.length < 6) {
-    // @ts-ignore
     Snackbar.warning('密码至少6位')
     return
   }
   if (password.value !== confirmPassword.value) {
-    // @ts-ignore
     Snackbar.warning('两次密码不一致')
     return
   }
@@ -51,9 +47,8 @@ const onRegister = async () => {
       nickname: nickname.value,
     })
     registered.value = true
-  } catch (e: any) {
-    // @ts-ignore
-    Snackbar.error(e?.message || '注册失败')
+  } catch {
+    // 拦截器已处理错误提示
   } finally {
     loading.value = false
   }

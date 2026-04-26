@@ -2,6 +2,7 @@ import axios, {
     AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse,
     type InternalAxiosRequestConfig
 } from 'axios'
+import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
 
 // 创建 axios 实例
@@ -43,7 +44,6 @@ request.interceptors.response.use(
         const res = response.data
         // 业务失败：弹出错误提示并 reject
         if (res.code !== SUCCESS_CODE) {
-            // @ts-ignore
             Snackbar.error(res.message || '请求失败')
             return Promise.reject(new Error(res.message || '请求失败'))
         }
@@ -80,7 +80,6 @@ request.interceptors.response.use(
             message = '网络连接失败，请检查网络'
         }
 
-        // @ts-ignore
         Snackbar.error(message)
         return Promise.reject(error)
     }

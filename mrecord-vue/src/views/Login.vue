@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {useRouter} from 'vue-router'
+import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
-import {login} from '@/api'
+import {login, queryMyInfo} from '@/api'
 import {md5} from 'js-md5'
 import loginBg from '@/assets/login_bg.png'
 
@@ -14,30 +15,25 @@ const password = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
 
-const onLoginReal = async () => {
+const onLogin = async () => {
   if (!email.value || !password.value) {
-    // @ts-ignore
     Snackbar.warning('请输入邮箱和密码')
     return
   }
   loading.value = true
   try {
-    const res = await login({email: email.value, password: md5(password.value)})
-    userStore.setToken(res)
-    // @ts-ignore
+    const token = await login({email: email.value, password: md5(password.value)})
+    userStore.setToken(token)
+    // 登录成功后查询用户信息
+    const userInfo = await queryMyInfo()
+    userStore.setUserInfo(userInfo)
     Snackbar.success('登录成功')
     router.replace('/home')
-  } catch (e: any) {
-    // @ts-ignore
-    Snackbar.error(e?.message || '登录失败')
+  } catch {
+    // 拦截器已处理错误提示
   } finally {
     loading.value = false
   }
-}
-
-// 临时：跳过登录直接进入主页
-const onLogin = () => {
-  router.replace('/home')
 }
 
 const onForgotPassword = () => {
@@ -104,15 +100,7 @@ const onRegister = () => {
               autocomplete="current-password"
             />
             <button class="eye-btn" @click="showPassword = !showPassword" type="button">
-              <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
+              <span class="moon-toggle">{{ showPassword ? '🌚' : '🌝' }}</span>
             </button>
           </div>
         </div>
@@ -337,6 +325,11 @@ const onRegister = () => {
 
 .eye-btn:active {
   color: #FF6500;
+}
+
+.moon-toggle {
+  font-size: 20px;
+  line-height: 1;
 }
 
 /* ======= 登录按钮 ======= */
