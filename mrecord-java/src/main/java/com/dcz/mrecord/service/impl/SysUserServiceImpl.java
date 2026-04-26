@@ -101,6 +101,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 加密密码
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         user.setPassword(hashedPassword);
+        user.setAdmin(0);
+        user.setStatus(UserStatusConst.NORMAL);
 
         int insert = userMapper.insert(user);
         if (insert <= 0) {
@@ -135,7 +137,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
 
         // 状态验证
-        if (sysUser.getStatus() != 0) {
+        if (sysUser.getStatus() != UserStatusConst.NORMAL.intValue()) {
             throw new MrecordException(ResCode.USER_STATUS_ERROR);
         }
 
@@ -158,7 +160,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             return;
         }
         // 状态验证
-        if (sysUser.getStatus() != 0) {
+        if (sysUser.getStatus() != UserStatusConst.NORMAL.intValue()) {
             log.warn("用户状态异常，尝试找回密码。{}", sysUser);
             return;
         }
@@ -276,7 +278,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 构建查询参数
         QueryWrapper eq = QueryWrapper.create()
                 .and(SysUser::getIsDeleted).eq(0)
-                .and(SysUser::getStatus).eq(0)
+                .and(SysUser::getStatus).eq(UserStatusConst.NORMAL)
                 .and(SysUser::getNickname).like(params.getNickname())
                 .and(SysUser::getEmail).like(params.getEmail())
                 .and(SysUser::getAdmin).eq(params.getIsAdmin())
@@ -338,7 +340,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             return;
         }
 
-        sysUsers.forEach(sysUser -> sysUser.setStatus(sysUser.getStatus() == 0 ? 1 : 0));
+        sysUsers.forEach(sysUser -> sysUser.setStatus(sysUser.getStatus() == UserStatusConst.NORMAL ? UserStatusConst.DISABLED : UserStatusConst.NORMAL));
         // 批量更新
         Db.updateEntitiesBatch(sysUsers, 1000);
     }
@@ -405,6 +407,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         mailParamsBO.setTo(user.getEmail());
         mailParamsBO.setUserName(user.getNickname());
         mailParamsBO.setUserEmail(user.getEmail());
+        mailParamsBO.setWebSite(sysConfigService.getWebSite());
+        mailParamsBO.setAdminMail(sysConfigService.getAdminMail());
         return mailParamsBO;
     }
 
@@ -421,6 +425,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         mailParamsBO.setUserName(user.getNickname());
         mailParamsBO.setUserEmail(user.getEmail());
         mailParamsBO.setRepassword(repwUrl);
+        mailParamsBO.setWebSite(sysConfigService.getWebSite());
+        mailParamsBO.setAdminMail(sysConfigService.getAdminMail());
         return mailParamsBO;
     }
 }

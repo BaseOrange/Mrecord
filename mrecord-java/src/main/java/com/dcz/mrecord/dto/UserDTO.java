@@ -2,6 +2,8 @@ package com.dcz.mrecord.dto;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * 用户注册、登录 DTO
  *
@@ -9,7 +11,7 @@ import lombok.Data;
  * @since 2026/04/11
  */
 @Data
-public class UserDTO {
+public class UserDTO implements Serializable {
 
     /**
      * id

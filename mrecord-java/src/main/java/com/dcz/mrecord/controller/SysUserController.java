@@ -43,7 +43,7 @@ public class SysUserController {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
-        log.info("用户注册[/user/register]请求传参：{}", params);
+        log.info("用户注册[/user/register]请求传参：{}", clone);
 
         String email = sysUserService.userRegister(params);
         return Result.success(email);
