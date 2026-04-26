@@ -1,8 +1,8 @@
 package com.dcz.mrecord.bo;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.dcz.mrecord.service.SysConfigService;
-import jakarta.annotation.Resource;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -16,9 +16,6 @@ import java.util.Map;
  */
 @Data
 public class MailParamsBO {
-
-    @Resource
-    private SysConfigService sysConfigService;
 
     /**
      * 接收者邮箱
@@ -53,7 +50,7 @@ public class MailParamsBO {
     /**
      * 网站地址
      */
-    private String webSite = sysConfigService.getWebSite();
+    private String webSite;
 
     /**
      * 忘记密码找回地址
@@ -63,7 +60,7 @@ public class MailParamsBO {
     /**
      * 管理员邮箱
      */
-    private String adminMail = sysConfigService.getAdminMail();
+    private String adminMail;
 
     /**
      * 获取邮件参数
@@ -71,6 +68,10 @@ public class MailParamsBO {
      * @return 邮件参数
      */
     public Map<String, String> getParams() {
+        SysConfigService configService = SpringUtil.getBean(SysConfigService.class);
+        webSite = configService.getWebSite();
+        adminMail = configService.getAdminMail();
+
         return Map.of(
                 "MR-UserName", getUserName(),
                 "MR-UserEmail", getUserEmail(),
