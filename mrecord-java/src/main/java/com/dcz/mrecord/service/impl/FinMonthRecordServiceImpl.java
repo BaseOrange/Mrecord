@@ -97,6 +97,7 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
 
         // 设置备注
         finMonthRecord.setNote(monthItemDTO.getNote());
+        finMonthRecord.setUserId(UserContext.getUserId());
 
         finMonthRecordMapper.insert(finMonthRecord);
         return finMonthRecord;
