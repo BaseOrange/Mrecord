@@ -167,8 +167,19 @@ const handleDelete = async () => {
     </div>
 
     <div class="page-body">
+      <!-- 首次加载 thinking 动画 -->
+      <div v-if="loading && books.length === 0" class="thinking-state">
+        <div class="thinking-face">🤔</div>
+        <div class="thinking-text">
+          thinking
+          <span class="thinking-dots">
+            <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+          </span>
+        </div>
+      </div>
+
       <!-- 空状态 -->
-      <div v-if="!loading && books.length === 0" class="empty-state">
+      <div v-else-if="!loading && books.length === 0" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 64 64" width="64" height="64">
           <rect x="12" y="8" width="40" height="48" rx="4" fill="none" stroke="#ccc" stroke-width="2"/>
           <line x1="22" y1="20" x2="42" y2="20" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
@@ -310,6 +321,43 @@ const handleDelete = async () => {
 /* 页面主体 */
 .page-body {
   padding: 16px;
+}
+
+/* thinking 加载状态 */
+.thinking-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 0 40px;
+}
+.thinking-face {
+  font-size: 48px;
+  animation: thinking-wobble 2s ease-in-out infinite;
+}
+@keyframes thinking-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+.thinking-text {
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #8e8e93;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+.thinking-dots .dot {
+  animation: thinking-blink 1.4s infinite both;
+  opacity: 0;
+}
+.thinking-dots .dot:nth-child(1) { animation-delay: 0s; }
+.thinking-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes thinking-blink {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
 }
 
 /* 空状态 */
