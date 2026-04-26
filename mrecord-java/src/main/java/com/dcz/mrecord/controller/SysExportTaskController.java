@@ -11,6 +11,7 @@ import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,7 +40,7 @@ public class SysExportTaskController {
      * @return 任务ID
      */
     @PostMapping("/export")
-    public Result<SysExportTask> export(ExportBookDTO dto) {
+    public Result<SysExportTask> export(@RequestBody ExportBookDTO dto) {
         String userId = UserContext.getUserId();
         log.info("发起账簿数据导出任务[/exportTask/export]请求传参：{} {}", userId, dto);
         String taskId = sysExportTaskService.createExportTask(userId, dto.getBookId(), dto.getStartYearMonth(), dto.getEndYearMonth());
@@ -53,7 +54,7 @@ public class SysExportTaskController {
      * @return 任务列表
      */
     @PostMapping("/list")
-    public Result<Page<SysExportTask>> list(PageInfoDTO pageInfoDTO) {
+    public Result<Page<SysExportTask>> list(@RequestBody PageInfoDTO pageInfoDTO) {
         String userId = UserContext.getUserId();
         log.info("查询当前用户的导出任务列表[/exportTask/list]请求传参：{} {}", userId, pageInfoDTO);
         return Result.success(sysExportTaskService.listMyTasks(userId, pageInfoDTO));

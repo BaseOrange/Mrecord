@@ -8,6 +8,7 @@ import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,7 +33,7 @@ public class FinBookController {
      * @return 账簿
      */
     @PostMapping("/create")
-    public Result<FinBook> create(FinBook params) {
+    public Result<FinBook> create(@RequestBody FinBook params) {
         log.info("创建账簿[/book/create]请求传参：{}", params);
         return Result.success(finBookService.createFinBook(params));
     }
@@ -44,7 +45,7 @@ public class FinBookController {
      * @return 账簿
      */
     @PostMapping("/update")
-    public Result<FinBook> update(FinBook params) {
+    public Result<FinBook> update(@RequestBody FinBook params) {
         log.info("更新账簿[/book/update]请求传参：{}", params);
         return Result.success(finBookService.updateFinBook(params));
     }
@@ -56,7 +57,7 @@ public class FinBookController {
      * @return 删除结果
      */
     @PostMapping("/delete")
-    public Result<String> delete(String id) {
+    public Result<String> delete(@RequestBody String id) {
         log.info("删除账簿[/book/delete]请求传参：{}", id);
         finBookService.deleteFinBook(id);
         return Result.success();
@@ -69,7 +70,7 @@ public class FinBookController {
      * @return 账簿列表
      */
     @PostMapping("/list")
-    public Result<Page<FinBook>> list(QueryFinBookDTO params) {
+    public Result<Page<FinBook>> list(@RequestBody QueryFinBookDTO params) {
         log.info("获取账簿列表[/book/list]请求传参：{}", params);
         return Result.success(finBookService.getMyFinBook(params));
     }

@@ -8,6 +8,7 @@ import com.dcz.mrecord.service.SysUserOperateLogService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,7 +32,7 @@ public class SysUserOperateLogController {
      */
     @CheckAdmin
     @PostMapping("/list")
-    public Result<Page<SysUserOperateLog>> list(PageInfoDTO queryDTO) {
+    public Result<Page<SysUserOperateLog>> list(@RequestBody PageInfoDTO queryDTO) {
         Page<SysUserOperateLog> sysUserOperateLogPage = sysUserOperateLogService.queryList(queryDTO);
         return Result.success(sysUserOperateLogPage);
     }

@@ -7,6 +7,7 @@ import com.dcz.mrecord.service.FinMonthRecordService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,7 +33,7 @@ public class FinMonthRecordController {
      * @return 月度财务汇总
      */
     @PostMapping("/getMonthRecord")
-    public Result<FinMonthRecord> getMonthRecord(MonthRecordDTO monthRecordDTO) {
+    public Result<FinMonthRecord> getMonthRecord(@RequestBody MonthRecordDTO monthRecordDTO) {
         log.info("获取月度财务汇总[/monthRecord/getMonthRecord]请求传参：{}", monthRecordDTO);
         FinMonthRecord monthRecord = finMonthRecordService.getMonthRecord(monthRecordDTO);
         return Result.success(monthRecord);
@@ -45,7 +46,7 @@ public class FinMonthRecordController {
      * @return 年度财务汇总列表
      */
     @PostMapping("/getYearRecordList")
-    public Result<List<FinMonthRecord>> getYearRecordList(MonthRecordDTO monthRecordDTO) {
+    public Result<List<FinMonthRecord>> getYearRecordList(@RequestBody MonthRecordDTO monthRecordDTO) {
         log.info("获取年度财务汇总列表[/monthRecord/getYearRecordList]请求传参：{}", monthRecordDTO);
         return Result.success(finMonthRecordService.getYearRecordList(monthRecordDTO));
     }

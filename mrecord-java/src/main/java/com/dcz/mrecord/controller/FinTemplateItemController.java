@@ -7,6 +7,7 @@ import com.dcz.mrecord.service.FinTemplateItemService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,7 +33,7 @@ public class FinTemplateItemController {
      * @return 账本模板项列表
      */
     @PostMapping("/create")
-    public Result<List<FinTemplateItem>> createFinTemplateItem(FinTempItemDTO param) {
+    public Result<List<FinTemplateItem>> createFinTemplateItem(@RequestBody FinTempItemDTO param) {
         log.info("创建账本模板项[/tempItem/create]请求传参：{}", param);
         List<FinTemplateItem> resList = finTemplateItemService.ceateFinTemplateItemList(param);
         return Result.success(resList);
@@ -45,7 +46,7 @@ public class FinTemplateItemController {
      * @return 账本模板项列表
      */
     @PostMapping("/update")
-    public Result<List<FinTemplateItem>> updateFinTemplateItem(FinTempItemDTO param) {
+    public Result<List<FinTemplateItem>> updateFinTemplateItem(@RequestBody FinTempItemDTO param) {
         log.info("更新账本模板项[/tempItem/update]请求传参：{}", param);
         List<FinTemplateItem> resList = finTemplateItemService.updateFinTemplateItemList(param);
         return Result.success(resList);
@@ -58,7 +59,7 @@ public class FinTemplateItemController {
      * @return 账本模板项列表
      */
     @PostMapping("/copy")
-    public Result<List<FinTemplateItem>> copyFinTemplateItem(FinTempItemDTO param) {
+    public Result<List<FinTemplateItem>> copyFinTemplateItem(@RequestBody FinTempItemDTO param) {
         log.info("复制账本模板项[/tempItem/copy]请求传参：{}", param);
         List<FinTemplateItem> resList = finTemplateItemService.copyTemplateItem(param);
         return Result.success(resList);
@@ -71,7 +72,7 @@ public class FinTemplateItemController {
      * @return 账本模板项列表
      */
     @PostMapping("/list")
-    public Result<List<FinTemplateItem>> listFinTemplateItem(FinTempItemDTO param) {
+    public Result<List<FinTemplateItem>> listFinTemplateItem(@RequestBody FinTempItemDTO param) {
         log.info("查询账本模板项列表[/tempItem/list]请求传参：{}", param);
         List<FinTemplateItem> resList = finTemplateItemService.selectByFinBookIdExternal(param.getBookId());
         return Result.success(resList);

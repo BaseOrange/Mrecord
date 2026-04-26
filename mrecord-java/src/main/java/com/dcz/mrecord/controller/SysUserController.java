@@ -12,6 +12,7 @@ import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,7 +39,7 @@ public class SysUserController {
      * @return 注册结果
      */
     @PostMapping("/register")
-    public Result<String> register(UserDTO params) {
+    public Result<String> register(@RequestBody UserDTO params) {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
@@ -55,7 +56,7 @@ public class SysUserController {
      * @return token
      */
     @PostMapping("/login")
-    public Result<String> login(UserDTO params) {
+    public Result<String> login(@RequestBody UserDTO params) {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
@@ -82,7 +83,7 @@ public class SysUserController {
      * @return 请求响应
      */
     @PostMapping("/forgotPassword")
-    public Result<String> forgotPassword(UserDTO params) throws Exception {
+    public Result<String> forgotPassword(@RequestBody UserDTO params) throws Exception {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
@@ -98,7 +99,7 @@ public class SysUserController {
      * @return 请求响应
      */
     @PostMapping("/resetPassword")
-    public Result<String> resetPassword(UserDTO params) {
+    public Result<String> resetPassword(@RequestBody UserDTO params) {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
@@ -126,7 +127,7 @@ public class SysUserController {
      * @return 修改结果
      */
     @PostMapping("/updateMyInfo")
-    public Result<SysUser> updateMyInfo(UserDTO params) {
+    public Result<SysUser> updateMyInfo(@RequestBody UserDTO params) {
         log.info("修改当前用户信息[/user/updateMyInfo]请求传参：{}", params);
         SysUser sysUser = sysUserService.updateMyUserInfo(params);
         return Result.success(sysUser);
@@ -151,7 +152,7 @@ public class SysUserController {
      */
     @CheckAdmin
     @PostMapping("/list")
-    public Result<Page<SysUser>> queryAll(QueryUserDTO params) {
+    public Result<Page<SysUser>> queryAll(@RequestBody QueryUserDTO params) {
         log.info("管理员查询所有用户[/user/list]请求传参：{}", params);
         return Result.success(sysUserService.queryList(params));
     }
@@ -163,7 +164,7 @@ public class SysUserController {
      */
     @CheckAdmin
     @PostMapping("/queryUserInfo")
-    public Result<SysUser> queryUserInfo(String userId) {
+    public Result<SysUser> queryUserInfo(@RequestBody String userId) {
         log.info("管理员查询用户信息[/user/queryUserInfo]请求传参：{}", userId);
         return Result.success(sysUserService.queryUserInfo(userId));
     }
@@ -175,7 +176,7 @@ public class SysUserController {
      */
     @CheckAdmin
     @PostMapping("/adminResetPassword")
-    public Result<String> adminResetPassword(UserDTO params) {
+    public Result<String> adminResetPassword(@RequestBody UserDTO params) {
         // 数据脱敏后打印日志
         UserDTO clone = ObjUtil.clone(params);
         clone.setPassword(DesensitizedUtil.password(params.getPassword()));
@@ -191,7 +192,7 @@ public class SysUserController {
      */
     @CheckAdmin
     @PostMapping("/enableOrDisableUser")
-    public Result<String> enableOrDisableUser(Set<String> userIdList) {
+    public Result<String> enableOrDisableUser(@RequestBody Set<String> userIdList) {
         log.info("管理员启用或禁用用户[/user/enableOrDisableUser]请求传参：{}", userIdList);
         sysUserService.enableOrDisableUser(userIdList);
         return Result.success();
@@ -204,7 +205,7 @@ public class SysUserController {
      */
     @CheckAdmin
     @PostMapping("/deleteUser")
-    public Result<String> deleteUser(Set<String> userIdList) {
+    public Result<String> deleteUser(@RequestBody Set<String> userIdList) {
         log.info("管理员删除用户[/user/deleteUser]请求传参：{}", userIdList);
         sysUserService.deleteUser(userIdList);
         return Result.success();
