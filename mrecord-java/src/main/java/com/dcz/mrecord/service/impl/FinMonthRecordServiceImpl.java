@@ -208,13 +208,13 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
         if (StrUtil.isBlankIfStr(bookId)) {
             throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿ID不能为空");
         }
-        Integer year = monthRecordDTO.getYear();
-        if (year == null) {
-            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "年份不能为空");
-        }
+
         QueryWrapper queryWrapper = QueryWrapper.create();
         queryWrapper.eq(FinMonthRecord::getBookId, bookId);
-        queryWrapper.eq(FinMonthRecord::getYear, year);
+        Integer year = monthRecordDTO.getYear();
+        if (year != null){
+            queryWrapper.eq(FinMonthRecord::getYear, year);
+        }
         return finMonthRecordMapper.selectListByQuery(queryWrapper);
     }
 
