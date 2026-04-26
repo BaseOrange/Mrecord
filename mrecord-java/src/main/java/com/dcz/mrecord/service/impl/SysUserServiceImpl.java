@@ -27,6 +27,7 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +43,7 @@ import java.util.Set;
  */
 @Slf4j
 @Service
+@Transactional(rollbackFor = Exception.class)
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
     @Resource
     private SysUserMapper userMapper;

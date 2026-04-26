@@ -18,6 +18,7 @@ import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
  * @since 2026/04/09
  */
 @Service
+@Transactional(rollbackFor = Exception.class)
 public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecordMapper, FinMonthItemRecord> implements FinMonthItemRecordService {
 
     @Resource

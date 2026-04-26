@@ -16,6 +16,7 @@ import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +30,7 @@ import java.util.Optional;
  * @since 2026/04/09
  */
 @Service
+@Transactional(rollbackFor = Exception.class)
 public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMapper, FinTemplateItem> implements FinTemplateItemService {
 
     @Resource
