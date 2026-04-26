@@ -1,19 +1,41 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Snackbar } from '@varlet/ui'
 import { createBook, updateBook, deleteBook, listBooks } from '@/api/modules/book'
 import type { BookInfo } from '@/api/modules/book'
 import BookCard from '@/components/BookCard.vue'
 
-// ---- 账簿列表 ----
+// ---- 账簿列表（懒加载） ----
+const PAGE_SIZE = 10
 const books = ref<BookInfo[]>([])
 const loading = ref(false)
+const pageNum = ref(1)
+const hasMore = ref(true)
 
-const fetchBooks = async () => {
+const fetchBooks = async (reset = false) => {
+  if (loading.value) return
+  if (!reset && !hasMore.value) return
+
+  if (reset) {
+    pageNum.value = 1
+    hasMore.value = true
+  }
+
   loading.value = true
   try {
-    const res = await listBooks({ pageNum: 1, pageSize: 100 })
-    books.value = res.records || []
+    const res = await listBooks({ pageNum: pageNum.value, pageSize: PAGE_SIZE })
+    const records = res.records || []
+    if (reset) {
+      books.value = records
+    } else {
+      books.value.push(...records)
+    }
+    // 没有更多数据了
+    if (records.length < PAGE_SIZE || pageNum.value >= res.totalPage) {
+      hasMore.value = false
+    } else {
+      pageNum.value++
+    }
   } catch {
     // 拦截器已处理
   } finally {
@@ -21,7 +43,26 @@ const fetchBooks = async () => {
   }
 }
 
-onMounted(fetchBooks)
+// 滚动触底检测
+const onScroll = () => {
+  if (!hasMore.value || loading.value) return
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const scrollHeight = document.documentElement.scrollHeight
+  const clientHeight = document.documentElement.clientHeight
+  // 距离底部 100px 时触发加载
+  if (scrollTop + clientHeight >= scrollHeight - 100) {
+    fetchBooks()
+  }
+}
+
+onMounted(() => {
+  fetchBooks()
+  window.addEventListener('scroll', onScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
+})
 
 // ---- 创建账簿弹窗 ----
 const showCreateDialog = ref(false)
@@ -44,7 +85,7 @@ const handleCreate = async () => {
     await createBook({ bookName: name })
     Snackbar.success('创建成功')
     showCreateDialog.value = false
-    fetchBooks()
+    fetchBooks(true)
   } catch {
     // 拦截器已处理
   } finally {
@@ -84,7 +125,7 @@ const handleRename = async () => {
     await updateBook({ id: activeBook.value.id, bookName: name })
     Snackbar.success('修改成功')
     showRenameDialog.value = false
-    fetchBooks()
+    fetchBooks(true)
   } catch {
     // 拦截器已处理
   } finally {
@@ -108,7 +149,7 @@ const handleDelete = async () => {
     await deleteBook({ id: activeBook.value.id })
     Snackbar.success('删除成功')
     showDeleteConfirm.value = false
-    fetchBooks()
+    fetchBooks(true)
   } catch {
     // 拦截器已处理
   } finally {
@@ -146,6 +187,12 @@ const handleDelete = async () => {
           :book="book"
           @more="openActionMenu"
         />
+      </div>
+
+      <!-- 底部加载状态 -->
+      <div v-if="books.length > 0" class="load-more">
+        <span v-if="loading" class="load-more-text">加载中...</span>
+        <span v-else-if="!hasMore" class="load-more-text">没有更多了</span>
       </div>
     </div>
 
@@ -293,5 +340,15 @@ const handleDelete = async () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* 底部加载提示 */
+.load-more {
+  text-align: center;
+  padding: 20px 0 8px;
+}
+.load-more-text {
+  font-size: 13px;
+  color: #aeaeb2;
 }
 </style>
