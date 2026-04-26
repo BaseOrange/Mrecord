@@ -5,6 +5,7 @@ import { Snackbar } from '@varlet/ui'
 import { listTempItems, createTempItem, updateTempItem } from '@/api/modules/tempItem'
 import type { FinTemplateItem } from '@/api/modules/tempItem'
 import draggable from 'vuedraggable'
+import IconPicker from '@/components/IconPicker.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -116,6 +117,7 @@ const genTempId = () => `_new_${Date.now()}_${++tempIdCounter}`
 const showAddDialog = ref(false)
 const newItemName = ref('')
 const newItemType = ref(1)
+const newItemIcon = ref('')
 
 const typeOptions = [
   { label: '资产', value: 1 },
@@ -126,6 +128,7 @@ const typeOptions = [
 const openAddDialog = () => {
   newItemName.value = ''
   newItemType.value = 1
+  newItemIcon.value = ''
   showAddDialog.value = true
 }
 
@@ -139,11 +142,41 @@ const handleAdd = () => {
     bookId: bookId.value,
     itemName: name,
     itemType: newItemType.value,
+    icon: newItemIcon.value || undefined,
     sort: String(items.value.length),
     _tempKey: genTempId(),
   } as any)
   showAddDialog.value = false
   hasChanges.value = true
+}
+
+// ---- 图标选择 ----
+const showIconPicker = ref(false)
+const iconPickerTarget = ref<'rename' | 'editNew' | 'add'>('add')
+const iconPickerValue = ref('')
+
+const openIconPicker = (target: 'rename' | 'editNew' | 'add') => {
+  iconPickerTarget.value = target
+  if (target === 'rename') {
+    iconPickerValue.value = items.value[renameIndex.value]?.icon || ''
+  } else if (target === 'editNew') {
+    iconPickerValue.value = items.value[editNewIndex.value]?.icon || ''
+  } else {
+    iconPickerValue.value = newItemIcon.value
+  }
+  showIconPicker.value = true
+}
+
+const onIconSelect = (key: string) => {
+  if (iconPickerTarget.value === 'rename') {
+    items.value[renameIndex.value].icon = key
+    hasChanges.value = true
+  } else if (iconPickerTarget.value === 'editNew') {
+    items.value[editNewIndex.value].icon = key
+    hasChanges.value = true
+  } else {
+    newItemIcon.value = key
+  }
 }
 
 // ---- 类型标签 ----
@@ -264,6 +297,13 @@ const goBack = () => {
               </div>
               <!-- 新增标记 -->
               <span v-if="!element.id" class="new-badge">新</span>
+              <!-- 图标 -->
+              <div class="item-icon-wrap" :class="{ 'item-icon-wrap--empty': !element.icon }">
+                <svg v-if="element.icon" viewBox="0 0 24 24" width="18" height="18">
+                  <use :href="`/icons.svg#icon-${element.icon}`" />
+                </svg>
+                <span v-else class="item-icon-placeholder">?</span>
+              </div>
               <!-- 名称 -->
               <div class="item-name">{{ element.itemName }}</div>
               <!-- 类型标签 -->
@@ -282,24 +322,36 @@ const goBack = () => {
       </div>
     </div>
 
-    <!-- 重命名弹窗（已有项，仅改名） -->
+    <!-- 重命名弹窗（已有项，改名+改图标） -->
     <var-dialog
       v-model:show="showRenameDialog"
-      title="修改名称"
+      title="编辑模板项"
       confirm-button-text="确定"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
       confirm-button-color="#FF6500"
       @confirm="handleRename"
     >
-      <var-input
-        v-model="renameValue"
-        placeholder="请输入新名称"
-        :maxlength="20"
-        clearable
-        autofocus
-        @keyup.enter="handleRename"
-      />
+      <div class="add-form">
+        <var-input
+          v-model="renameValue"
+          placeholder="请输入新名称"
+          :maxlength="20"
+          clearable
+          autofocus
+          @keyup.enter="handleRename"
+        />
+        <div class="icon-select-row" @click="openIconPicker('rename')">
+          <span class="icon-select-label">图标</span>
+          <div class="icon-select-preview" v-if="items[renameIndex]?.icon">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <use :href="`/icons.svg#icon-${items[renameIndex].icon}`" />
+            </svg>
+          </div>
+          <span v-else class="icon-select-hint">点击选择</span>
+          <span class="icon-select-arrow">›</span>
+        </div>
+      </div>
     </var-dialog>
 
     <!-- 编辑新增项弹窗（改名+改类型+删除） -->
@@ -335,6 +387,16 @@ const goBack = () => {
               {{ opt.label }}
             </button>
           </div>
+        </div>
+        <div class="icon-select-row" @click="openIconPicker('editNew')">
+          <span class="icon-select-label">图标</span>
+          <div class="icon-select-preview" v-if="items[editNewIndex]?.icon">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <use :href="`/icons.svg#icon-${items[editNewIndex].icon}`" />
+            </svg>
+          </div>
+          <span v-else class="icon-select-hint">点击选择</span>
+          <span class="icon-select-arrow">›</span>
         </div>
         <button class="delete-new-btn" @click="handleDeleteNew" type="button">
           删除此项
@@ -376,8 +438,25 @@ const goBack = () => {
             </button>
           </div>
         </div>
+        <div class="icon-select-row" @click="openIconPicker('add')">
+          <span class="icon-select-label">图标</span>
+          <div class="icon-select-preview" v-if="newItemIcon">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <use :href="`/icons.svg#icon-${newItemIcon}`" />
+            </svg>
+          </div>
+          <span v-else class="icon-select-hint">点击选择</span>
+          <span class="icon-select-arrow">›</span>
+        </div>
       </div>
     </var-dialog>
+
+    <!-- 图标选择器 -->
+    <IconPicker
+      v-model:show="showIconPicker"
+      v-model="iconPickerValue"
+      @select="onIconSelect"
+    />
   </div>
 </template>
 
@@ -503,6 +582,35 @@ const goBack = () => {
   white-space: nowrap;
 }
 
+/* 列表中的图标 */
+.item-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+  color: #666;
+}
+.item-icon-wrap svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.item-icon-wrap--empty {
+  border: 1px dashed #d0d0d0;
+  background: transparent;
+}
+.item-icon-placeholder {
+  font-size: 14px;
+  color: #c7c7cc;
+}
+
 .item-type {
   font-size: 12px;
   font-weight: 500;
@@ -601,6 +709,48 @@ const goBack = () => {
 }
 .type-chip--active {
   border-color: transparent;
+}
+
+/* 图标选择行 */
+.icon-select-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.icon-select-label {
+  font-size: 14px;
+  color: #666;
+  flex-shrink: 0;
+}
+.icon-select-preview {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+.icon-select-preview svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-select-hint {
+  margin-left: auto;
+  font-size: 14px;
+  color: #c7c7cc;
+}
+.icon-select-arrow {
+  margin-left: 6px;
+  font-size: 18px;
+  color: #c7c7cc;
 }
 
 /* 删除新增项按钮 */

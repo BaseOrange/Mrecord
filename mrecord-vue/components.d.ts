@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     BookCard: typeof import('./src/components/BookCard.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
+    IconPicker: typeof import('./src/components/IconPicker.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     VarActionSheet: typeof import('@varlet/ui')['_ActionSheetComponent']
@@ -20,5 +21,6 @@ declare module 'vue' {
     VarDialog: typeof import('@varlet/ui')['_DialogComponent']
     VarIcon: typeof import('@varlet/ui')['_IconComponent']
     VarInput: typeof import('@varlet/ui')['_InputComponent']
+    VarPopup: typeof import('@varlet/ui')['_PopupComponent']
   }
 }
