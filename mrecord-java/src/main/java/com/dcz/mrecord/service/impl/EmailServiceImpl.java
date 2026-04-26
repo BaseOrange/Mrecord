@@ -207,11 +207,10 @@ public class EmailServiceImpl implements EmailService {
 
         HtmlEmail email = new HtmlEmail();
         email.setHostName(emailConfig.getHostName());
-        email.setSmtpPort(emailConfig.getSmtpPort());
         Boolean ssl = emailConfig.getSsl();
-        if (ssl != null) {
-            email.setSSLOnConnect(ssl);
-        }
+        email.setSmtpPort(587);
+        email.setSSLOnConnect(true);
+        email.setSslSmtpPort(String.valueOf(emailConfig.getSmtpPort()));
         email.setAuthenticator(new DefaultAuthenticator(emailConfig.getUsername(), emailConfig.getPassword()));
         email.setFrom(emailConfig.getFrom());
         email.setCharset(EmailConstants.UTF_8);

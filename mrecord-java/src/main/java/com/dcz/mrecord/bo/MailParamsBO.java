@@ -6,6 +6,7 @@ import com.dcz.mrecord.service.SysConfigService;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -20,17 +21,17 @@ public class MailParamsBO {
     /**
      * 接收者邮箱
      */
-    private String to;
+    private String to = "";
 
     /**
      * 用户名
      */
-    private String userName;
+    private String userName = "";
 
     /**
      * 用户邮箱
      */
-    private String userEmail;
+    private String userEmail = "";
 
     /**
      * 注册时间
@@ -40,7 +41,7 @@ public class MailParamsBO {
     /**
      * 当前年月
      */
-    private String currYearMonth;
+    private String currYearMonth = DateUtil.format(LocalDateTime.now(), "M");;
 
     /**
      * 当前年
@@ -50,17 +51,17 @@ public class MailParamsBO {
     /**
      * 网站地址
      */
-    private String webSite;
+    private String webSite = "";
 
     /**
      * 忘记密码找回地址
      */
-    private String repassword;
+    private String repassword = "";
 
     /**
      * 管理员邮箱
      */
-    private String adminMail;
+    private String adminMail = "";
 
     /**
      * 获取邮件参数
@@ -69,18 +70,24 @@ public class MailParamsBO {
      */
     public Map<String, String> getParams() {
         SysConfigService configService = SpringUtil.getBean(SysConfigService.class);
-        webSite = configService.getWebSite();
-        adminMail = configService.getAdminMail();
+        String site = configService.getWebSite();
+        if (site != null) {
+            webSite = site;
+        }
+        String mail = configService.getAdminMail();
+        if (mail != null) {
+            adminMail = mail;
+        }
 
-        return Map.of(
-                "MR-UserName", getUserName(),
-                "MR-UserEmail", getUserEmail(),
-                "MR-YearMonth", getCurrYearMonth(),
-                "MR-Year", getCurrYear(),
-                "MR-WebSite", getWebSite(),
-                "MR-AdminMail", getAdminMail(),
-                "MR-Repassword", getRepassword(),
-                "MR-RegisterDate", getRegisterDate()
-        );
+        Map<String, String> params = new HashMap<>();
+        params.put("MR-UserName", getUserName());
+        params.put("MR-UserEmail", getUserEmail());
+        params.put("MR-YearMonth", getCurrYearMonth());
+        params.put("MR-Year", getCurrYear());
+        params.put("MR-WebSite", getWebSite());
+        params.put("MR-AdminMail", getAdminMail());
+        params.put("MR-Repassword", getRepassword());
+        params.put("MR-RegisterDate", getRegisterDate());
+        return params;
     }
 }

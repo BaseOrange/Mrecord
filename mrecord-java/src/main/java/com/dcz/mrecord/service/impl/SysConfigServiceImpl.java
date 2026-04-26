@@ -82,6 +82,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         }
 
         // 获取邮件端口
+        Optional<SysConfig> sslPortAny = sysConfigs.stream().filter(s -> "mail.sslSmtpPort".equals(s.getKey())).findAny();
+        if (sslPortAny.isPresent()) {
+            emailConfigBo.setSslSmtpPort(Integer.parseInt(sslPortAny.get().getValue()));
+        } else {
+            log.warn("管理员未配置邮件端口，返回空邮箱配置信息。");
+            return null;
+        }
         Optional<SysConfig> portAny = sysConfigs.stream().filter(s -> "mail.smtpPort".equals(s.getKey())).findAny();
         if (portAny.isPresent()) {
             emailConfigBo.setSmtpPort(Integer.parseInt(portAny.get().getValue()));

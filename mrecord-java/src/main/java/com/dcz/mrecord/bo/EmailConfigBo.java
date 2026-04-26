@@ -17,6 +17,11 @@ public class EmailConfigBo {
     private String hostName;
 
     /**
+     * 邮件服务器SSL-SMTP端口
+     */
+    private Integer sslSmtpPort;
+
+    /**
      * 邮件服务器SMTP端口
      */
     private Integer smtpPort;
