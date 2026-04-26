@@ -20,13 +20,13 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/api/v2/**")
+                .addPathPatterns("/**")
                 .excludePathPatterns(
                         // 注册、登录、忘记密码、重置密码放行
-                        "/api/v2/user/register",
-                        "/api/v2/user/login",
-                        "/api/v2/user/forgotPassword",
-                        "/api/v2/user/resetPassword"
+                        "/user/register",
+                        "/user/login",
+                        "/user/forgotPassword",
+                        "/user/resetPassword"
                 );
     }
 }
