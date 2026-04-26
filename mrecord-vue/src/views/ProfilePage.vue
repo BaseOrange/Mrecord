@@ -86,6 +86,7 @@ const handleLogout = async () => {
       title="提示"
       confirm-button-text="退出"
       cancel-button-text="取消"
+      confirm-button-text-color="#fff"
       confirm-button-color="#FF6500"
       @confirm="handleLogout"
       @cancel="showLogoutConfirm = false"

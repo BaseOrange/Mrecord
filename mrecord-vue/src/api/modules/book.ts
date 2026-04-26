@@ -13,6 +13,8 @@ export interface BookInfo extends BaseEntity {
 
 /** 创建/更新账簿传参 */
 export interface SaveBookParams {
+    /** 账簿ID（更新时必传） */
+    id?: string
     /** 账簿名称 */
     bookName: string
 }
