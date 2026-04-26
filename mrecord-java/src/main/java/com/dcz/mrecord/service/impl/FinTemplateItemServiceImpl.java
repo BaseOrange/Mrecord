@@ -54,8 +54,7 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
             throw new MrecordException(ResCode.FIN_ITEM_TEMP_IS_NOT);
         }
 
-        for (int i = 0; i < finTemplateItemList.size(); i++) {
-            FinTemplateItem finTemplateItem = finTemplateItemList.get(i);
+        for (FinTemplateItem finTemplateItem : finTemplateItemList) {
             finTemplateItem.setId(IdUtil.simpleUUID());
             finTemplateItem.setBookId(finBookId);
 
@@ -71,7 +70,6 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
             if (type != TempItemTypeConst.LIABILITY && type != TempItemTypeConst.ASSET && type != TempItemTypeConst.ONLY_RECORD) {
                 throw new MrecordException(ResCode.FIN_ITEM_TEMP_TYPE_ERROR);
             }
-            finTemplateItem.setSort(String.valueOf(i));
         }
 
         finTemplateItemMapper.insertBatch(finTemplateItemList);
@@ -108,10 +106,7 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
 
         List<FinTemplateItem> updateList = new ArrayList<>();
         List<FinTemplateItem> insertList = new ArrayList<>();
-        for (int i = 0; i < finTemplateItemList.size(); i++) {
-            FinTemplateItem finTemplateItem = finTemplateItemList.get(i);
-            finTemplateItem.setSort(String.valueOf(i));
-
+        for (FinTemplateItem finTemplateItem : finTemplateItemList) {
             // Id为空，新模板项
             String id = finTemplateItem.getId();
             if (StrUtil.isBlankIfStr(id)) {
