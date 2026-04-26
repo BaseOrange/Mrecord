@@ -4,6 +4,7 @@ import com.dcz.mrecord.common.UserContext;
 import com.dcz.mrecord.entity.BaseEntity;
 import com.mybatisflex.annotation.InsertListener;
 import com.mybatisflex.annotation.UpdateListener;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
  * @author dcz
  * @since 2023/4/16 08:44
  */
+@Slf4j
 @Component
 public class AuditFieldListener implements InsertListener, UpdateListener {
 
@@ -24,7 +26,13 @@ public class AuditFieldListener implements InsertListener, UpdateListener {
     public void onInsert(Object entity) {
         if (entity instanceof BaseEntity) {
             BaseEntity base = (BaseEntity) entity;
-            String userId = UserContext.getUserId();
+            String userId;
+            try {
+                userId = UserContext.getUserId();
+            } catch (Exception e) {
+                log.warn("获取当前用户ID失败,{}", e.getMessage());
+                userId = "anonymous";
+            }
 
             // 防空（未登录场景）
             if (userId != null) {
