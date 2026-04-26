@@ -8,7 +8,7 @@ import {useUserStore} from '@/stores/user'
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
     baseURL: '/api/v2',
-    timeout: 15000,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
