@@ -72,6 +72,14 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
 
         // 计算月度汇总数据
         finMonthRecordService.calculateFinMonthRecord(monthItemDTO);
+
+        // 重计算其他月份数据
+        MonthRecordDTO monthRecordDTO = new MonthRecordDTO();
+        monthRecordDTO.setYear(year);
+        monthRecordDTO.setMonth(month);
+        monthRecordDTO.setBookId(monthItemDTO.getBookId());
+        monthRecordDTO.setNote(monthItemDTO.getNote());
+        finMonthRecordService.recalculateFinMonthRecord(monthRecordDTO, monthItemDTO);
         return finMonthItemRecords;
     }
 

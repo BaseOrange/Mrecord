@@ -16,7 +16,6 @@ import com.dcz.mrecord.service.FinMonthRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.dcz.mrecord.service.SysBackupMonthRecordService;
 import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -142,7 +141,9 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
         }
 
         // 更新数据库
-        Db.updateEntitiesBatch(updateList);
+        for (FinMonthRecord finMonthRecord : updateList) {
+            finMonthRecordMapper.insertOrUpdateSelective(finMonthRecord);
+        }
         return currMonthRecord;
     }
 
