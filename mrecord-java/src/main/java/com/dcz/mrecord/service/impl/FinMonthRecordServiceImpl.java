@@ -12,7 +12,6 @@ import com.dcz.mrecord.entity.FinMonthRecord;
 import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinMonthRecordMapper;
-import com.dcz.mrecord.service.FinBookService;
 import com.dcz.mrecord.service.FinMonthRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.dcz.mrecord.service.SysBackupMonthRecordService;
@@ -79,25 +78,9 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
         finMonthRecord.setBookId(bookId);
         finMonthRecord.setYear(year);
         finMonthRecord.setMonth(month);
-        // 设置总资产和总负债
-        setTotalAssetAndTotalLiability(finMonthRecord, monthItemDTO);
-        // 计算净资产
-        BigDecimal netAsset = finMonthRecord.getTotalAsset().subtract(finMonthRecord.getTotalLiability()).setScale(2, RoundingMode.HALF_UP);
-        finMonthRecord.setNetAsset(netAsset);
 
-        // 获取上个月的财务汇总 并 计算月度环比增长
-        FinMonthRecord lastMonthRecord = getLastMonthRecord(bookId, year, month);
-        BigDecimal monthOnMonth = getMonthOnMonthVal(lastMonthRecord, finMonthRecord);
-        finMonthRecord.setMonthOnMonth(monthOnMonth);
-
-        // 获取去年的财务汇总 并 计算年度同比增长
-        FinMonthRecord lastYearRecord = getLastYearRecord(bookId, year, month);
-        BigDecimal yearOnYear = getYearOnYearVal(lastYearRecord, finMonthRecord);
-        finMonthRecord.setYearOnYear(yearOnYear);
-
-        // 设置备注
-        finMonthRecord.setNote(monthItemDTO.getNote());
-        finMonthRecord.setUserId(UserContext.getUserId());
+        // 设置财务数据
+        setFinancialData(finMonthRecord, monthItemDTO);
 
         finMonthRecordMapper.insert(finMonthRecord);
         return finMonthRecord;
@@ -122,10 +105,11 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
      * 更新后重新计算月度财务汇总【修复某月数据时，进行计算】
      *
      * @param monthRecordDTO 月度汇总DTO
+     * @param monthItemDTO
      * @return 月度财务汇总
      */
     @Override
-    public FinMonthRecord recalculateFinMonthRecord(MonthRecordDTO monthRecordDTO) {
+    public FinMonthRecord recalculateFinMonthRecord(MonthRecordDTO monthRecordDTO, MonthItemDTO monthItemDTO) {
         // 检查账簿ID和日期
         checkBookIdAndDate(monthRecordDTO);
 
@@ -138,26 +122,9 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
 
         // 获取当前月的财务汇总
         FinMonthRecord currMonthRecord = getMonthRecord(monthRecordDTO);
-
-        // 获取上月的财务汇总，用于计算本月的环比
-        boolean updateCurrFlag = false;
-        FinMonthRecord lastMonthRecord = getLastMonthRecord(bookId, year, month);
-        if (lastMonthRecord != null) {
-            BigDecimal currMonthOnMonth = getMonthOnMonthVal(lastMonthRecord, currMonthRecord);
-            currMonthRecord.setMonthOnMonth(currMonthOnMonth);
-            updateCurrFlag = true;
-        }
-        // 获取上年当前月的财务汇总，用于计算本月的同比
-        FinMonthRecord lastYearRecord = getLastYearRecord(bookId, year, month);
-        if (lastYearRecord != null) {
-            BigDecimal currYearOnYear = getYearOnYearVal(lastYearRecord, currMonthRecord);
-            currMonthRecord.setYearOnYear(currYearOnYear);
-            updateCurrFlag = true;
-        }
-        if (updateCurrFlag) {
-            currMonthRecord.setNote(monthRecordDTO.getNote());
-            updateList.add(currMonthRecord);
-        }
+        // 重计算本月财务数据
+        setFinancialData(currMonthRecord, monthItemDTO);
+        updateList.add(currMonthRecord);
 
         // 获取下月的财务汇总，用于计算下月的环比
         FinMonthRecord nextMonthRecord = getNextMonthRecord(bookId, year, month);
@@ -217,6 +184,38 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
             queryWrapper.eq(FinMonthRecord::getYear, year);
         }
         return finMonthRecordMapper.selectListByQuery(queryWrapper);
+    }
+
+    /**
+     * 设置财务数据
+     *
+     * @param finMonthRecord 月度财务汇总
+     * @param monthItemDTO   月度项目DTO
+     */
+    private void setFinancialData(FinMonthRecord finMonthRecord, MonthItemDTO monthItemDTO) {
+        Integer year = finMonthRecord.getYear();
+        Integer month = finMonthRecord.getMonth();
+        String bookId = finMonthRecord.getBookId();
+
+        // 设置总资产和总负债
+        setTotalAssetAndTotalLiability(finMonthRecord, monthItemDTO);
+        // 计算净资产
+        BigDecimal netAsset = finMonthRecord.getTotalAsset().subtract(finMonthRecord.getTotalLiability()).setScale(2, RoundingMode.HALF_UP);
+        finMonthRecord.setNetAsset(netAsset);
+
+        // 获取上个月的财务汇总 并 计算月度环比增长
+        FinMonthRecord lastMonthRecord = getLastMonthRecord(bookId, year, month);
+        BigDecimal monthOnMonth = getMonthOnMonthVal(lastMonthRecord, finMonthRecord);
+        finMonthRecord.setMonthOnMonth(monthOnMonth);
+
+        // 获取去年的财务汇总 并 计算年度同比增长
+        FinMonthRecord lastYearRecord = getLastYearRecord(bookId, year, month);
+        BigDecimal yearOnYear = getYearOnYearVal(lastYearRecord, finMonthRecord);
+        finMonthRecord.setYearOnYear(yearOnYear);
+
+        // 设置备注
+        finMonthRecord.setNote(monthItemDTO.getNote());
+        finMonthRecord.setUserId(UserContext.getUserId());
     }
 
     /**

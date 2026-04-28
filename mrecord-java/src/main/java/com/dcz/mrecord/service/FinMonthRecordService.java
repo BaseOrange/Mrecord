@@ -34,9 +34,10 @@ public interface FinMonthRecordService extends IService<FinMonthRecord> {
      * 更新后重新计算月度财务汇总【修复某月数据时，进行计算】
      *
      * @param monthRecordDTO 月度汇总DTO
+     * @param monthItemDTO
      * @return 月度财务汇总
      */
-    FinMonthRecord recalculateFinMonthRecord(MonthRecordDTO monthRecordDTO);
+    FinMonthRecord recalculateFinMonthRecord(MonthRecordDTO monthRecordDTO, MonthItemDTO monthItemDTO);
 
     /**
      * 获取月度财务汇总

@@ -14,7 +14,6 @@ import com.dcz.mrecord.service.FinMonthRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.dcz.mrecord.service.SysBackupMonthItemRecordService;
 import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -115,7 +114,7 @@ public class FinMonthItemRecordServiceImpl extends ServiceImpl<FinMonthItemRecor
         monthRecordDTO.setYear(monthItemDTO.getYear());
         monthRecordDTO.setMonth(monthItemDTO.getMonth());
         monthRecordDTO.setNote(monthItemDTO.getNote());
-        finMonthRecordService.recalculateFinMonthRecord(monthRecordDTO);
+        finMonthRecordService.recalculateFinMonthRecord(monthRecordDTO, monthItemDTO);
         return monthItemDTO.getItemList();
     }
 
