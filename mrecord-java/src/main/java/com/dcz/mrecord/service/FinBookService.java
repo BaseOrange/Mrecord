@@ -1,5 +1,6 @@
 package com.dcz.mrecord.service;
 
+import com.dcz.mrecord.dto.DataStatisticsDTO;
 import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
@@ -44,4 +45,12 @@ public interface FinBookService extends IService<FinBook> {
      * @return 账簿列表
      */
     Page<FinBook> getMyFinBook(QueryFinBookDTO param);
+
+
+    /**
+     * 获取统计数据
+     *
+     * @return 统计数据DTO
+     */
+    DataStatisticsDTO getMyDataStatistics();
 }

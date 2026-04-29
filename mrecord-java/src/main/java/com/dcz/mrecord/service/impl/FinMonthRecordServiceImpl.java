@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.common.UserContext;
 import com.dcz.mrecord.constant.TempItemTypeConst;
+import com.dcz.mrecord.dto.DataStatisticsDTO;
 import com.dcz.mrecord.dto.MonthItemDTO;
 import com.dcz.mrecord.dto.MonthRecordDTO;
 import com.dcz.mrecord.entity.FinMonthItemRecord;
@@ -12,6 +13,7 @@ import com.dcz.mrecord.entity.FinMonthRecord;
 import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinMonthRecordMapper;
+import com.dcz.mrecord.service.FinBookService;
 import com.dcz.mrecord.service.FinMonthRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.dcz.mrecord.service.SysBackupMonthRecordService;
@@ -28,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +51,8 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     private FinTemplateItemService finTemplateItemService;
     @Resource
     private SysBackupMonthRecordService sysBackupMonthRecordService;
+    @Resource
+    private FinBookService finBookService;
 
     /**
      * 计算月度财务汇总【插入当月数据时，进行计算】
@@ -185,6 +190,29 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
             queryWrapper.eq(FinMonthRecord::getYear, year);
         }
         return finMonthRecordMapper.selectListByQuery(queryWrapper);
+    }
+
+    /**
+     * 获取数据统计的财务汇总
+     *
+     * @param bookIdSet         账簿ID集合
+     * @param dataStatisticsDTO 数据统计DTO
+     * @return 数据统计的财务汇总
+     */
+    @Override
+    public List<FinMonthRecord> getDataStatisticsRecord(Set<String> bookIdSet, DataStatisticsDTO dataStatisticsDTO) {
+        if (bookIdSet == null || bookIdSet.isEmpty()) {
+            return List.of();
+        }
+
+        QueryWrapper qwObj = QueryWrapper.create();
+        qwObj.in(FinMonthRecord::getBookId, bookIdSet);
+        qwObj.where("MR_YEAR * 100 + MR_MONTH between ? and ?", dataStatisticsDTO.getStartYearMonth(), dataStatisticsDTO.getEndYearMonth());
+        qwObj.orderBy(FinMonthRecord::getBookId, true);
+        qwObj.orderBy(FinMonthRecord::getYear, true);
+        qwObj.orderBy(FinMonthRecord::getMonth, true);
+
+        return finMonthRecordMapper.selectListByQuery(qwObj);
     }
 
     /**

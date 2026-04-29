@@ -1,6 +1,7 @@
 package com.dcz.mrecord.controller;
 
 import com.dcz.mrecord.common.Result;
+import com.dcz.mrecord.dto.DataStatisticsDTO;
 import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
@@ -74,5 +75,16 @@ public class FinBookController {
     public Result<Page<FinBook>> list(@RequestBody QueryFinBookDTO params) {
         log.info("获取账簿列表[/book/list]请求传参：{}", params);
         return Result.success(finBookService.getMyFinBook(params));
+    }
+
+    /**
+     * 获取统计数据
+     *
+     * @return 统计数据DTO
+     */
+    @PostMapping("/getMyDataStatistics")
+    public Result<DataStatisticsDTO> getMyDataStatistics() {
+        log.info("获取获取统计数据[/monthRecord/getMyDataStatistics]请求");
+        return Result.success(finBookService.getMyDataStatistics());
     }
 }

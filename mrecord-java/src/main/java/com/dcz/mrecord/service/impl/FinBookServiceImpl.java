@@ -1,12 +1,16 @@
 package com.dcz.mrecord.service.impl;
 
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.common.UserContext;
+import com.dcz.mrecord.dto.DataStatisticsDTO;
 import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
+import com.dcz.mrecord.entity.FinMonthRecord;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinBookMapper;
 import com.dcz.mrecord.service.FinBookService;
@@ -22,7 +26,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 财务账簿服务实现
@@ -123,6 +132,42 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
         }
         qw.eq(FinBook::getUserId, UserContext.getUserId());
         return finBookMapper.paginate(page, qw);
+    }
+
+    /**
+     * 获取我的数据统计
+     *
+     * @return 数据统计
+     */
+    @Override
+    public DataStatisticsDTO getMyDataStatistics() {
+        QueryWrapper qw = QueryWrapper.create();
+        qw.eq(FinBook::getUserId, UserContext.getUserId());
+        List<FinBook> finBooks = finBookMapper.selectListByQuery(qw);
+
+        // 设置开始结束的年份和月份
+        DataStatisticsDTO dataStatisticsDTO = new DataStatisticsDTO();
+        DateTime date = DateUtil.date();
+        dataStatisticsDTO.setStartYearMonth(DateUtil.format(DateUtil.offsetYear(date, -1), "yyyyMM"));
+        dataStatisticsDTO.setEndYearMonth(DateUtil.format(date, "yyyyMM"));
+
+        if (finBooks == null || finBooks.isEmpty()) {
+            return dataStatisticsDTO;
+        }
+
+        // 获取账目数据
+        Set<String> bookIdSet = finBooks.stream().map(FinBook::getId).collect(Collectors.toSet());
+        List<FinMonthRecord> finMonthRecordList = finMonthRecordService.getDataStatisticsRecord(bookIdSet, dataStatisticsDTO);
+
+        // 按账簿名称分组
+        Map<String, List<FinMonthRecord>> resMap = new HashMap<>();
+        for (String bookId : bookIdSet) {
+            FinBook finBook = finBooks.stream().filter(book -> bookId.equals(book.getId())).findAny().orElseGet(FinBook::new);
+            List<FinMonthRecord> collect = finMonthRecordList.stream().filter(record -> bookId.equals(record.getBookId())).toList();
+            resMap.put(finBook.getBookName(), collect);
+        }
+        dataStatisticsDTO.setRecordMap(resMap);
+        return dataStatisticsDTO;
     }
 
     /**
