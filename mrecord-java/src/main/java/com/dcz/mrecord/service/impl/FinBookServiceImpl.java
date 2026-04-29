@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -160,6 +161,14 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
         for (FinMonthRecord finMonthRecord : finMonthRecordList) {
             FinBookRecordDTO finBookRecordDTO = new FinBookRecordDTO();
             BeanUtil.copyProperties(finMonthRecord, finBookRecordDTO);
+            Optional<FinBook> any = finBooks.stream().filter(book -> book.getId().equals(finMonthRecord.getBookId())).findAny();
+            if (any.isEmpty()) {
+                log.warn("账目数据 {} 所属账簿不存在", finMonthRecord.getId());
+                continue;
+            }
+            FinBook finBook = any.get();
+            finBookRecordDTO.setBookId(finBook.getId());
+            finBookRecordDTO.setBookName(finBook.getBookName());
             resList.add(finBookRecordDTO);
         }
         dataStatisticsDTO.setRecordList(resList);
