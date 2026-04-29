@@ -58,11 +58,19 @@ public interface FinMonthRecordService extends IService<FinMonthRecord> {
     List<FinMonthRecord> getYearRecordList(MonthRecordDTO monthRecordDTO);
 
     /**
-     * 获取数据统计汇总
+     * 获取每个账簿最新的财务汇总
      *
      * @param bookIdSet         账簿ID集合
+     * @return 数据统计汇总
+     */
+    List<FinMonthRecord> getMyBookLastRecord(Set<String> bookIdSet);
+
+    /**
+     * 获取指定账簿某年份的财务汇总
+     *
+     * @param id               账簿ID
      * @param dataStatisticsDTO 数据统计DTO
      * @return 数据统计汇总
      */
-    List<FinMonthRecord> getDataStatisticsRecord(Set<String> bookIdSet, DataStatisticsDTO dataStatisticsDTO);
+    List<FinMonthRecord> getBookOneYearRecord(String id, DataStatisticsDTO dataStatisticsDTO);
 }

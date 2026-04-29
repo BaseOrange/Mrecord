@@ -1,9 +1,11 @@
 package com.dcz.mrecord.service;
 
 import com.dcz.mrecord.dto.DataStatisticsDTO;
+import com.dcz.mrecord.dto.FinBookRecordDTO;
 import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
+import com.dcz.mrecord.entity.FinMonthRecord;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.service.IService;
 
@@ -48,9 +50,17 @@ public interface FinBookService extends IService<FinBook> {
 
 
     /**
-     * 获取统计数据
+     * 获取所有账户的统计数据
      *
      * @return 统计数据DTO
      */
-    DataStatisticsDTO getMyDataStatistics();
+    DataStatisticsDTO<FinBookRecordDTO>  getMyDataStatistics();
+
+    /**
+     * 获取指定账户的详细统计数据
+     *
+     * @param id 账簿ID
+     * @return 统计数据DTO
+     */
+    DataStatisticsDTO<FinMonthRecord>  getBookDetailedStatistics(IdDto id);
 }

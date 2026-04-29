@@ -13,7 +13,6 @@ import com.dcz.mrecord.entity.FinMonthRecord;
 import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.FinMonthRecordMapper;
-import com.dcz.mrecord.service.FinBookService;
 import com.dcz.mrecord.service.FinMonthRecordService;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.dcz.mrecord.service.SysBackupMonthRecordService;
@@ -32,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.mybatisflex.core.query.QueryMethods.max;
+import static com.mybatisflex.core.query.QueryMethods.string;
 
 /**
  * 月度财务汇总服务实现
@@ -191,20 +193,50 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     }
 
     /**
-     * 获取数据统计的财务汇总
+     * 获取每个账簿最新的财务汇总
      *
      * @param bookIdSet         账簿ID集合
-     * @param dataStatisticsDTO 数据统计DTO
-     * @return 数据统计的财务汇总
+     * @return 数据统计汇总
      */
     @Override
-    public List<FinMonthRecord> getDataStatisticsRecord(Set<String> bookIdSet, DataStatisticsDTO dataStatisticsDTO) {
+    public List<FinMonthRecord> getMyBookLastRecord(Set<String> bookIdSet) {
         if (bookIdSet == null || bookIdSet.isEmpty()) {
             return List.of();
         }
 
+        // 构造子查询：每个bookid 最大年、最大月
+        QueryWrapper childWrapper = QueryWrapper.create()
+                .select(string("MR_BOOK_ID"),
+                        max("MR_YEAR").as("max_year"),
+                        max("MR_MONTH").as("max_month"))
+                .from("FIN_MONTH_RECORD")
+                .groupBy(FinMonthRecord::getBookId);
+
+        // 2主表关联子查询，取出每条最新记录
+        QueryWrapper wrapper = QueryWrapper.create()
+                .from("FIN_MONTH_RECORD")
+                .leftJoin(childWrapper).as("t2")
+                .on(string("MR_BOOK_ID").eq("t2.MR_BOOK_ID")
+                        .and(string("MR_YEAR").eq("t2.max_year"))
+                        .and(string("MR_MONTH").eq("t2.max_month")))
+                // 去重，防止同bookid同年月有多条
+                .groupBy(string("MR_BOOK_ID"), string("MR_YEAR"), string("MR_MONTH"));
+
+        // 查询结果
+        return finMonthRecordMapper.selectListByQuery(wrapper);
+    }
+
+    /**
+     * 获取指定账簿某年份的财务汇总
+     *
+     * @param id                账簿ID
+     * @param dataStatisticsDTO 数据统计DTO
+     * @return 数据统计汇总
+     */
+    @Override
+    public List<FinMonthRecord> getBookOneYearRecord(String id, DataStatisticsDTO dataStatisticsDTO) {
         QueryWrapper qwObj = QueryWrapper.create();
-        qwObj.in(FinMonthRecord::getBookId, bookIdSet);
+        qwObj.eq(FinMonthRecord::getBookId, id);
         qwObj.where("MR_YEAR * 100 + MR_MONTH between ? and ?", dataStatisticsDTO.getStartYearMonth(), dataStatisticsDTO.getEndYearMonth());
         qwObj.orderBy(FinMonthRecord::getBookId, true);
         qwObj.orderBy(FinMonthRecord::getYear, true);

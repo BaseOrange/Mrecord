@@ -4,13 +4,12 @@ import com.dcz.mrecord.entity.FinMonthRecord;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 数据统计DTO
  */
 @Data
-public class DataStatisticsDTO {
+public class DataStatisticsDTO<T extends FinMonthRecord> {
     /**
      * 开始年月yyyyMM
      */
@@ -22,7 +21,7 @@ public class DataStatisticsDTO {
     private String endYearMonth;
 
     /**
-     * 数据Map Key:账簿名称 value：近12个月的汇总数据集合
+     * 获取所有账户最新月份统计数据
      */
-    Map<String, List<FinMonthRecord>> recordMap;
+    private List<T> recordList;
 }

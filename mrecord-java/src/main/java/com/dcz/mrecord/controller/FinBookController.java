@@ -2,9 +2,11 @@ package com.dcz.mrecord.controller;
 
 import com.dcz.mrecord.common.Result;
 import com.dcz.mrecord.dto.DataStatisticsDTO;
+import com.dcz.mrecord.dto.FinBookRecordDTO;
 import com.dcz.mrecord.dto.IdDto;
 import com.dcz.mrecord.dto.QueryFinBookDTO;
 import com.dcz.mrecord.entity.FinBook;
+import com.dcz.mrecord.entity.FinMonthRecord;
 import com.dcz.mrecord.service.FinBookService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
@@ -78,13 +80,25 @@ public class FinBookController {
     }
 
     /**
-     * 获取统计数据
+     * 获取所有账户的统计数据
      *
      * @return 统计数据DTO
      */
     @PostMapping("/getMyDataStatistics")
-    public Result<DataStatisticsDTO> getMyDataStatistics() {
+    public Result<DataStatisticsDTO<FinBookRecordDTO>> getMyDataStatistics() {
         log.info("获取获取统计数据[/monthRecord/getMyDataStatistics]请求");
         return Result.success(finBookService.getMyDataStatistics());
+    }
+
+    /**
+     * 获取指定账户的详细统计数据
+     *
+     * @param id 账簿ID
+     * @return 统计数据DTO
+     */
+    @PostMapping("/getBookDetailedStatistics")
+    public Result<DataStatisticsDTO<FinMonthRecord>> getBookDetailedStatistics(@RequestBody IdDto id) {
+        log.info("获取获取统计数据[/monthRecord/getBookDetailedStatistics]请求传参：{}", id);
+        return Result.success(finBookService.getBookDetailedStatistics(id));
     }
 }
