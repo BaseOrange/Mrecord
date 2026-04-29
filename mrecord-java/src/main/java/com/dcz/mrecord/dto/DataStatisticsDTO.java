@@ -12,12 +12,12 @@ import java.util.Map;
 @Data
 public class DataStatisticsDTO {
     /**
-     * 开始年月
+     * 开始年月yyyyMM
      */
     private String startYearMonth;
 
     /**
-     * 结束年月
+     * 结束年月yyyyMM
      */
     private String endYearMonth;
 
