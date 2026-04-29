@@ -51,8 +51,6 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     private FinTemplateItemService finTemplateItemService;
     @Resource
     private SysBackupMonthRecordService sysBackupMonthRecordService;
-    @Resource
-    private FinBookService finBookService;
 
     /**
      * 计算月度财务汇总【插入当月数据时，进行计算】
