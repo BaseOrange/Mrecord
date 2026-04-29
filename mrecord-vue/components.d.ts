@@ -16,6 +16,7 @@ declare module 'vue' {
     IconPicker: typeof import('./src/components/IconPicker.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    TrendChart: typeof import('./src/components/TrendChart.vue')['default']
     VarActionSheet: typeof import('@varlet/ui')['_ActionSheetComponent']
     VarButton: typeof import('@varlet/ui')['_ButtonComponent']
     VarDialog: typeof import('@varlet/ui')['_DialogComponent']

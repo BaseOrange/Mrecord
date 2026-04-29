@@ -84,6 +84,12 @@ const router = createRouter({
             meta: {title: '记账', transition: 'slide-up'}
         },
         {
+            path: '/book/:bookId/stats',
+            name: 'BookStatsDetail',
+            component: () => import('@/views/BookStatsDetail.vue'),
+            meta: {title: '账簿统计', transition: 'slide-up'}
+        },
+        {
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
             component: () => import('@/views/NotFound.vue'),

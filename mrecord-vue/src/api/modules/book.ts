@@ -11,8 +11,8 @@ export interface BookInfo extends BaseEntity {
     bookName?: string
 }
 
-/** 账簿统计数据 */
-export interface BookStatistics {
+/** 账簿统计数据（含审计字段） */
+export interface BookStatistics extends BaseEntity {
     /** 账簿ID */
     bookId?: string
     /** 账簿名称 */
@@ -64,9 +64,9 @@ export interface ListBooksParams extends PageParams {
 /** 指定账簿详细统计响应 */
 export interface BookDetailedStatistics {
     /** 开始年月 yyyyMM */
-    startYearMonth?: string
+    startYearMonth?: string | null
     /** 结束年月 yyyyMM */
-    endYearMonth?: string
+    endYearMonth?: string | null
     /** 区间财务汇总数据 */
     recordList?: BookStatistics[]
 }
@@ -95,7 +95,7 @@ export function listBooks(data?: ListBooksParams) {
 
 /** 获取我的所有账簿统计数据 */
 export function getMyDataStatistics() {
-    return post<BookDetailedStatistics>('/book/getMyDataStatistics')
+    return post<BookStatistics[]>('/book/getMyDataStatistics')
 }
 
 /** 获取指定账簿详细统计数据 */
