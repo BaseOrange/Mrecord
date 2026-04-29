@@ -91,7 +91,7 @@ public class FinBookController {
     }
 
     /**
-     * 获取指定账户的详细统计数据
+     * 获取指定账簿的详细统计数据
      *
      * @param id 账簿ID
      * @return 统计数据DTO
