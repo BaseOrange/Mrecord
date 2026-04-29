@@ -90,8 +90,15 @@ const onCardClick = (item: BookStatistics) => {
           @click="onCardClick(item)"
         >
           <div class="card-header">
-            <span class="book-name">{{ item.bookName }}</span>
-            <span class="period">{{ item.year }}年{{ item.month }}月</span>
+            <div class="card-header-left">
+              <span class="book-name">{{ item.bookName }}</span>
+              <span class="period">{{ item.year }}年{{ item.month }}月</span>
+            </div>
+            <div class="card-arrow">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
           </div>
 
           <div class="card-body">
@@ -124,12 +131,6 @@ const onCardClick = (item: BookStatistics) => {
                 </span>
               </div>
             </div>
-          </div>
-
-          <div class="card-arrow">
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
           </div>
         </div>
       </div>
@@ -228,6 +229,11 @@ const onCardClick = (item: BookStatistics) => {
   justify-content: space-between;
   margin-bottom: 12px;
 }
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .book-name {
   font-size: 16px;
   font-weight: 600;
@@ -283,13 +289,9 @@ const onCardClick = (item: BookStatistics) => {
 }
 
 .card-arrow {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
   color: #c7c7cc;
   display: flex;
   align-items: center;
-  justify-content: center;
+  flex-shrink: 0;
 }
 </style>
