@@ -204,26 +204,8 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
             return List.of();
         }
 
-        // 构造子查询：每个bookid 最大年、最大月
-        QueryWrapper childWrapper = QueryWrapper.create()
-                .select(string("MR_BOOK_ID"),
-                        max("MR_YEAR").as("max_year"),
-                        max("MR_MONTH").as("max_month"))
-                .from("FIN_MONTH_RECORD")
-                .groupBy(FinMonthRecord::getBookId);
-
-        // 2主表关联子查询，取出每条最新记录
-        QueryWrapper wrapper = QueryWrapper.create()
-                .from("FIN_MONTH_RECORD")
-                .leftJoin(childWrapper).as("t2")
-                .on(string("MR_BOOK_ID").eq("t2.MR_BOOK_ID")
-                        .and(string("MR_YEAR").eq("t2.max_year"))
-                        .and(string("MR_MONTH").eq("t2.max_month")))
-                // 去重，防止同bookid同年月有多条
-                .groupBy(string("MR_BOOK_ID"), string("MR_YEAR"), string("MR_MONTH"));
-
         // 查询结果
-        return finMonthRecordMapper.selectListByQuery(wrapper);
+        return finMonthRecordMapper.getMyBookLastRecord(bookIdSet);
     }
 
     /**

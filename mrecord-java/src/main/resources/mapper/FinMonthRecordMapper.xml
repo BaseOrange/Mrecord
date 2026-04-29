@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dcz.mrecord.mapper.FinMonthRecordMapper">
+
+    <select id="getMyBookLastRecord" resultType="com.dcz.mrecord.entity.FinMonthRecord">
+        SELECT t1.*
+        FROM fin_month_record t1
+        INNER JOIN (SELECT MR_BOOK_ID,
+        MAX(CONCAT(MR_YEAR, LPAD(MR_MONTH, 2, '0'))) AS max_ym
+        FROM fin_month_record
+        WHERE MR_IS_DELETED = 0
+        GROUP BY MR_BOOK_ID) t2 ON t1.MR_BOOK_ID = t2.MR_BOOK_ID
+        AND CONCAT(t1.MR_YEAR, LPAD(t1.MR_MONTH, 2, '0')) = t2.max_ym
+        WHERE t1.MR_IS_DELETED = 0 AND t1.MR_BOOK_ID IN
+        <foreach item="bookId" index="index" collection="bookIdSet" open="(" separator="," close=")">
+            #{bookId}
+        </foreach>
+    </select>
+</mapper>
