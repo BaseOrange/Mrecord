@@ -67,7 +67,7 @@ const onCardClick = (item: BookStatistics) => {
       <!-- 加载态 -->
       <div v-if="loading && list.length === 0" class="loading-state">
         <div class="loading-spinner"></div>
-        <p>加载中...</p>
+        <p>Thinking...</p>
       </div>
 
       <!-- 空状态 -->
