@@ -34,6 +34,12 @@ const router = createRouter({
                     meta: {title: '账簿'}
                 },
                 {
+                    path: 'export',
+                    name: 'Export',
+                    component: () => import('@/views/ExportPage.vue'),
+                    meta: {title: '数据导出'}
+                },
+                {
                     path: 'profile',
                     name: 'Profile',
                     component: () => import('@/views/ProfilePage.vue'),

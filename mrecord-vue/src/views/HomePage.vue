@@ -27,7 +27,7 @@ const onQuickEntry = (action: string) => {
       router.push('/book')
       break
     case 'export':
-      Snackbar.info('即将上线')
+      router.push('/export')
       break
     case 'profile':
       router.push('/profile')
