@@ -382,7 +382,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
             // 拆分三部分：主键、过期时间、防伪造随机串
             String[] arr = plainText.split("_");
-            Long userId = Long.valueOf(arr[0]);
+            String userId = arr[0];
             long expireTime = Long.parseLong(arr[1]);
             // String randomStr = arr[2];
 

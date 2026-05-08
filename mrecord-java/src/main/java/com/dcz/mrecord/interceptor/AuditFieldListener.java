@@ -26,19 +26,9 @@ public class AuditFieldListener implements InsertListener, UpdateListener {
     public void onInsert(Object entity) {
         if (entity instanceof BaseEntity) {
             BaseEntity base = (BaseEntity) entity;
-            String userId;
-            try {
-                userId = UserContext.getUserId();
-            } catch (Exception e) {
-                log.warn("获取当前用户ID失败,{}", e.getMessage());
-                userId = "anonymous";
-            }
-
-            // 防空（未登录场景）
-            if (userId != null) {
-                base.setCreateBy(userId);
-                base.setUpdateBy(userId);
-            }
+            String operator = getIdOrIp();
+            base.setCreateBy(operator);
+            base.setUpdateBy(operator);
         }
     }
 
@@ -51,11 +41,28 @@ public class AuditFieldListener implements InsertListener, UpdateListener {
     public void onUpdate(Object entity) {
         if (entity instanceof BaseEntity) {
             BaseEntity base = (BaseEntity) entity;
-            String userId = UserContext.getUserId();
+            base.setUpdateBy(getIdOrIp());
+        }
+    }
 
-            if (userId != null) {
-                base.setUpdateBy(userId);
+    /**
+     * 获取当前操作人标识，优先取用户ID，其次取请求IP，均失败则返回"anonymous"
+     *
+     * @return 操作人标识
+     */
+    private String getIdOrIp() {
+        String res = "anonymous";
+        try {
+            res = UserContext.getUserId();
+        } catch (Exception e) {
+            log.warn("获取当前用户ID失败,{}", e.getMessage());
+            try {
+                res = UserContext.getUserIp();
+            } catch (Exception e1) {
+                log.warn("获取当前用户IP失败,{}", e1.getMessage());
             }
         }
+
+        return res;
     }
 }

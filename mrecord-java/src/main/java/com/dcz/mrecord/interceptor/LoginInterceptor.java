@@ -51,6 +51,7 @@ public class LoginInterceptor implements HandlerInterceptor {
 
         // 放入当前用户
         UserContext.setUserId(userId);
+        UserContext.setUserIp(request.getRemoteAddr());
         return true;
     }
 

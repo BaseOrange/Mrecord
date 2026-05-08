@@ -11,6 +11,7 @@ import com.dcz.mrecord.exception.MrecordException;
  */
 public class UserContext {
     private static final ThreadLocal<String> USER_ID = new ThreadLocal<>();
+    private static final ThreadLocal<String> USER_IP = new ThreadLocal<>();
 
     public static String getUserId() {
         String userId = USER_ID.get();
@@ -20,11 +21,24 @@ public class UserContext {
         return userId;
     }
 
+    public static String getUserIp() {
+        String userIp = USER_IP.get();
+        if (StrUtil.isBlankIfStr(userIp)) {
+            throw new MrecordException(ResCode.DATA_NOT_EXIST);
+        }
+        return userIp;
+    }
+
     public static void setUserId(String userId) {
         USER_ID.set(userId);
     }
 
+    public static void setUserIp(String userIp) {
+        USER_IP.set(userIp);
+    }
+
     public static void clear() {
         USER_ID.remove();
+        USER_IP.remove();
     }
 }
