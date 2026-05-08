@@ -79,14 +79,13 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
     @Override
     @Async("exportTaskExecutor")
     public void executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth) {
-        // 更新状态为执行中
-        SysExportTask runningTask = new SysExportTask();
-        runningTask.setId(taskId);
-        runningTask.setStatus("RUN");
-        sysExportTaskService.updateById(runningTask);
-
         File excelFile = null;
         try {
+            // 更新状态为执行中
+            SysExportTask runningTask = new SysExportTask();
+            runningTask.setId(taskId);
+            runningTask.setStatus("RUN");
+            sysExportTaskService.updateById(runningTask);
             SysUser user = sysUserService.getById(userId);
             if (user == null || StrUtil.isBlank(user.getEmail())) {
                 throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "用户邮箱未配置，无法发送导出文件");
