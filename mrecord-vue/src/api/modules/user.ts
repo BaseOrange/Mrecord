@@ -31,6 +31,8 @@ export interface UserAuthParams {
     password?: string
     /** 昵称 */
     nickname?: string
+    /** 重置密码token */
+    rePasswordToken?: string
 }
 
 /** 用户列表查询传参 */

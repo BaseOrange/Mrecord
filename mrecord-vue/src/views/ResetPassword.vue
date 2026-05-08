@@ -37,7 +37,7 @@ const onSubmit = async () => {
 
   loading.value = true
   try {
-    await resetPassword({password: md5(password.value)})
+    await resetPassword({password: md5(password.value), rePasswordToken: token.value})
     success.value = true
   } catch (e: any) {
     // @ts-ignore
