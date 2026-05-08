@@ -207,10 +207,13 @@ public class EmailServiceImpl implements EmailService {
 
         HtmlEmail email = new HtmlEmail();
         email.setHostName(emailConfig.getHostName());
-        Boolean ssl = emailConfig.getSsl();
-        email.setSmtpPort(587);
+        // 开启 SSL 直连
         email.setSSLOnConnect(true);
-        email.setSslSmtpPort(String.valueOf(emailConfig.getSmtpPort()));
+        // 与上面端口一致
+        email.setSslSmtpPort(String.valueOf(emailConfig.getSslSmtpPort()));
+        // 如果同时设置了 STARTTLS，建议关闭
+        email.setStartTLSEnabled(false);
+        email.setStartTLSRequired(false);
         email.setAuthenticator(new DefaultAuthenticator(emailConfig.getUsername(), emailConfig.getPassword()));
         email.setFrom(emailConfig.getFrom());
         email.setCharset(EmailConstants.UTF_8);
