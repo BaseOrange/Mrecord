@@ -44,8 +44,8 @@ public class SysExportTaskController {
         String userId = UserContext.getUserId();
         log.info("发起账簿数据导出任务[/exportTask/export]请求传参：{} {}", userId, dto);
         String taskId = sysExportTaskService.createExportTask(userId, dto.getBookId(), dto.getStartYearMonth(), dto.getEndYearMonth());
-        SysExportTask sysExportTask = exportTaskExecutorService.executeExport(taskId, userId, dto.getBookId(), dto.getStartYearMonth(), dto.getEndYearMonth());
-        return Result.success(sysExportTask);
+        exportTaskExecutorService.executeExport(taskId, userId, dto.getBookId(), dto.getStartYearMonth(), dto.getEndYearMonth());
+        return Result.success(sysExportTaskService.getById(taskId));
     }
 
     /**

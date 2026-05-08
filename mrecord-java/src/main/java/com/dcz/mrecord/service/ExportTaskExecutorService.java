@@ -19,5 +19,5 @@ public interface ExportTaskExecutorService {
      * @param startYearMonth 起始年月yyyyMM（可选）
      * @param endYearMonth   结束年月yyyyMM（可选）
      */
-    SysExportTask executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth);
+    void executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth);
 }

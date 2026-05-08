@@ -78,7 +78,7 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
      */
     @Override
     @Async("exportTaskExecutor")
-    public SysExportTask executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth) {
+    public void executeExport(String taskId, String userId, String bookId, String startYearMonth, String endYearMonth) {
         // 更新状态为执行中
         SysExportTask runningTask = new SysExportTask();
         runningTask.setId(taskId);
@@ -130,7 +130,6 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
             params.put("MR-UserName", user.getNickname());
             params.put("MR-FileName", fileName);
             emailService.sendExportSuccessEmail(user.getEmail(), params, excelFile);
-
         } catch (Exception e) {
             log.error("导出任务执行失败, taskId={}", taskId, e);
             SysExportTask failTask = new SysExportTask();
@@ -143,7 +142,6 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
                 excelFile.delete();
             }
         }
-        return runningTask;
     }
 
     /**
