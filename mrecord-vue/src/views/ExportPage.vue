@@ -144,16 +144,6 @@ const formatTime = (time?: string) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-const onDownload = (fileName?: string) => {
-  if (!fileName) {
-    Snackbar.warning('文件不存在')
-    return
-  }
-  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
-  const url = `${baseURL}/exportTask/download?fileName=${encodeURIComponent(fileName)}`
-  window.open(url, '_blank')
-}
-
 const onScroll = () => {
   if (!hasMore.value || loadingTasks.value) return
   const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
@@ -252,13 +242,12 @@ const onScroll = () => {
             </div>
 
             <div class="task-actions">
-              <button
-                v-if="task.status === 'SUCCESS' && task.fileName"
-                class="task-action-btn download"
-                @click="onDownload(task.fileName)"
+              <span
+                v-if="task.status === 'SUCCESS'"
+                class="task-mail-tip"
               >
-                下载
-              </button>
+                已发至邮箱，请查收附件
+              </span>
               <span
                 v-else-if="task.status === 'FAIL'"
                 class="task-fail-reason"
@@ -504,22 +493,11 @@ const onScroll = () => {
   display: flex;
   align-items: center;
 }
-.task-action-btn {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-.task-action-btn.download {
-  background: #FF6500;
-  color: #fff;
-}
-.task-action-btn.download:active {
-  background: #e05800;
+.task-mail-tip {
+  font-size: 12px;
+  color: #34C759;
+  font-weight: 500;
+  white-space: nowrap;
 }
 .task-fail-reason {
   font-size: 12px;
