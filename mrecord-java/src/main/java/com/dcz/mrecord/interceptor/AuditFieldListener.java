@@ -55,11 +55,11 @@ public class AuditFieldListener implements InsertListener, UpdateListener {
         try {
             res = UserContext.getUserId();
         } catch (Exception e) {
-            log.warn("获取当前用户ID失败,{}", e.getMessage());
+            log.warn("获取当前用户ID失败", e);
             try {
                 res = UserContext.getUserIp();
             } catch (Exception e1) {
-                log.warn("获取当前用户IP失败,{}", e1.getMessage());
+                log.warn("获取当前用户IP失败", e1);
             }
         }
 
