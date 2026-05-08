@@ -4,11 +4,13 @@ import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
 import { logout } from '@/api'
+import AgreementPopup from '@/components/AgreementPopup.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
+const showAgreement = ref(false)
 
 const handleLogout = async () => {
   showLogoutConfirm.value = false
@@ -48,8 +50,14 @@ const handleLogout = async () => {
         </div>
       </div>
 
-      <!-- 功能列表占位 -->
+      <!-- 功能列表 -->
       <div class="menu-card">
+        <div class="menu-item" @click="showAgreement = true">
+          <span class="menu-icon">📄</span>
+          <span class="menu-text">用户协议及隐私政策</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-divider"></div>
         <div class="menu-item" style="opacity: 0.4;">
           <span class="menu-icon">📊</span>
           <span class="menu-text">导出数据</span>
@@ -93,6 +101,9 @@ const handleLogout = async () => {
     >
       确定要退出登录吗？
     </var-dialog>
+
+    <!-- 协议弹窗 -->
+    <AgreementPopup v-model:show="showAgreement" />
   </div>
 </template>
 

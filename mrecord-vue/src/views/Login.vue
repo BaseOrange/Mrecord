@@ -6,6 +6,7 @@ import {useUserStore} from '@/stores/user'
 import {login, queryMyInfo} from '@/api'
 import {md5} from 'js-md5'
 import loginBg from '@/assets/login_bg.png'
+import AgreementPopup from '@/components/AgreementPopup.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -43,6 +44,8 @@ const onForgotPassword = () => {
 const onRegister = () => {
   router.push('/register')
 }
+
+const showAgreement = ref(false)
 </script>
 
 <template>
@@ -126,9 +129,18 @@ const onRegister = () => {
           <span class="link-divider"></span>
           <a class="link" @click="onRegister">注册账户</a>
         </div>
+
+        <!-- 用户协议入口 -->
+        <p class="agreement-entry">
+          登录即表示同意
+          <a class="link agreement-link" @click="showAgreement = true">《用户协议及隐私政策》</a>
+        </p>
       </div>
     </div>
   </div>
+
+    <!-- 协议弹窗 -->
+    <AgreementPopup v-model:show="showAgreement" />
 </template>
 
 <style scoped>
