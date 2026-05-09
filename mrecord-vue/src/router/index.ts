@@ -45,6 +45,12 @@ const router = createRouter({
                     component: () => import('@/views/ProfilePage.vue'),
                     meta: {title: '我的'}
                 },
+                {
+                    path: 'change-password',
+                    name: 'ChangePassword',
+                    component: () => import('@/views/ChangePassword.vue'),
+                    meta: {title: '修改密码'}
+                },
             ]
         },
         {

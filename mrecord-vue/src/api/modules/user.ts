@@ -35,6 +35,14 @@ export interface UserAuthParams {
     rePasswordToken?: string
 }
 
+/** 修改密码传参 */
+export interface ChangePasswordParams {
+    /** 旧密码 */
+    oldPassword: string
+    /** 新密码 */
+    newPassword: string
+}
+
 /** 用户列表查询传参 */
 export interface ListUsersParams extends PageParams {
     /** 昵称 */
@@ -102,6 +110,11 @@ export function queryUserInfo(userId: string) {
 /** 管理员重置密码 */
 export function adminResetPassword(data: UserAuthParams) {
     return post<void>('/user/adminResetPassword', data)
+}
+
+/** 修改密码 */
+export function changePassword(data: ChangePasswordParams) {
+    return post<void>('/user/changePassword', data)
 }
 
 /** 管理员启用或禁用用户 */

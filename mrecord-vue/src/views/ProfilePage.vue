@@ -70,7 +70,7 @@ const handleLogout = async () => {
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-divider"></div>
-        <div class="menu-item" style="opacity: 0.4;">
+        <div class="menu-item" @click="router.push('/change-password')">
           <span class="menu-icon">🔒</span>
           <span class="menu-text">修改密码</span>
           <span class="menu-arrow">›</span>
