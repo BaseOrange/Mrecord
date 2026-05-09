@@ -4,6 +4,7 @@ import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.core.util.ObjUtil;
 import com.dcz.mrecord.common.CheckAdmin;
 import com.dcz.mrecord.common.Result;
+import com.dcz.mrecord.dto.ChangePasswordDTO;
 import com.dcz.mrecord.dto.QueryUserDTO;
 import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
@@ -106,6 +107,23 @@ public class SysUserController {
         log.info("重置密码[/user/resetPassword]请求传参：{}", clone);
 
         sysUserService.resetPassword(params);
+        return Result.success();
+    }
+
+    /**
+     * 修改密码
+     *
+     * @param params 修改密码参数
+     * @return 修改结果
+     */
+    @PostMapping("/changePassword")
+    public Result<String> changePassword(@RequestBody ChangePasswordDTO params) {
+        // 数据脱敏后打印日志
+        log.info("修改密码[/user/changePassword]请求传参：oldPassword={}，newPassword={}",
+                DesensitizedUtil.password(params.getOldPassword()),
+                DesensitizedUtil.password(params.getNewPassword()));
+
+        sysUserService.changePassword(params);
         return Result.success();
     }
 

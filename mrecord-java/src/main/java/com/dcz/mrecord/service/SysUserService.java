@@ -1,5 +1,6 @@
 package com.dcz.mrecord.service;
 
+import com.dcz.mrecord.dto.ChangePasswordDTO;
 import com.dcz.mrecord.dto.QueryUserDTO;
 import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
@@ -101,5 +102,12 @@ public interface SysUserService extends IService<SysUser> {
      * @param userIdList 用户ID集合
      */
     void enableOrDisableUser(Set<String> userIdList);
+
+    /**
+     * 修改密码
+     *
+     * @param params 修改密码参数
+     */
+    void changePassword(ChangePasswordDTO params);
 
 }

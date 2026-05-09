@@ -11,6 +11,7 @@ import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.common.UserContext;
 import com.dcz.mrecord.config.MrConf;
 import com.dcz.mrecord.constant.UserStatusConst;
+import com.dcz.mrecord.dto.ChangePasswordDTO;
 import com.dcz.mrecord.dto.QueryUserDTO;
 import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
@@ -342,9 +343,48 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             return;
         }
 
-        sysUsers.forEach(sysUser -> sysUser.setStatus(sysUser.getStatus() == UserStatusConst.NORMAL ? UserStatusConst.DISABLED : UserStatusConst.NORMAL));
+        sysUsers.forEach(sysUser -> sysUser.setStatus(sysUser.getStatus() == UserStatusConst.NORMAL.intValue() ? UserStatusConst.DISABLED : UserStatusConst.NORMAL));
         // 批量更新
         Db.updateEntitiesBatch(sysUsers, 1000);
+    }
+
+    /**
+     * 修改密码
+     *
+     * @param params 修改密码参数
+     */
+    @Override
+    public void changePassword(ChangePasswordDTO params) {
+        // 旧密码验证
+        String oldPassword = params.getOldPassword();
+        if (StrUtil.isBlankIfStr(oldPassword)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "旧密码不能为空");
+        }
+
+        // 新密码验证
+        String newPassword = params.getNewPassword();
+        if (StrUtil.isBlankIfStr(newPassword)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "新密码不能为空");
+        }
+        if (newPassword.length() < 6) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "新密码长度不能小于6");
+        }
+
+        // 查询当前用户
+        String userId = UserContext.getUserId();
+        SysUser sysUser = userMapper.selectOneById(userId);
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户不存在");
+        }
+
+        // 校验旧密码
+        if (!BCrypt.checkpw(oldPassword, sysUser.getPassword())) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "旧密码错误");
+        }
+
+        // 更新为新密码
+        sysUser.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
+        userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(userId));
     }
 
     /**
