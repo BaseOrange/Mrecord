@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
-import {activateAccount} from '@/api'
+import {activateAccount, resendActivateEmail} from '@/api'
 import loginBg from '@/assets/login_bg.png'
 
 const router = useRouter()
@@ -13,6 +13,9 @@ const invalidToken = computed(() => !token.value)
 const loading = ref(false)
 const success = ref(false)
 const errorMsg = ref('')
+const email = ref('')
+const resendLoading = ref(false)
+const resendSuccess = ref(false)
 
 const doActivate = async () => {
   if (invalidToken.value) return
@@ -20,12 +23,31 @@ const doActivate = async () => {
   loading.value = true
   errorMsg.value = ''
   try {
-    await activateAccount({activateToken: token.value})
+    await activateAccount(token.value)
     success.value = true
   } catch (e: any) {
     errorMsg.value = e?.message || '激活失败，链接可能已过期或已被使用'
   } finally {
     loading.value = false
+  }
+}
+
+const onResendEmail = async () => {
+  if (!email.value) {
+    // @ts-ignore
+    Snackbar.warning('请输入邮箱')
+    return
+  }
+  resendLoading.value = true
+  try {
+    await resendActivateEmail(email.value)
+    resendSuccess.value = true
+    // @ts-ignore
+    Snackbar.success('激活邮件已发送')
+  } catch {
+    // 拦截器已处理错误提示
+  } finally {
+    resendLoading.value = false
   }
 }
 
@@ -99,7 +121,44 @@ onMounted(() => {
         </div>
         <h3 class="status-title">激活失败</h3>
         <p class="status-desc">{{ errorMsg }}</p>
-        <button class="submit-btn" @click="doActivate">重新尝试</button>
+
+        <!-- 重新发送激活邮件 -->
+        <div v-if="!resendSuccess" class="resend-section">
+          <p class="resend-hint">输入邮箱重新发送激活邮件</p>
+          <div class="input-group">
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="4" width="20" height="16" rx="3" />
+                <path d="M2 7l10 6 10-6" />
+              </svg>
+              <input
+                v-model="email"
+                type="email"
+                placeholder="请输入邮箱"
+                class="form-input"
+                autocomplete="email"
+              />
+            </div>
+          </div>
+          <button
+            class="submit-btn"
+            :class="{ 'submit-btn--loading': resendLoading }"
+            :disabled="resendLoading"
+            @click="onResendEmail"
+          >
+            <span v-if="!resendLoading">重新发送激活邮件</span>
+            <span v-else class="btn-loading">
+              <svg class="spinner" viewBox="0 0 24 24" width="22" height="22">
+                <circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" />
+              </svg>
+            </span>
+          </button>
+        </div>
+
+        <div v-else class="resend-success">
+          <p class="status-desc">激活邮件已重新发送，请前往邮箱查收。</p>
+        </div>
+
         <button class="secondary-btn" @click="goLogin">返回登录</button>
       </div>
 
@@ -174,6 +233,33 @@ onMounted(() => {
 .status-icon { margin-bottom: 16px; }
 .status-title { font-size: 20px; font-weight: 700; color: #333; margin-bottom: 12px; }
 .status-desc { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 24px; }
+
+/* 重新发送区域 */
+.resend-section { width: 100%; margin-bottom: 16px; }
+.resend-hint { font-size: 13px; color: #999; margin-bottom: 12px; }
+.resend-success { margin-bottom: 16px; }
+
+/* 输入框 */
+.input-group { margin-bottom: 14px; }
+.input-wrapper {
+  position: relative; display: flex; align-items: center;
+  background: rgba(255,245,238,0.6); border: 1.5px solid rgba(255,160,100,0.3);
+  border-radius: 14px; padding: 0 14px; height: 50px;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 1px 4px rgba(255,140,66,0.04);
+}
+.input-wrapper:focus-within {
+  border-color: #FF8C42; background: rgba(255,250,246,0.85);
+  box-shadow: 0 0 0 3px rgba(255,140,66,0.1), 0 2px 8px rgba(255,101,0,0.08);
+}
+.input-icon { width: 20px; height: 20px; flex-shrink: 0; color: #FFa060; margin-right: 12px; opacity: 0.7; transition: opacity 0.3s; }
+.input-wrapper:focus-within .input-icon { opacity: 1; color: #FF6500; }
+.form-input { flex: 1; height: 100%; font-size: 15px; color: #333; background: transparent; border: none; outline: none; letter-spacing: 0.5px; }
+.form-input::placeholder { color: #cca88a; font-weight: 400; }
+
+/* 按钮加载态 */
+.submit-btn--loading { opacity: 0.8; cursor: not-allowed; }
+.btn-loading { display: flex; align-items: center; justify-content: center; }
 
 /* 提交按钮 */
 .submit-btn {

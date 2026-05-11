@@ -63,8 +63,13 @@ export function register(data: UserAuthParams) {
 }
 
 /** 账户激活 */
-export function activateAccount(data: { activateToken: string }) {
-    return post<void>('/user/activateAccount', data)
+export function activateAccount(activateToken: string) {
+    return post<void>('/user/activate', {activateToken})
+}
+
+/** 重新发送激活邮件 */
+export function resendActivateEmail(email: string) {
+    return post<void>('/user/resendActivateEmail', {email})
 }
 
 /** 用户登录 */
