@@ -47,4 +47,9 @@ public class UserDTO implements Serializable {
      * 重置密码token
      */
     private String rePasswordToken;
+
+    /**
+     * 激活账户token
+     */
+    private String activateToken;
 }

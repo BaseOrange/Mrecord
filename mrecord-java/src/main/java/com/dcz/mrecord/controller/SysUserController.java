@@ -12,11 +12,9 @@ import com.dcz.mrecord.service.SysUserService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Set;
@@ -55,13 +53,13 @@ public class SysUserController {
     /**
      * 激活账户
      *
-     * @param token 激活令牌
+     * @param params 用户参数
      * @return 激活结果
      */
-    @GetMapping("/activate")
-    public Result<String> activateAccount(@RequestParam String token) {
-        log.info("账户激活[/user/activate]请求传参：token={}", token);
-        sysUserService.activateAccount(token);
+    @PostMapping("/activate")
+    public Result<String> activateAccount(@RequestBody UserDTO params) {
+        log.info("账户激活[/user/activate]请求传参：{}", params);
+        sysUserService.activateAccount(params.getActivateToken());
         return Result.success();
     }
 
