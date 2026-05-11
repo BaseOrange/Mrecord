@@ -484,8 +484,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (sysUser == null) {
             throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户不存在");
         }
+        if (sysUser.getStatus() != UserStatusConst.NORMAL.intValue()) {
+            throw new MrecordException(ResCode.USER_STATUS_ERROR.getCode(), "用户状态正常，无需重复激活");
+        }
         if (sysUser.getStatus() != UserStatusConst.UNACTIVATED.intValue()) {
-            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "用户状态异常，无需激活");
+            throw new MrecordException(ResCode.USER_STATUS_ERROR.getCode(), "用户状态异常，请联系管理员");
         }
 
         emailService.sendActivateAccountEmail(getActivateAccountEmailParam(sysUser, getActivateAccountUrl(sysUser)));
