@@ -62,6 +62,11 @@ export function register(data: UserAuthParams) {
     return post<string>('/user/register', data)
 }
 
+/** 账户激活 */
+export function activateAccount(data: { activateToken: string }) {
+    return post<void>('/user/activateAccount', data)
+}
+
 /** 用户登录 */
 export function login(data: UserAuthParams) {
     return post<string>('/user/login', data)

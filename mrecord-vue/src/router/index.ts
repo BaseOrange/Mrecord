@@ -2,7 +2,7 @@ import {createRouter, createWebHistory} from 'vue-router'
 import {useUserStore} from '@/stores/user'
 
 // 无需登录即可访问的页面
-const PUBLIC_PAGES = ['/login', '/register', '/forgot-password', '/reset-password']
+const PUBLIC_PAGES = ['/login', '/register', '/forgot-password', '/reset-password', '/activate-account']
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -76,6 +76,12 @@ const router = createRouter({
             name: 'ResetPassword',
             component: () => import('@/views/ResetPassword.vue'),
             meta: {title: '重置密码'}
+        },
+        {
+            path: '/activate-account',
+            name: 'ActivateAccount',
+            component: () => import('@/views/ActivateAccount.vue'),
+            meta: {title: '账户激活'}
         },
         {
             path: '/book/:bookId/template',
