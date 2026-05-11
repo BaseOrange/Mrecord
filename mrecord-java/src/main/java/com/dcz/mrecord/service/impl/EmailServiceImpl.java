@@ -73,6 +73,27 @@ public class EmailServiceImpl implements EmailService {
     }
 
     /**
+     * 发送账户激活邮件
+     *
+     * @param params 邮件参数
+     */
+    @Override
+    public void sendActivateAccountEmail(MailParamsBO params) {
+        try {
+            HtmlEmail mailClient = getMailClient();
+            if (mailClient == null) {
+                throw new MrecordException(ResCode.BUSINESS_ERROR.getCode(), "管理员未配置邮箱参数，请联系管理员");
+            }
+            sendHtmlMail(mailClient, params.getTo(), "【MRecord｜月衡】账户激活", "mail/mr-activate.html", params.getParams());
+        } catch (MrecordException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("账户激活邮件发送失败", e);
+            throw new MrecordException(ResCode.ERROR.getCode(), "账户激活邮件发送失败，请联系管理员");
+        }
+    }
+
+    /**
      * 发送月报邮件
      *
      * @param paramsList 邮件参数集合

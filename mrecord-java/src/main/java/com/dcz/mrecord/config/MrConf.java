@@ -30,4 +30,10 @@ public class MrConf {
      */
     @Value("${mr.resetPwdTokenSecret}")
     private String resetPwdTokenSecret;
+
+    /**
+     * 账户激活令牌密钥
+     */
+    @Value("${mr.activateTokenSecret}")
+    private String activateTokenSecret;
 }

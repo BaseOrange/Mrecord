@@ -59,6 +59,11 @@ public class MailParamsBO {
     private String repassword = "";
 
     /**
+     * 账户激活地址
+     */
+    private String activateUrl = "";
+
+    /**
      * 管理员邮箱
      */
     private String adminMail = "";
@@ -87,6 +92,7 @@ public class MailParamsBO {
         params.put("MR-WebSite", getWebSite());
         params.put("MR-AdminMail", getAdminMail());
         params.put("MR-Repassword", getRepassword());
+        params.put("MR-ActivateUrl", getActivateUrl());
         params.put("MR-RegisterDate", getRegisterDate());
         return params;
     }

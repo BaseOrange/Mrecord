@@ -26,6 +26,7 @@ public enum ResCode {
     LOGIN_EXPIR("11003", "登录过期"),
     NO_PERMISSION("11004", "无操作权限"),
     USER_STATUS_ERROR("11005", "用户状态异常"),
+    USER_NOT_ACTIVATED("11006", "用户账户未激活，请先激活账户"),
 
     // 数据错误
     DATA_NOT_EXIST("12001", "数据不存在"),

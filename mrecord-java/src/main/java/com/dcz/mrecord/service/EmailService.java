@@ -27,6 +27,13 @@ public interface EmailService {
     void sendRegisterSuccessEmail(MailParamsBO params);
 
     /**
+     * 发送账户激活邮件
+     *
+     * @param params 邮件参数
+     */
+    void sendActivateAccountEmail(MailParamsBO params);
+
+    /**
      * 发送月报邮件
      *
      * @param paramsList 邮件参数集合

@@ -27,4 +27,9 @@ public interface UserStatusConst {
      * 已注销
      */
     public static final Integer CANCELED = 3;
+
+    /**
+     * 未激活
+     */
+    public static final Integer UNACTIVATED = 4;
 }

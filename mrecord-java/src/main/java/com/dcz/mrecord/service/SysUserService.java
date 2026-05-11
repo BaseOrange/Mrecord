@@ -110,4 +110,18 @@ public interface SysUserService extends IService<SysUser> {
      */
     void changePassword(ChangePasswordDTO params);
 
+    /**
+     * 激活账户
+     *
+     * @param token 激活令牌
+     */
+    void activateAccount(String token);
+
+    /**
+     * 重新发送激活邮件
+     *
+     * @param email 用户邮箱
+     */
+    void resendActivateEmail(String email);
+
 }

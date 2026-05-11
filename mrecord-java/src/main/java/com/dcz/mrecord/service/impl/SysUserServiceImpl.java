@@ -105,15 +105,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         user.setPassword(hashedPassword);
         user.setAdmin(0);
-        user.setStatus(UserStatusConst.NORMAL);
+        user.setStatus(UserStatusConst.UNACTIVATED);
 
         int insert = userMapper.insert(user);
         if (insert <= 0) {
             throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户注册失败，请联系管理员");
         }
 
-        // 发送注册成功邮件
-        emailService.sendRegisterSuccessEmail(getRegisterSuccessEmailParam(user));
+        // 发送账户激活邮件
+        emailService.sendActivateAccountEmail(getActivateAccountEmailParam(user, getActivateAccountUrl(user)));
         return user.getEmail();
     }
 
@@ -140,6 +140,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
 
         // 状态验证
+        if (sysUser.getStatus() == UserStatusConst.UNACTIVATED.intValue()) {
+            throw new MrecordException(ResCode.USER_NOT_ACTIVATED);
+        }
         if (sysUser.getStatus() != UserStatusConst.NORMAL.intValue()) {
             throw new MrecordException(ResCode.USER_STATUS_ERROR);
         }
@@ -437,6 +440,124 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             log.error("重置密码令牌解析失败", e);
             return null;
         }
+    }
+
+    /**
+     * 激活账户
+     *
+     * @param token 激活令牌
+     */
+    @Override
+    public void activateAccount(String token) {
+        if (StrUtil.isBlankIfStr(token)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "激活令牌不能为空");
+        }
+
+        SysUser sysUser = checkActivateToken(token);
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "激活令牌错误或已过期");
+        }
+
+        if (sysUser.getStatus() != UserStatusConst.UNACTIVATED.intValue()) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "用户状态异常，无需激活");
+        }
+
+        sysUser.setStatus(UserStatusConst.NORMAL);
+        userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(sysUser.getId()));
+    }
+
+    /**
+     * 重新发送激活邮件
+     *
+     * @param email 用户邮箱
+     */
+    @Override
+    public void resendActivateEmail(String email) {
+        if (StrUtil.isBlankIfStr(email)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "邮箱不能为空");
+        }
+        if (!Validator.isEmail(email)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "邮箱格式错误");
+        }
+
+        SysUser sysUser = userMapper.selectOneByQuery(QueryWrapper.create().and(SysUser::getEmail).eq(email));
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户不存在");
+        }
+        if (sysUser.getStatus() != UserStatusConst.UNACTIVATED.intValue()) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "用户状态异常，无需激活");
+        }
+
+        emailService.sendActivateAccountEmail(getActivateAccountEmailParam(sysUser, getActivateAccountUrl(sysUser)));
+    }
+
+    /**
+     * 获取账户激活链接
+     *
+     * @param user 用户
+     * @return 激活链接
+     */
+    private String getActivateAccountUrl(SysUser user) {
+        String userId = user.getId();
+
+        // 过期时间：24小时后
+        long expireTime = System.currentTimeMillis() + 24 * 60 * 60 * 1000;
+        // 防伪造随机串
+        String randomStr = IdUtil.fastSimpleUUID();
+        String plainText = userId + "_" + expireTime + "_" + randomStr;
+
+        // AES加密
+        String token = SecureUtil.aes(mrConf.getActivateTokenSecret().getBytes()).encryptBase64(plainText);
+
+        return sysConfigService.getWebSite() + "activate-account?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 检查账户激活令牌
+     *
+     * @param token 激活令牌
+     * @return 用户对象
+     */
+    private SysUser checkActivateToken(String token) {
+        try {
+            // 解密
+            AES aes = SecureUtil.aes(mrConf.getActivateTokenSecret().getBytes());
+            String plainText = aes.decryptStr(token);
+
+            // 拆分三部分：主键、过期时间、防伪造随机串
+            String[] arr = plainText.split("_");
+            String userId = arr[0];
+            long expireTime = Long.parseLong(arr[1]);
+
+            // 判断是否过期
+            if (System.currentTimeMillis() > expireTime) {
+                throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "激活令牌已过期");
+            }
+
+            // 根据 userId 去查用户
+            return userMapper.selectOneById(userId);
+        } catch (Exception e) {
+            log.error("激活令牌解析失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取账户激活邮件参数
+     *
+     * @param user       用户
+     * @param activateUrl 激活链接
+     * @return 邮件参数
+     */
+    private MailParamsBO getActivateAccountEmailParam(SysUser user, String activateUrl) {
+        MailParamsBO mailParamsBO = new MailParamsBO();
+        mailParamsBO.setTo(user.getEmail());
+        mailParamsBO.setUserName(user.getNickname());
+        mailParamsBO.setUserEmail(user.getEmail());
+        mailParamsBO.setActivateUrl(activateUrl);
+        mailParamsBO.setWebSite(sysConfigService.getWebSite());
+        mailParamsBO.setAdminMail(sysConfigService.getAdminMail());
+        return mailParamsBO;
     }
 
     /**

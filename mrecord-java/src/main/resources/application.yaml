@@ -50,3 +50,5 @@ mr:
   jwtExpire: 604800000
   # 重置密码令牌生成密钥，确定后不要修改，否则会导致15分钟前的找回密码链接失效
   resetPwdTokenSecret:
+  # 账户激活令牌生成密钥，确定后不要修改，否则会导致24小时前的激活链接失效
+  activateTokenSecret:
