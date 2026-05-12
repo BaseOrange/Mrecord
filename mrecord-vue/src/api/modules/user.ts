@@ -35,6 +35,16 @@ export interface UserAuthParams {
     rePasswordToken?: string
 }
 
+/** 修改当前用户信息传参 */
+export interface UpdateMyInfoParams {
+    /** 昵称 */
+    nickname?: string
+    /** 邮件提醒功能是否启用（0-关闭，1-开启） */
+    remindEnabled?: number
+    /** 月度提醒日期（1-31） */
+    remindDay?: number
+}
+
 /** 修改密码传参 */
 export interface ChangePasswordParams {
     /** 旧密码 */
@@ -98,7 +108,7 @@ export function queryMyInfo() {
 }
 
 /** 修改当前用户信息 */
-export function updateMyInfo(data: UserAuthParams) {
+export function updateMyInfo(data: UpdateMyInfoParams) {
     return post<SysUser>('/user/updateMyInfo', data)
 }
 

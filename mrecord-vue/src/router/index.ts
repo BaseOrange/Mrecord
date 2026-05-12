@@ -51,6 +51,12 @@ const router = createRouter({
                     component: () => import('@/views/ChangePassword.vue'),
                     meta: {title: '修改密码'}
                 },
+                {
+                    path: 'profile-edit',
+                    name: 'ProfileEdit',
+                    component: () => import('@/views/ProfileEditPage.vue'),
+                    meta: {title: '个人资料'}
+                },
             ]
         },
         {

@@ -64,9 +64,9 @@ const handleLogout = async () => {
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-divider"></div>
-        <div class="menu-item" style="opacity: 0.4;">
-          <span class="menu-icon">🔔</span>
-          <span class="menu-text">提醒设置</span>
+        <div class="menu-item" @click="router.push('/profile-edit')">
+          <span class="menu-icon">👤</span>
+          <span class="menu-text">个人资料</span>
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-divider"></div>
