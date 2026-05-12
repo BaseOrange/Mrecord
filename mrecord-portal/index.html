@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>月衡 MRecord — 月度快照式个人财务记账系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        :root {
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --bg: #0f1116;
+            --card: #1a1c23;
+            --text: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --border: #2d2f3a;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .logo img {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            }
+        .nav-link {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: var(--primary);
+        }
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        .hero {
+            padding: 90px 0 70px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 46px;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+        .hero h1 span {
+            color: var(--primary);
+        }
+        .hero p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin: 0 auto 40px;
+        }
+
+        /* ✅ 完美遮罩版：只在文字 & 标签内发光，绝不外泄 */
+        .dev-tag {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 14px;
+            background: rgba(249, 115, 22, 0.1);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 30px;
+            color: var(--primary);
+            overflow: hidden; /* 👈 核心：遮罩！流光超出就隐藏 */
+            position: relative;
+        }
+        .text-shine {
+            position: relative;
+            display: inline-block;
+        }
+        .text-shine::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.7), transparent 70%);
+            animation: textShine 2.2s infinite linear;
+            z-index: 1;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+        @keyframes textShine {
+            0% { transform: translateX(-100%) skewX(-20deg); }
+            100% { transform: translateX(100%) skewX(-20deg); }
+        }
+
+        .section {
+            padding: 70px 0;
+        }
+        .section-title {
+            font-size: 30px;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 26px;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+        }
+        .card h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        .card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+        .preview {
+            text-align: center;
+            padding: 60px 0;
+        }
+        .preview img {
+            max-width: 95%;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .cta {
+            background: var(--card);
+            padding: 60px 0;
+            text-align: center;
+            border-radius: 20px;
+            margin: 40px 0;
+        }
+        .cta h2 {
+            margin-bottom: 24px;
+        }
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* 版本日志样式 */
+        .changelog {
+            padding: 60px 0;
+        }
+        .log-item {
+            border-left: 3px solid var(--primary);
+            padding-left: 20px;
+            margin-bottom: 30px;
+        }
+        .log-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .log-version {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .log-content {
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .hidden {
+            display: none;
+        }
+
+        /* 联系方式样式 */
+        .contact {
+            padding: 50px 0;
+            text-align: center;
+        }
+        .contact-grid {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .contact-item {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        .contact-item a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .contact-item a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <link rel="icon" type="image/jpg" href="./logo.jpg">
+</head>
+<body>
+
+<!-- 导航 -->
+<header>
+    <div class="container nav">
+        <a href="#" class="logo" onclick="show('home')">
+            <img src="./logo.jpg" alt="月衡">
+            月衡 MRecord
+        </a>
+        <div class="nav-links">
+            <a href="#" class="nav-link" onclick="show('home')">首页</a>
+            <a href="#" class="nav-link" onclick="show('changelog')">更新日志</a>
+            <a href="https://github.com/BaseOrange/Mrecord" target="_blank" class="nav-link">GitHub</a>
+            <a href="https://github.com/BaseOrange/Mrecord" target="_blank" class="btn">项目主页</a>
+        </div>
+    </div>
+</header>
+
+<!-- 首页内容 -->
+<div id="home">
+    <section class="hero">
+        <div class="container">
+            <h1>月衡 <span>MRecord</span></h1>
+            <p>月度快照式个人财务记账系统，面向个人及小范围多用户，按月记录完整资产与负债，支持统计、同比环比分析、数据导出与统一管理，让财务更清晰、更严谨。</p>
+            
+            <!-- ✅ 最终完美效果 -->
+            <div class="dev-tag">
+                <span class="text-shine">🚧 项目开发中 · 敬请期待</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">核心功能</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>📊 月度快照记账</h3>
+                    <p>每月记录完整资产与负债，形成稳定财务快照，数据更准确、更易追溯。</p>
+                </div>
+                <div class="card">
+                    <h3>📈 同比环比分析</h3>
+                    <p>自动生成月度、年度对比，资产变化一目了然，清晰掌握财务趋势。</p>
+                </div>
+                <div class="card">
+                    <h3>👥 多用户支持</h3>
+                    <p>支持个人与小团队共用，数据隔离，管理员可统一管控系统与用户。</p>
+                </div>
+                <div class="card">
+                    <h3>🔔 便捷提醒</h3>
+                    <p>每月记账提醒、数据核对提醒，避免遗漏，保持财务记录持续完整。</p>
+                </div>
+                <div class="card">
+                    <h3>📤 数据导出</h3>
+                    <p>支持一键导出报表，方便存档、审计或在其他工具中二次分析。</p>
+                </div>
+                <div class="card">
+                    <h3>⚙️ 后台管理</h3>
+                    <p>管理员可统一管理用户、权限、数据，满足小组织安全与管控需求。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="preview">
+        <div class="container">
+            <h2 class="section-title">界面预览</h2>
+            <img src="./xct.png" alt="月衡 MRecord 界面预览">
+        </div>
+    </section>
+
+    <!-- 联系方式 & 问题反馈 -->
+    <section class="contact">
+        <div class="container">
+            <h2 class="section-title">联系与反馈</h2>
+            <div class="contact-grid">
+                <div class="contact-item">
+                   问题反馈：<a href="https://github.com/BaseOrange/Mrecord/issues" target="_blank">GitHub Issues</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container">
+        <div class="cta">
+            <h2>关注项目获取最新进展</h2>
+            <a href="https://github.com/BaseOrange/Mrecord" target="_blank" class="btn">前往 GitHub 关注</a>
+        </div>
+    </section>
+</div>
+
+<!-- 版本更新日志 -->
+<div id="changelog" class="hidden">
+    <div class="container">
+        <div class="section-title">版本更新日志</div>
+        <div class="changelog">
+            <div class="log-item">
+                <div class="log-date">2026-5-12</div>
+                <div class="log-version">v0.9.0</div>
+                <div class="log-content">
+                    • 普通用户服务基本完工，后续开始精修打磨<br>
+                    • 已完成：账户注册及其账户激活、忘记密码、基础记账、数据统计、数据导出、月度提醒<br>
+                    • 后续计划：管理员功能、年度MVP结算画面、AI年度总结、导出记录优化
+                </div>
+            </div>
+            <div class="log-item">
+                <div class="log-date">2026-4-27</div>
+                <div class="log-version">v0.5.0</div>
+                <div class="log-content">
+                    • 后端服务基本完成，前端页面开发过程中修复BUG中<br>
+                    • 前端页面已完成登录、注册、忘记密码、账簿、记账的开发<br>
+                    • 后续计划：定时邮件提醒、年度MVP结算画面、注册激活、AI年度总结
+                </div>
+            </div>
+            <div class="log-item">
+                <div class="log-date">2026-4-3</div>
+                <div class="log-version">v0.1.0</div>
+                <div class="log-content">
+                    • 月衡 MRecord 项目立项<br>
+                    • 核心架构搭建中<br>
+                    • 基础功能开发进行中
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 底部 -->
+<footer>
+    <div class="container">
+        月衡 MRecord © 2026 ｜ 月度快照式个人财务记账系统
+    </div>
+</footer>
+
+<script>
+    function show(page) {
+        document.getElementById('home').classList.add('hidden');
+        document.getElementById('changelog').classList.add('hidden');
+        document.getElementById(page).classList.remove('hidden');
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - 页面不存在 | 月衡 MRecord</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        :root {
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --bg: #0f1116;
+            --card: #1a1c23;
+            --text: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --border: #2d2f3a;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 0 20px;
+        }
+        .wrap {
+            max-width: 600px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .logo img {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+        }
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .title {
+            font-size: 80px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .subtitle {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        .desc {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        footer {
+            margin-top: 40px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="logo">
+            <img src="https://picsum.photos/id/1025/28/28" alt="月衡">
+            <div class="logo-text">月衡 MRecord</div>
+        </div>
+        <div class="title">404</div>
+        <div class="subtitle">页面未找到</div>
+        <p class="desc">你访问的页面不存在或已被移动，请返回首页继续浏览。</p>
+        <a href="index.html" class="btn">返回首页</a>
+        <footer>月衡 MRecord © 2026</footer>
+    </div>
+</body>
+</html>
