@@ -7,7 +7,7 @@ import {useUserStore} from '@/stores/user'
 
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
-    baseURL: '/api/v2',
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v2',
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
@@ -44,6 +44,12 @@ request.interceptors.response.use(
         const res = response.data
         // 业务失败：弹出错误提示并 reject
         if (res.code !== SUCCESS_CODE) {
+            // 特殊处理token过期情况
+            if (res.code === '401' || res.message?.includes('登录') || res.message?.includes('token')) {
+                useUserStore().logout()
+                window.location.href = '/login'
+                return Promise.reject(new Error(res.message || '登录已过期，请重新登录'))
+            }
             Snackbar.error(res.message || '请求失败')
             return Promise.reject(new Error(res.message || '请求失败'))
         }
@@ -60,7 +66,10 @@ request.interceptors.response.use(
                 case 401:
                     message = '登录已过期，请重新登录'
                     useUserStore().logout()
-                    window.location.href = '/login'
+                    // 避免在登录页面重复跳转
+                    if (window.location.pathname !== '/login') {
+                        window.location.href = '/login'
+                    }
                     break
                 case 403:
                     message = '没有权限访问'
@@ -70,6 +79,11 @@ request.interceptors.response.use(
                     break
                 case 500:
                     message = '服务器内部错误'
+                    break
+                case 502:
+                case 503:
+                case 504:
+                    message = '服务暂时不可用，请稍后重试'
                     break
                 default:
                     message = `请求失败 (${status})`

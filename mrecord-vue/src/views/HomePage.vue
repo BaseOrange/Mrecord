@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Snackbar } from '@varlet/ui'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
+import { formatMoney, getChangeColor, getChangePrefix } from '@/utils/format'
 
 const router = useRouter()
 
@@ -67,20 +67,6 @@ const fetchOverview = async () => {
 onMounted(() => {
   fetchOverview()
 })
-
-const formatMoney = (val: number) => {
-  return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-const getChangeColor = (val: number) => {
-  if (val === 0) return '#8e8e93'
-  return val > 0 ? '#34c759' : '#ff3b30'
-}
-
-const getChangePrefix = (val: number) => {
-  if (val === 0) return ''
-  return val > 0 ? '+' : ''
-}
 
 const onBookCardClick = (item: BookStatistics) => {
   router.push({
@@ -199,8 +185,7 @@ const onBookCardClick = (item: BookStatistics) => {
 /* 顶部区域 */
 .page-header {
   background: #fff;
-  padding: 16px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
 }
 
 .page-header h2 {

@@ -15,6 +15,7 @@ declare module 'vue' {
     BookCard: typeof import('./src/components/BookCard.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     IconPicker: typeof import('./src/components/IconPicker.vue')['default']
+    PageHeader: typeof import('./src/components/PageHeader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TrendChart: typeof import('./src/components/TrendChart.vue')['default']
