@@ -86,6 +86,8 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
      */
     @Override
     public FinBook updateFinBook(FinBook finBook) {
+        String userId = UserContext.getUserId();
+        checkUpdateMyFinBook(finBook.getId(), userId);
         finBookMapper.insertOrUpdateSelective(finBook);
         return finBook;
     }

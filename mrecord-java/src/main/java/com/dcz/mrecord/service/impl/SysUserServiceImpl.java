@@ -284,11 +284,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 构建查询参数
         QueryWrapper eq = QueryWrapper.create()
                 .and(SysUser::getIsDeleted).eq(0)
-                .and(SysUser::getStatus).eq(UserStatusConst.NORMAL)
                 .and(SysUser::getNickname).like(params.getNickname())
                 .and(SysUser::getEmail).like(params.getEmail())
-                .and(SysUser::getAdmin).eq(params.getIsAdmin())
-                .and(SysUser::getStatus).eq(params.getStatus());
+                .and(SysUser::getAdmin).eq(params.getIsAdmin());
+        if (params.getStatus() != null) {
+            eq.and(SysUser::getStatus).eq(params.getStatus());
+        }
 
         // 分页查询
         return userMapper.paginate(params.getPageNum(), params.getPageSize(), eq);
@@ -436,6 +437,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
             // 根据 userId 去查用户，允许重置密码
             return userMapper.selectOneById(userId);
+        } catch (MrecordException e) {
+            throw e;
         } catch (Exception e) {
             log.error("重置密码令牌解析失败", e);
             return null;
@@ -484,8 +487,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (sysUser == null) {
             throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "用户不存在");
         }
-        if (sysUser.getStatus() != UserStatusConst.NORMAL.intValue()) {
-            throw new MrecordException(ResCode.USER_STATUS_ERROR.getCode(), "用户状态正常，无需重复激活");
+        if (sysUser.getStatus() == UserStatusConst.NORMAL.intValue()) {
+            throw new MrecordException(ResCode.USER_STATUS_ERROR.getCode(), "用户已激活，无需重复激活");
         }
         if (sysUser.getStatus() != UserStatusConst.UNACTIVATED.intValue()) {
             throw new MrecordException(ResCode.USER_STATUS_ERROR.getCode(), "用户状态异常，请联系管理员");
@@ -539,6 +542,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
             // 根据 userId 去查用户
             return userMapper.selectOneById(userId);
+        } catch (MrecordException e) {
+            throw e;
         } catch (Exception e) {
             log.error("激活令牌解析失败", e);
             return null;

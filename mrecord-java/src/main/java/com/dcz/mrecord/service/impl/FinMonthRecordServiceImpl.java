@@ -26,14 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.mybatisflex.core.query.QueryMethods.max;
-import static com.mybatisflex.core.query.QueryMethods.string;
 
 /**
  * 月度财务汇总服务实现
@@ -287,7 +284,7 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     private FinMonthRecord getLastYearRecord(String bookId, Integer currYear, Integer currMonth) {
         QueryWrapper queryWrapper = QueryWrapper.create();
         queryWrapper.eq(FinMonthRecord::getBookId, bookId);
-        queryWrapper.eq(FinMonthRecord::getYear, currYear);
+        queryWrapper.eq(FinMonthRecord::getYear, currYear - 1);
         queryWrapper.eq(FinMonthRecord::getMonth, currMonth);
         FinMonthRecord finMonthRecord = finMonthRecordMapper.selectOneByQuery(queryWrapper);
         if (finMonthRecord == null) {
@@ -389,12 +386,11 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
         Map<String, Integer> tempTypeMap = finTemplateItems.stream().collect(Collectors.toMap(
                 FinTemplateItem::getId,
                 FinTemplateItem::getItemType,
-                (existing, replacement) -> replacement,
-                HashMap::new
+                (existing, replacement) -> replacement
         ));
 
-        BigDecimal totalAsset = new BigDecimal(0);
-        BigDecimal totalLiability = new BigDecimal(0);
+        BigDecimal totalAsset = BigDecimal.ZERO;
+        BigDecimal totalLiability = BigDecimal.ZERO;
 
         List<FinMonthItemRecord> itemList = monthItemDTO.getItemList();
         for (FinMonthItemRecord item : itemList) {
