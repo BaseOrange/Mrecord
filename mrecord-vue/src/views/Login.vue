@@ -137,10 +137,9 @@ const showAgreement = ref(false)
         </p>
       </div>
     </div>
-  </div>
-
     <!-- 协议弹窗 -->
     <AgreementPopup v-model:show="showAgreement" />
+  </div>
 </template>
 
 <style scoped>
