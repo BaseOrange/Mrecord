@@ -35,6 +35,7 @@ function changePage(page: number) {
   loadLogs()
 }
 
+// ==================== 操作类型映射 ====================
 const operateTypeMap: Record<string, { label: string; color: string }> = {
   LOGIN: { label: '登录', color: '#1890ff' },
   LOGOUT: { label: '登出', color: '#999' },
@@ -46,6 +47,15 @@ const operateTypeMap: Record<string, { label: string; color: string }> = {
 
 function getTypeInfo(type?: string) {
   return operateTypeMap[type || ''] || { label: type || '未知', color: '#999' }
+}
+
+// ==================== 详情弹窗 ====================
+const showDetail = ref(false)
+const detailLog = ref<OperateLogInfo | null>(null)
+
+function openDetail(log: OperateLogInfo) {
+  detailLog.value = log
+  showDetail.value = true
 }
 
 onMounted(() => {
@@ -80,18 +90,17 @@ onMounted(() => {
         暂无日志记录
       </div>
       <div v-else>
-        <div v-for="log in pageResult.records" :key="log.id" class="log-card">
-          <div class="log-header">
+        <div v-for="log in pageResult.records" :key="log.id" class="log-card" @click="openDetail(log)">
+          <div class="log-main">
+            <div class="log-user">
+              <span class="user-icon">👤</span>
+              <span class="user-id">用户 {{ log.userId || '-' }}</span>
+            </div>
             <span class="log-type" :style="{ color: getTypeInfo(log.operateType).color, borderColor: getTypeInfo(log.operateType).color }">
               {{ getTypeInfo(log.operateType).label }}
             </span>
-            <span class="log-time">{{ log.createTime || '-' }}</span>
           </div>
-          <div class="log-content">{{ log.content || '-' }}</div>
-          <div class="log-footer">
-            <span v-if="log.ip" class="log-ip">IP: {{ log.ip }}</span>
-            <span v-if="log.userId" class="log-user">用户ID: {{ log.userId }}</span>
-          </div>
+          <span class="log-arrow">›</span>
         </div>
       </div>
     </div>
@@ -102,6 +111,47 @@ onMounted(() => {
       <span class="page-info">{{ pageParams.pageNum }} / {{ pageResult.totalPage }}</span>
       <button class="page-btn" :disabled="pageParams.pageNum >= pageResult.totalPage" @click="changePage(pageParams.pageNum + 1)">下一页</button>
     </div>
+
+    <!-- 详情弹窗 -->
+    <var-popup v-model:show="showDetail" position="bottom" :overlay-style="{ background: 'rgba(0,0,0,0.5)' }" round>
+      <div class="detail-popup">
+        <div class="detail-header">
+          <span class="detail-title">日志详情</span>
+          <button class="detail-close" @click="showDetail = false">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div class="detail-body" v-if="detailLog">
+          <div class="detail-row">
+            <span class="detail-label">操作类型</span>
+            <span class="detail-value">
+              <span class="log-type" :style="{ color: getTypeInfo(detailLog.operateType).color, borderColor: getTypeInfo(detailLog.operateType).color }">
+                {{ getTypeInfo(detailLog.operateType).label }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">用户ID</span>
+            <span class="detail-value">{{ detailLog.userId || '-' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">操作内容</span>
+            <span class="detail-value detail-content">{{ detailLog.content || '-' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">IP 地址</span>
+            <span class="detail-value">{{ detailLog.ip || '-' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">操作时间</span>
+            <span class="detail-value">{{ detailLog.createTime || '-' }}</span>
+          </div>
+        </div>
+      </div>
+    </var-popup>
   </div>
 </template>
 
@@ -174,13 +224,41 @@ onMounted(() => {
   border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-.log-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.log-card:active {
+  background: #fafafa;
+}
+.log-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.log-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.user-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.user-id {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .log-type {
   font-size: 12px;
@@ -188,22 +266,14 @@ onMounted(() => {
   padding: 2px 8px;
   border-radius: 6px;
   border: 1px solid;
+  flex-shrink: 0;
 }
-.log-time {
-  font-size: 11px;
-  color: #bbb;
-}
-.log-content {
-  font-size: 14px;
-  color: #333;
-  line-height: 1.6;
-  margin-bottom: 8px;
-}
-.log-footer {
-  display: flex;
-  gap: 12px;
-  font-size: 11px;
-  color: #bbb;
+.log-arrow {
+  font-size: 20px;
+  color: #ccc;
+  font-weight: 300;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 /* 分页 */
@@ -236,5 +306,78 @@ onMounted(() => {
 .page-info {
   font-size: 13px;
   color: #999;
+}
+
+/* 详情弹窗 */
+.detail-popup {
+  max-height: 75vh;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+}
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f0e8e0;
+  flex-shrink: 0;
+}
+.detail-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+  letter-spacing: 1px;
+}
+.detail-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f5f0ec;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+.detail-close:active {
+  background: #e8ddd4;
+  color: #FF6500;
+}
+.detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 32px;
+}
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.detail-row:last-child {
+  border-bottom: none;
+}
+.detail-label {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #999;
+  padding-top: 1px;
+}
+.detail-value {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
+  min-width: 0;
+  word-break: break-all;
+}
+.detail-content {
+  white-space: pre-wrap;
 }
 </style>
