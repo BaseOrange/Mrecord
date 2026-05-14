@@ -39,6 +39,7 @@ public class WebConfig implements WebMvcConfigurer {
 
         // 操作日志拦截器
         registry.addInterceptor(logInterceptor)
-                .addPathPatterns("/**");
+                .addPathPatterns("/**")
+                .excludePathPatterns("/operateLog/list");
     }
 }
