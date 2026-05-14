@@ -265,9 +265,9 @@ onMounted(() => {
 
     <!-- 分页 -->
     <div v-if="pageResult.totalPage > 1" class="pagination">
-      <button class="page-btn" :disabled="searchParams.pageNum <= 1" @click="changePage(searchParams.pageNum - 1)">上一页</button>
-      <span class="page-info">{{ searchParams.pageNum }} / {{ pageResult.totalPage }}</span>
-      <button class="page-btn" :disabled="searchParams.pageNum >= pageResult.totalPage" @click="changePage(searchParams.pageNum + 1)">下一页</button>
+      <button class="page-btn" :disabled="(searchParams.pageNum ?? 1) <= 1" @click="changePage((searchParams.pageNum ?? 1) - 1)">上一页</button>
+      <span class="page-info">{{ searchParams.pageNum ?? 1 }} / {{ pageResult.totalPage }}</span>
+      <button class="page-btn" :disabled="(searchParams.pageNum ?? 1) >= pageResult.totalPage" @click="changePage((searchParams.pageNum ?? 1) + 1)">下一页</button>
     </div>
 
     <!-- 操作菜单 ActionSheet -->
