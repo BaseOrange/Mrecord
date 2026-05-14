@@ -50,6 +50,18 @@ const handleLogout = async () => {
         </div>
       </div>
 
+      <!-- 管理员入口 -->
+      <div v-if="userStore.userInfo?.admin === 1" class="menu-card admin-card" @click="router.push('/admin')">
+        <div class="menu-item">
+          <span class="menu-icon">🛡️</span>
+          <span class="menu-text">
+            <span class="admin-label">管理中心</span>
+            <span class="admin-badge">管理员</span>
+          </span>
+          <span class="menu-arrow">›</span>
+        </div>
+      </div>
+
       <!-- 功能列表 -->
       <div class="menu-card">
         <div class="menu-item" @click="showAgreement = true">
@@ -181,6 +193,35 @@ const handleLogout = async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 管理员入口卡片 */
+.admin-card {
+  background: linear-gradient(135deg, #FFF8F0, #FFF0E0);
+  border: 1px solid rgba(255, 101, 0, 0.12);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.admin-card:active {
+  background: linear-gradient(135deg, #FFF0E0, #FFE8D0);
+  transform: scale(0.98);
+}
+.admin-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #FF6500;
+}
+.admin-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #FF8C42, #FF6500);
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 6px;
+  vertical-align: middle;
+  line-height: 1.5;
 }
 
 /* 功能菜单卡片 */

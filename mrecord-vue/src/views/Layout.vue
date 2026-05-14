@@ -14,6 +14,8 @@ const tabs = [
 
 const activeTab = computed(() => {
   const path = route.path
+  // 管理员页面属于"我的"入口
+  if (path.startsWith('/admin')) return 'profile'
   const tab = tabs.find(t => path.startsWith(t.path))
   return tab ? tab.key : 'home'
 })

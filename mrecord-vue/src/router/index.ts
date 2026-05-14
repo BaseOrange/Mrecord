@@ -54,6 +54,30 @@ const router = createRouter({
                     component: () => import('@/views/ProfileEditPage.vue'),
                     meta: {title: '个人资料'}
                 },
+                {
+                    path: 'admin',
+                    name: 'Admin',
+                    component: () => import('@/views/AdminPage.vue'),
+                    meta: {title: '管理中心', requiresAdmin: true}
+                },
+                {
+                    path: 'admin/users',
+                    name: 'AdminUsers',
+                    component: () => import('@/views/AdminUsersPage.vue'),
+                    meta: {title: '用户管理', requiresAdmin: true}
+                },
+                {
+                    path: 'admin/logs',
+                    name: 'AdminLogs',
+                    component: () => import('@/views/AdminLogsPage.vue'),
+                    meta: {title: '操作日志', requiresAdmin: true}
+                },
+                {
+                    path: 'admin/config',
+                    name: 'AdminConfig',
+                    component: () => import('@/views/AdminConfigPage.vue'),
+                    meta: {title: '系统配置', requiresAdmin: true}
+                },
             ]
         },
         {
@@ -132,6 +156,9 @@ router.beforeEach((to, _from, next) => {
     } else if (!userStore.token && !isPublic) {
         // 未登录访问需认证页面 → 跳转登录
         next('/login')
+    } else if (to.meta.requiresAdmin && userStore.userInfo?.admin !== 1) {
+        // 非管理员访问管理员页面 → 跳转首页
+        next('/home')
     } else {
         next()
     }

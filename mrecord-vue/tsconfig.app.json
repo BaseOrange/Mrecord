@@ -1,6 +1,7 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
+    "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": [
       "vite/client"
@@ -17,7 +18,8 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": false
   },
   "include": [
     "src/**/*.ts",
