@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.io.BufferedReader;
+
 
 /**
  * 日志拦截器
@@ -48,19 +48,9 @@ public class LogInterceptor implements HandlerInterceptor {
         reqLog.setIp(getClientIp(request));
         reqLog.setOperateType(request.getRequestURI());
 
-        try {
-            BufferedReader reader = request.getReader();
-            StringBuilder builder = new StringBuilder();
-            String line = reader.readLine();
-            while (line != null) {
-                builder.append(line);
-                line = reader.readLine();
-            }
-            reader.close();
-            String reqBody = builder.toString();
-            reqLog.setContent(reqBody);
-        } catch (Exception e) {
-            log.error("日志记录异常", e);
+        // 从 CachedBodyHttpServletRequest 读取已缓存的请求体，避免消耗原始流
+        if (request instanceof CachedBodyHttpServletRequest cachedRequest) {
+            reqLog.setContent(cachedRequest.getCachedBody());
         }
 
         logService.saveLog(reqLog);
