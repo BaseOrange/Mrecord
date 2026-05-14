@@ -243,8 +243,8 @@ CREATE TABLE `sys_user` (
 CREATE TABLE `sys_user_operate_log` (
   `MR_ID` varchar(32) NOT NULL COMMENT '日志ID，32位UUID字符串',
   `MR_USER_ID` varchar(32) NOT NULL COMMENT '操作用户ID，关联SYS_USER.MR_ID',
-  `MR_OPERATE_TYPE` varchar(32) NOT NULL COMMENT '操作类型：LOGIN-登录，LOGOUT-登出，UPDATE-数据修改，EXPORT-导出，CANCEL-注销/撤销注销，RESET_PWD-密码重置',
-  `MR_CONTENT` varchar(255) DEFAULT NULL COMMENT '操作内容详细描述',
+  `MR_OPERATE_TYPE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作类型：LOGIN-登录，LOGOUT-登出，UPDATE-数据修改，EXPORT-导出，CANCEL-注销/撤销注销，RESET_PWD-密码重置',
+  `MR_CONTENT` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '操作内容详细描述',
   `MR_IP` varchar(32) DEFAULT NULL COMMENT '操作IP地址',
   `MR_CREATE_BY` varchar(32) NOT NULL COMMENT '创建人ID，即操作用户MR_ID',
   `MR_CREATE_TIME` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
