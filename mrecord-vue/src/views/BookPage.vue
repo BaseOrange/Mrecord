@@ -12,6 +12,7 @@ const router = useRouter()
 const PAGE_SIZE = 10
 const books = ref<BookInfo[]>([])
 const loading = ref(false)
+const refreshing = ref(false)
 const pageNum = ref(1)
 const hasMore = ref(true)
 
@@ -44,6 +45,45 @@ const fetchBooks = async (reset = false) => {
   } finally {
     loading.value = false
   }
+}
+
+// 下拉刷新
+const pullDistance = ref(0)
+const pulling = ref(false)
+let touchStartY = 0
+const PULL_THRESHOLD = 70
+
+const onTouchStart = (e: TouchEvent) => {
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  if (scrollTop > 0 || loading.value) return
+  touchStartY = e.touches[0]?.clientY || 0
+  pulling.value = true
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  if (!pulling.value || refreshing.value) return
+  const currentY = e.touches[0]?.clientY || 0
+  const delta = currentY - touchStartY
+
+  if (delta <= 0) {
+    pullDistance.value = 0
+    return
+  }
+
+  pullDistance.value = Math.min(delta * 0.5, 100)
+}
+
+const onTouchEnd = async () => {
+  if (!pulling.value) return
+
+  if (pullDistance.value >= PULL_THRESHOLD && !refreshing.value) {
+    refreshing.value = true
+    await fetchBooks(true)
+    refreshing.value = false
+  }
+
+  pullDistance.value = 0
+  pulling.value = false
 }
 
 // 滚动触底检测
@@ -185,7 +225,12 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <div class="book-page">
+  <div
+    class="book-page"
+    @touchstart.passive="onTouchStart"
+    @touchmove="onTouchMove"
+    @touchend="onTouchEnd"
+  >
     <!-- 顶部标题 -->
     <div class="page-header">
       <h2>账簿</h2>
@@ -193,6 +238,13 @@ const handleDelete = async () => {
     </div>
 
     <div class="page-body">
+      <!-- 下拉刷新提示 -->
+      <div class="pull-refresh-indicator" :style="{ height: `${pullDistance}px` }">
+        <span class="pull-refresh-text">
+          {{ refreshing ? '刷新中...' : pullDistance >= 70 ? '松开立即刷新' : '下拉刷新' }}
+        </span>
+      </div>
+
       <!-- 首次加载 thinking 动画 -->
       <div v-if="loading && books.length === 0" class="thinking-state">
         <div class="thinking-face">🤔</div>
@@ -349,6 +401,19 @@ const handleDelete = async () => {
 /* 页面主体 */
 .page-body {
   padding: 16px;
+}
+
+/* 下拉刷新 */
+.pull-refresh-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: height 0.2s ease;
+}
+.pull-refresh-text {
+  font-size: 12px;
+  color: #999;
 }
 
 /* thinking 加载状态 */

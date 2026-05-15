@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listOperateLogs, type OperateLogInfo } from '@/api'
 import type { PageResult, PageParams } from '@/api/types'
@@ -11,6 +11,9 @@ const pageParams = reactive<PageParams>({
   pageSize: 15,
 })
 const loading = ref(false)
+const refreshing = ref(false)
+const hasMore = ref(true)
+const initialLoading = ref(true)
 const pageResult = ref<PageResult<OperateLogInfo>>({
   records: [],
   pageNumber: 1,
@@ -19,20 +22,92 @@ const pageResult = ref<PageResult<OperateLogInfo>>({
   totalRow: 0,
 })
 
-async function loadLogs() {
+async function loadLogs(reset = false) {
+  if (loading.value) return
+  if (!reset && !hasMore.value) return
+
+  if (reset) {
+    pageParams.pageNum = 1
+    hasMore.value = true
+  }
+
   loading.value = true
   try {
-    pageResult.value = await listOperateLogs(pageParams)
+    const res = await listOperateLogs(pageParams)
+    const records = res.records || []
+
+    if (reset) {
+      pageResult.value = {
+        ...res,
+        records,
+      }
+    } else {
+      pageResult.value = {
+        ...res,
+        records: [...(pageResult.value.records || []), ...records],
+      }
+    }
+
+    if (records.length < pageParams.pageSize || pageParams.pageNum >= res.totalPage) {
+      hasMore.value = false
+    } else {
+      pageParams.pageNum += 1
+    }
   } catch {
     // 拦截器处理
   } finally {
     loading.value = false
+    if (reset) {
+      initialLoading.value = false
+    }
   }
 }
 
-function changePage(page: number) {
-  pageParams.pageNum = page
-  loadLogs()
+const pullDistance = ref(0)
+const pulling = ref(false)
+let touchStartY = 0
+const PULL_THRESHOLD = 70
+
+const onTouchStart = (e: TouchEvent) => {
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  if (scrollTop > 0 || loading.value) return
+  touchStartY = e.touches[0]?.clientY || 0
+  pulling.value = true
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  if (!pulling.value || refreshing.value) return
+  const currentY = e.touches[0]?.clientY || 0
+  const delta = currentY - touchStartY
+  if (delta <= 0) {
+    pullDistance.value = 0
+    return
+  }
+
+  pullDistance.value = Math.min(delta * 0.5, 100)
+}
+
+const onTouchEnd = async () => {
+  if (!pulling.value) return
+
+  if (pullDistance.value >= PULL_THRESHOLD && !refreshing.value) {
+    refreshing.value = true
+    await loadLogs(true)
+    refreshing.value = false
+  }
+
+  pullDistance.value = 0
+  pulling.value = false
+}
+
+const onScroll = () => {
+  if (!hasMore.value || loading.value) return
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const scrollHeight = document.documentElement.scrollHeight
+  const clientHeight = document.documentElement.clientHeight
+  if (scrollTop + clientHeight >= scrollHeight - 100) {
+    loadLogs()
+  }
 }
 
 // ==================== 操作类型映射 ====================
@@ -59,12 +134,22 @@ function openDetail(log: OperateLogInfo) {
 }
 
 onMounted(() => {
-  loadLogs()
+  loadLogs(true)
+  window.addEventListener('scroll', onScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
 <template>
-  <div class="admin-logs-page">
+  <div
+    class="admin-logs-page"
+    @touchstart.passive="onTouchStart"
+    @touchmove="onTouchMove"
+    @touchend="onTouchEnd"
+  >
     <!-- 顶部导航 -->
     <div class="page-header">
       <button class="back-btn" @click="router.push('/admin')">
@@ -81,9 +166,16 @@ onMounted(() => {
       共 <strong>{{ pageResult.totalRow }}</strong> 条记录
     </div>
 
+    <!-- 下拉刷新提示 -->
+    <div class="pull-refresh-indicator" :style="{ height: `${pullDistance}px` }">
+      <span class="pull-refresh-text">
+        {{ refreshing ? '刷新中...' : pullDistance >= 70 ? '松开立即刷新' : '下拉刷新' }}
+      </span>
+    </div>
+
     <!-- 日志列表 -->
     <div class="log-list">
-      <div v-if="loading" class="loading-state">
+      <div v-if="initialLoading" class="loading-state">
         <var-loading type="circle" />
       </div>
       <div v-else-if="pageResult.records.length === 0" class="empty-state">
@@ -102,15 +194,14 @@ onMounted(() => {
           </div>
           <span class="log-arrow">›</span>
         </div>
+
+        <div class="load-more">
+          <span v-if="loading" class="load-more-text">加载中...</span>
+          <span v-else-if="!hasMore" class="load-more-text">没有更多了</span>
+        </div>
       </div>
     </div>
 
-    <!-- 分页 -->
-    <div v-if="pageResult.totalPage > 1" class="pagination">
-      <button class="page-btn" :disabled="pageParams.pageNum <= 1" @click="changePage(pageParams.pageNum - 1)">上一页</button>
-      <span class="page-info">{{ pageParams.pageNum }} / {{ pageResult.totalPage }}</span>
-      <button class="page-btn" :disabled="pageParams.pageNum >= pageResult.totalPage" @click="changePage(pageParams.pageNum + 1)">下一页</button>
-    </div>
 
     <!-- 详情弹窗 -->
     <var-popup v-model:show="showDetail" position="bottom" :overlay-style="{ background: 'rgba(0,0,0,0.5)' }" round>
@@ -208,6 +299,19 @@ onMounted(() => {
   color: #FF6500;
 }
 
+/* 下拉刷新 */
+.pull-refresh-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: height 0.2s ease;
+}
+.pull-refresh-text {
+  font-size: 12px;
+  color: #999;
+}
+
 /* 日志列表 */
 .log-list {
   padding: 0 16px;
@@ -276,36 +380,14 @@ onMounted(() => {
   margin-left: 8px;
 }
 
-/* 分页 */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 16px;
+/* 底部加载状态 */
+.load-more {
+  text-align: center;
+  padding: 8px 0 18px;
 }
-.page-btn {
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  background: #fff;
-  color: #666;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.page-btn:active:not(:disabled) {
-  border-color: #FF6500;
-  color: #FF6500;
-}
-.page-info {
-  font-size: 13px;
-  color: #999;
+.load-more-text {
+  font-size: 12px;
+  color: #aeaeb2;
 }
 
 /* 详情弹窗 */
