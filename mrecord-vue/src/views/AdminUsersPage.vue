@@ -185,7 +185,7 @@ onMounted(() => {
   <div class="admin-users-page">
     <!-- 顶部导航 -->
     <div class="page-header">
-      <button class="back-btn" @click="router.push('/admin')">
+      <button class="back-btn" @click="router.back()">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M15 18l-6-6 6-6" />
         </svg>
