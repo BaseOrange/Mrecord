@@ -29,6 +29,12 @@ public class BaseEntity {
     private String createBy;
 
     /**
+     * 创建人名称
+     */
+    @Column(ignore = true)
+    private String createByName;
+
+    /**
      * 创建时间
      */
     @Column(value = "MR_CREATE_TIME", onInsertValue = "now()")
@@ -39,6 +45,12 @@ public class BaseEntity {
      */
     @Column(value = "MR_UPDATE_BY")
     private String updateBy;
+
+    /**
+     * 更新人名称
+     */
+    @Column(ignore = true)
+    private String updateByName;
 
     /**
      * 更新时间

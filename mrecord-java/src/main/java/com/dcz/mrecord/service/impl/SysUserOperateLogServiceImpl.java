@@ -42,6 +42,18 @@ public class SysUserOperateLogServiceImpl extends ServiceImpl<SysUserOperateLogM
      */
     @Override
     public Page<SysUserOperateLog> queryList(PageInfoDTO pageInfoDTO) {
-        return sysUserOperateLogMapper.paginate(pageInfoDTO.getPageNum(), pageInfoDTO.getPageSize(), QueryWrapper.create());
+        // 构建联查QueryWrapper，LEFT JOIN用户表获取创建人和更新人的用户名
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .select(
+                        "t1.*",
+                        "create_user.MR_NICKNAME as createByName",
+                        "update_user.MR_NICKNAME as updateByName"
+                )
+                .from("SYS_USER_OPERATE_LOG").as("t1")
+                .leftJoin("SYS_USER").as("create_user").on("t1.MR_CREATE_BY = create_user.MR_ID")
+                .leftJoin("SYS_USER").as("update_user").on("t1.MR_UPDATE_BY = update_user.MR_ID");
+
+        // 执行分页查询
+        return sysUserOperateLogMapper.paginate(pageInfoDTO.getPageNum(), pageInfoDTO.getPageSize(), queryWrapper);
     }
 }
