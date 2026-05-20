@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listOperateLogs, type OperateLogInfo } from '@/api'
 import type { PageResult, PageParams } from '@/api/types'
+import { formatDate } from '@/utils/format'
 
 const router = useRouter()
 
@@ -186,11 +187,18 @@ onUnmounted(() => {
           <div class="log-main">
             <div class="log-user">
               <span class="user-icon">👤</span>
-              <span class="user-id">用户 {{ log.userId || '-' }}</span>
+              <span class="user-id">用户 {{ log.createByName || log.userId || '-' }}</span>
             </div>
-            <span class="log-type" :style="{ color: getTypeInfo(log.operateType).color, borderColor: getTypeInfo(log.operateType).color }">
-              {{ getTypeInfo(log.operateType).label }}
-            </span>
+            <div class="log-type-row">
+              <span class="row-icon">📋</span>
+              <span class="log-type" :style="{ color: getTypeInfo(log.operateType).color, borderColor: getTypeInfo(log.operateType).color }">
+                {{ getTypeInfo(log.operateType).label }}
+              </span>
+            </div>
+            <div class="log-time-row">
+              <span class="row-icon">🕐</span>
+              <span class="log-time">{{ log.createTime ? formatDate(log.createTime, 'YYYY-MM-DD HH:mm') : '-' }}</span>
+            </div>
           </div>
           <span class="log-arrow">›</span>
         </div>
@@ -226,7 +234,7 @@ onUnmounted(() => {
           </div>
           <div class="detail-row">
             <span class="detail-label">用户ID</span>
-            <span class="detail-value">{{ detailLog.userId || '-' }}</span>
+            <span class="detail-value">{{ detailLog.createByName || detailLog.userId || '-' }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">操作内容</span>
@@ -341,8 +349,8 @@ onUnmounted(() => {
 .log-main {
   flex: 1;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
 }
 .log-user {
@@ -350,6 +358,25 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+.log-type-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.log-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.row-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.log-time {
+  font-size: 13px;
+  color: #999;
 }
 .user-icon {
   font-size: 16px;

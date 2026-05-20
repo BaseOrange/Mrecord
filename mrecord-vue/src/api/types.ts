@@ -6,10 +6,14 @@ export interface BaseEntity {
     id?: string
     /** 创建人 */
     createBy?: string
+    /** 创建人名称 */
+    createByName?: string
     /** 创建时间 */
     createTime?: string
     /** 更新人 */
     updateBy?: string
+    /** 更新人名称 */
+    updateByName?: string
     /** 更新时间 */
     updateTime?: string
 }
