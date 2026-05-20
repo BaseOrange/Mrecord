@@ -51,7 +51,8 @@ public class SysUserOperateLogServiceImpl extends ServiceImpl<SysUserOperateLogM
                 )
                 .from("SYS_USER_OPERATE_LOG").as("t1")
                 .leftJoin("SYS_USER").as("create_user").on("t1.MR_CREATE_BY = create_user.MR_ID")
-                .leftJoin("SYS_USER").as("update_user").on("t1.MR_UPDATE_BY = update_user.MR_ID");
+                .leftJoin("SYS_USER").as("update_user").on("t1.MR_UPDATE_BY = update_user.MR_ID")
+                .orderBy("t1.MR_CREATE_TIME desc");
 
         // 执行分页查询
         return sysUserOperateLogMapper.paginate(pageInfoDTO.getPageNum(), pageInfoDTO.getPageSize(), queryWrapper);
