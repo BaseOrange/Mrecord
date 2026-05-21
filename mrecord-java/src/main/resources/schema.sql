@@ -181,3 +181,23 @@ INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMA
 VALUES ('mr-conf-reset-pwd', 'mr.resetPwdTokenSecret', '', '重置密码令牌生成密钥，确定后不要修改，否则会导致找回密码链接失效', 0);
 INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
 VALUES ('mr-conf-activate', 'mr.activateTokenSecret', '', '账户激活令牌生成密钥，确定后不要修改，否则会导致激活链接失效', 0);
+
+-- 初始化系统配置项
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-admin-mail', 'adminMail', '', '管理员邮箱【示例：admin@example.com】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-mail-from', 'mail.from', '', '发送邮箱地址【示例：admin@example.com】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-mail-hostname', 'mail.hostName', '', 'SMTP服务器【示例：admin@example.com】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-mail-password', 'mail.password', '', '邮箱授权码', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-mail-smtp-port', 'mail.smtpPort', '', 'SMTP服务器端口【示例：587】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-mail-ssl', 'mail.ssl', '1', '是否开启SSL【示例：1或者0】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-mail-ssl-smtp-port', 'mail.sslSmtpPort', '', 'SSL-SMTP服务器端口【示例：465】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-mail-username', 'mail.userName', '', '邮箱用户名【示例：admin@example.com】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-website', 'webSite', '', '站点地址【示例：https://mr.example.com/】', 0);
