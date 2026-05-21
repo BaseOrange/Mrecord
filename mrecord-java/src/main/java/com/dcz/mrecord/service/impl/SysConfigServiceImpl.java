@@ -2,7 +2,9 @@ package com.dcz.mrecord.service.impl;
 
 import com.dcz.mrecord.bo.EmailConfigBo;
 import com.dcz.mrecord.entity.SysConfig;
+import com.dcz.mrecord.entity.SysUser;
 import com.dcz.mrecord.mapper.SysConfigMapper;
+import com.dcz.mrecord.mapper.SysUserMapper;
 import com.dcz.mrecord.service.SysConfigService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -40,6 +42,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
     @Resource
     private SysConfigMapper sysConfigMapper;
+
+    @Resource
+    private SysUserMapper sysUserMapper;
 
     /**
      * 刷新缓存
@@ -178,5 +183,34 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         ADMIN_MAIL = sysConfigs.get(0).getValue();
         return ADMIN_MAIL;
+    }
+
+    /**
+     * 判断系统是否已完成初始化
+     * 以实际管理员账户存在为准，不信任SYS_CONFIG中的标记，防止篡改
+     *
+     * @return 是否已初始化
+     */
+    @Override
+    public boolean isInitialized() {
+        QueryWrapper userQuery = new QueryWrapper();
+        userQuery.eq(SysUser::getAdmin, 1);
+        long adminCount = sysUserMapper.selectCountByQuery(userQuery);
+        boolean initialized = adminCount > 0;
+
+        // 将实际结果同步到SYS_CONFIG标记
+        QueryWrapper configQuery = new QueryWrapper();
+        configQuery.eq(SysConfig::getKey, "sys.initialized");
+        List<SysConfig> configs = sysConfigMapper.selectListByQuery(configQuery);
+        if (configs != null && !configs.isEmpty()) {
+            SysConfig config = configs.get(0);
+            String expected = initialized ? "1" : "0";
+            if (!expected.equals(config.getValue())) {
+                config.setValue(expected);
+                sysConfigMapper.update(config);
+            }
+        }
+
+        return initialized;
     }
 }

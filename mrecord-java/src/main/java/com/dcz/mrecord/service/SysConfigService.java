@@ -36,4 +36,11 @@ public interface SysConfigService extends IService<SysConfig> {
      * @return 管理员邮箱
      */
     String getAdminMail();
+
+    /**
+     * 判断系统是否已完成初始化（存在管理员账户）
+     *
+     * @return 是否已初始化
+     */
+    boolean isInitialized();
 }

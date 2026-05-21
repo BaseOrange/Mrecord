@@ -29,4 +29,10 @@ public class SysConfigController {
         sysConfigService.refreshCache();
         return Result.success();
     }
+
+    @PostMapping("/initialized")
+    public Result<Boolean> initialized() {
+        log.info("获取系统初始化状态[/config/initialized]请求");
+        return Result.success(sysConfigService.isInitialized());
+    }
 }

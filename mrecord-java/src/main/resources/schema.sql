@@ -201,3 +201,5 @@ INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMA
 VALUES ('mr-conf-mail-username', 'mail.userName', '', '邮箱用户名【示例：admin@example.com】', 0);
 INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
 VALUES ('mr-conf-website', 'webSite', '', '站点地址【示例：https://mr.example.com/】', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-initialized', 'sys.initialized', '0', '系统是否已完成初始化（0-未初始化，1-已初始化）', 0);
