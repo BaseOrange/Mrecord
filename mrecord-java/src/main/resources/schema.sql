@@ -171,3 +171,13 @@ CREATE TABLE IF NOT EXISTS SYS_BACKUP_TEMPLATE_ITEM (
     MR_UPDATE_TIME TEXT,
     MR_IS_DELETED  INTEGER DEFAULT 0
 );
+
+-- 初始化安全配置项（仅首次插入，已存在则跳过）
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-jwt-secret', 'mr.jwtSecret', '', 'JWT生成密钥，确定后不要修改，否则会导致所有登录失败', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-jwt-expire', 'mr.jwtExpire', '604800000', 'JWT过期时间，默认7天(毫秒)', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-reset-pwd', 'mr.resetPwdTokenSecret', '', '重置密码令牌生成密钥，确定后不要修改，否则会导致找回密码链接失效', 0);
+INSERT OR IGNORE INTO SYS_CONFIG (MR_ID, MR_CONFIG_KEY, MR_CONFIG_VALUE, MR_REMARK, MR_IS_DELETED)
+VALUES ('mr-conf-activate', 'mr.activateTokenSecret', '', '账户激活令牌生成密钥，确定后不要修改，否则会导致激活链接失效', 0);
