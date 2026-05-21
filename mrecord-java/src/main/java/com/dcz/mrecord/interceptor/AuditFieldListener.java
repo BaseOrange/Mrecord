@@ -7,6 +7,8 @@ import com.mybatisflex.annotation.UpdateListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
+
 /**
  * 审计字段监听器
  *
@@ -29,6 +31,9 @@ public class AuditFieldListener implements InsertListener, UpdateListener {
             String operator = getIdOrIp();
             base.setCreateBy(operator);
             base.setUpdateBy(operator);
+            Date now = new Date();
+            base.setCreateTime(now);
+            base.setUpdateTime(now);
         }
     }
 
@@ -42,6 +47,7 @@ public class AuditFieldListener implements InsertListener, UpdateListener {
         if (entity instanceof BaseEntity) {
             BaseEntity base = (BaseEntity) entity;
             base.setUpdateBy(getIdOrIp());
+            base.setUpdateTime(new Date());
         }
     }
 
@@ -51,18 +57,12 @@ public class AuditFieldListener implements InsertListener, UpdateListener {
      * @return 操作人标识
      */
     private String getIdOrIp() {
-        String res = "anonymous";
-        try {
-            res = UserContext.getUserId();
-        } catch (Exception e) {
-            log.warn("获取当前用户ID失败", e);
-            try {
-                res = UserContext.getUserIp();
-            } catch (Exception e1) {
-                log.warn("获取当前用户IP失败", e1);
-            }
+        String userId = UserContext.getUserId();
+        if (userId != null && !userId.isBlank()) {
+            return userId;
         }
-
-        return res;
+        String userIp = UserContext.getUserIp();
+        log.info("未获取到用户ID，记录操作IP: {}", userIp);
+        return userIp;
     }
 }

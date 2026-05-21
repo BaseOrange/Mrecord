@@ -5,6 +5,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 /**
  * 启动类
  *
@@ -15,7 +18,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @MapperScan("com.dcz.mrecord.mapper")
 public class Application {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        Files.createDirectories(Path.of("./data"));
         SpringApplication.run(Application.class, args);
     }
 }

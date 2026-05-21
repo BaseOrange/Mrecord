@@ -1,8 +1,5 @@
 package com.dcz.mrecord.common;
 
-import cn.hutool.core.util.StrUtil;
-import com.dcz.mrecord.exception.MrecordException;
-
 /**
  * 用户上下文
  *
@@ -14,19 +11,11 @@ public class UserContext {
     private static final ThreadLocal<String> USER_IP = new ThreadLocal<>();
 
     public static String getUserId() {
-        String userId = USER_ID.get();
-        if (StrUtil.isBlankIfStr(userId)) {
-            throw new MrecordException(ResCode.DATA_NOT_EXIST);
-        }
-        return userId;
+        return USER_ID.get();
     }
 
     public static String getUserIp() {
-        String userIp = USER_IP.get();
-        if (StrUtil.isBlankIfStr(userIp)) {
-            throw new MrecordException(ResCode.DATA_NOT_EXIST);
-        }
-        return userIp;
+        return USER_IP.get();
     }
 
     public static void setUserId(String userId) {

@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MrecordException.class)
     public Result<Void> handleBusinessException(MrecordException e) {
-        log.error("业务异常：{}", e.getMessage());
+        log.error("业务异常", e);
         return Result.fail(e.getCode(), e.getMessage());
     }
 

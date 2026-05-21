@@ -37,7 +37,7 @@ public class BaseEntity {
     /**
      * 创建时间
      */
-    @Column(value = "MR_CREATE_TIME", onInsertValue = "now()")
+    @Column(value = "MR_CREATE_TIME")
     private Date createTime;
 
     /**
@@ -55,7 +55,7 @@ public class BaseEntity {
     /**
      * 更新时间
      */
-    @Column(value = "MR_UPDATE_TIME", onUpdateValue = "now()", onInsertValue = "now()")
+    @Column(value = "MR_UPDATE_TIME")
     private Date updateTime;
 
     /**

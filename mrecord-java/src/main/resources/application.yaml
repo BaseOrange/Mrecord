@@ -15,23 +15,32 @@ server:
 # 数据源配置
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/mrecord?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:./data/mrecord.db
     type: com.alibaba.druid.pool.DruidDataSource
     # Druid 连接池配置
     druid:
-      initial-size: 3
-      min-idle: 3
-      max-active: 10
+      initial-size: 1
+      min-idle: 1
+      max-active: 1
       max-wait: 6000
-      time-between-eviction-runs-millis: 60000
-      min-evictable-idle-time-millis: 300000
       test-while-idle: true
       test-on-borrow: false
       test-on-return: false
       pool-prepared-statements: true
+      validation-query: "SELECT 1"
+      connection-init-sqls:
+        - "PRAGMA journal_mode=WAL"
+        - "PRAGMA foreign_keys=ON"
+        - "PRAGMA busy_timeout=5000"
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+# MyBatis-Flex配置
+mybatis-flex:
+  type-handlers-package: com.dcz.mrecord.config
 
 # 日志配置
 logging:

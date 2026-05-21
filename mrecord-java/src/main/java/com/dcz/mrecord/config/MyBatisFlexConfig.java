@@ -3,6 +3,7 @@ package com.dcz.mrecord.config;
 import com.dcz.mrecord.entity.BaseEntity;
 import com.dcz.mrecord.interceptor.AuditFieldListener;
 import com.mybatisflex.core.FlexGlobalConfig;
+import com.mybatisflex.core.dialect.DbType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -23,6 +24,8 @@ public class MyBatisFlexConfig {
     @Bean
     public FlexGlobalConfig flexGlobalConfig(AuditFieldListener auditListener) {
         FlexGlobalConfig config = FlexGlobalConfig.getDefaultConfig();
+
+        config.setDbType(DbType.SQLITE);
 
         // 全局注册插入/更新监听器
         config.registerInsertListener(auditListener, BaseEntity.class);
