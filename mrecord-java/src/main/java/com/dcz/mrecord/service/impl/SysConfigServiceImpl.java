@@ -1,6 +1,8 @@
 package com.dcz.mrecord.service.impl;
 
 import com.dcz.mrecord.bo.EmailConfigBo;
+import com.dcz.mrecord.dto.UpdateEmailConfigDTO;
+import com.dcz.mrecord.dto.UpdateSiteConfigDTO;
 import com.dcz.mrecord.entity.SysConfig;
 import com.dcz.mrecord.entity.SysUser;
 import com.dcz.mrecord.mapper.SysConfigMapper;
@@ -212,5 +214,52 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         }
 
         return initialized;
+    }
+
+    /**
+     * 修改邮件配置
+     *
+     * @param dto 邮件配置
+     */
+    @Override
+    public void updateEmailConfig(UpdateEmailConfigDTO dto) {
+        updateConfigByKey("mail.hostName", dto.getHostName());
+        updateConfigByKey("mail.sslSmtpPort", String.valueOf(dto.getSslSmtpPort()));
+        updateConfigByKey("mail.smtpPort", String.valueOf(dto.getSmtpPort()));
+        updateConfigByKey("mail.ssl", dto.getSsl() != null && dto.getSsl() ? "1" : "0");
+        updateConfigByKey("mail.userName", dto.getUserName());
+        updateConfigByKey("mail.password", dto.getPassword());
+        updateConfigByKey("mail.from", dto.getFrom());
+        EMAIL_CONFIG = null;
+    }
+
+    /**
+     * 修改站点配置（站点地址、管理员邮箱）
+     *
+     * @param dto 站点配置
+     */
+    @Override
+    public void updateSiteConfig(UpdateSiteConfigDTO dto) {
+        updateConfigByKey("webSite", dto.getWebSite());
+        updateConfigByKey("adminMail", dto.getAdminMail());
+        WEB_SITE = null;
+        ADMIN_MAIL = null;
+    }
+
+    /**
+     * 修改配置
+     *
+     * @param key   配置键
+     * @param value 配置值
+     */
+    private void updateConfigByKey(String key, String value) {
+        QueryWrapper qw = new QueryWrapper();
+        qw.eq(SysConfig::getKey, key);
+        List<SysConfig> configs = sysConfigMapper.selectListByQuery(qw);
+        if (configs != null && !configs.isEmpty()) {
+            SysConfig config = configs.get(0);
+            config.setValue(value);
+            sysConfigMapper.update(config);
+        }
     }
 }

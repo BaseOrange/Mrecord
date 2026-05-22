@@ -1,6 +1,8 @@
 package com.dcz.mrecord.service;
 
 import com.dcz.mrecord.bo.EmailConfigBo;
+import com.dcz.mrecord.dto.UpdateEmailConfigDTO;
+import com.dcz.mrecord.dto.UpdateSiteConfigDTO;
 import com.dcz.mrecord.entity.SysConfig;
 import com.mybatisflex.core.service.IService;
 
@@ -43,4 +45,18 @@ public interface SysConfigService extends IService<SysConfig> {
      * @return 是否已初始化
      */
     boolean isInitialized();
+
+    /**
+     * 修改邮件配置
+     *
+     * @param dto 邮件配置
+     */
+    void updateEmailConfig(UpdateEmailConfigDTO dto);
+
+    /**
+     * 修改站点配置（站点地址、管理员邮箱）
+     *
+     * @param dto 站点配置
+     */
+    void updateSiteConfig(UpdateSiteConfigDTO dto);
 }
