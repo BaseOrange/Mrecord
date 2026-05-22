@@ -7,6 +7,8 @@ const menus = [
   { icon: '👥', label: '用户管理', desc: '查看、搜索、启用/停用、重置密码、删除用户', path: '/admin/users' },
   { icon: '📋', label: '操作日志', desc: '查看用户操作审计日志记录', path: '/admin/logs' },
   { icon: '⚙️', label: '系统配置', desc: '刷新配置项缓存', path: '/admin/config' },
+  { icon: '📧', label: '邮箱服务配置', desc: '配置SMTP邮件发送服务参数', path: '/admin/email-config' },
+  { icon: '🌐', label: '站点信息配置', desc: '配置站点地址、管理员邮箱、注册开关', path: '/admin/site-config' },
 ]
 </script>
 

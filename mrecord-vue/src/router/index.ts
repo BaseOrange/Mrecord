@@ -78,6 +78,18 @@ const router = createRouter({
                     component: () => import('@/views/AdminConfigPage.vue'),
                     meta: {title: '系统配置', requiresAdmin: true}
                 },
+                {
+                    path: 'admin/email-config',
+                    name: 'AdminEmailConfig',
+                    component: () => import('@/views/AdminEmailConfigPage.vue'),
+                    meta: {title: '邮箱服务配置', requiresAdmin: true}
+                },
+                {
+                    path: 'admin/site-config',
+                    name: 'AdminSiteConfig',
+                    component: () => import('@/views/AdminSiteConfigPage.vue'),
+                    meta: {title: '站点信息配置', requiresAdmin: true}
+                },
             ]
         },
         {
