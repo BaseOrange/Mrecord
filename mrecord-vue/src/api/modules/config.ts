@@ -15,3 +15,8 @@ export interface ConfigInfo {
 export function refreshCache() {
     return post<void>('/config/refreshCache')
 }
+
+/** 获取是否开启注册功能 */
+export function getRegisterEnabled() {
+    return post<boolean>('/config/registerEnabled')
+}

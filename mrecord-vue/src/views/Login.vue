@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import {onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
-import {login, queryMyInfo} from '@/api'
+import {login, queryMyInfo, getRegisterEnabled} from '@/api'
 import {md5} from 'js-md5'
 import loginBg from '@/assets/login_bg.png'
 import AgreementPopup from '@/components/AgreementPopup.vue'
@@ -15,6 +15,15 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
+const registerEnabled = ref(true)
+
+onMounted(async () => {
+  try {
+    registerEnabled.value = await getRegisterEnabled()
+  } catch {
+    // 获取失败时默认显示注册按钮
+  }
+})
 
 const onLogin = async () => {
   if (!email.value || !password.value) {
@@ -126,13 +135,15 @@ const showAgreement = ref(false)
         <!-- 底部链接 -->
         <div class="login-links">
           <a class="link" @click="onForgotPassword">忘记密码？</a>
-          <span class="link-divider"></span>
-          <a class="link" @click="onRegister">注册账户</a>
+          <template v-if="registerEnabled">
+            <span class="link-divider"></span>
+            <a class="link" @click="onRegister">注册账户</a>
+          </template>
         </div>
 
         <!-- 用户协议入口 -->
         <p class="agreement-entry">
-          登录即表示同意
+          注册或登录即表示同意
           <a class="link agreement-link" @click="showAgreement = true">《用户协议及隐私政策》</a>
         </p>
       </div>
