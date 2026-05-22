@@ -1,5 +1,7 @@
 package com.dcz.mrecord.controller;
 
+import com.dcz.mrecord.bo.EmailConfigBo;
+import com.dcz.mrecord.bo.SiteConfigBo;
 import com.dcz.mrecord.common.CheckAdmin;
 import com.dcz.mrecord.common.Result;
 import com.dcz.mrecord.dto.UpdateEmailConfigDTO;
@@ -43,6 +45,20 @@ public class SysConfigController {
     public Result<Boolean> registerEnabled() {
         log.info("获取是否开启注册功能[/config/registerEnabled]请求");
         return Result.success(sysConfigService.isRegisterEnabled());
+    }
+
+    @CheckAdmin
+    @PostMapping("/getEmailConfig")
+    public Result<EmailConfigBo> getEmailConfig() {
+        log.info("获取邮件配置[/config/getEmailConfig]请求");
+        return Result.success(sysConfigService.getEmailConfig());
+    }
+
+    @CheckAdmin
+    @PostMapping("/getSiteConfig")
+    public Result<SiteConfigBo> getSiteConfig() {
+        log.info("获取站点配置[/config/getSiteConfig]请求");
+        return Result.success(sysConfigService.getSiteConfig());
     }
 
     @CheckAdmin

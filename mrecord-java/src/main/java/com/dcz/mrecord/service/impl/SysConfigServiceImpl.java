@@ -1,6 +1,7 @@
 package com.dcz.mrecord.service.impl;
 
 import com.dcz.mrecord.bo.EmailConfigBo;
+import com.dcz.mrecord.bo.SiteConfigBo;
 import com.dcz.mrecord.dto.UpdateEmailConfigDTO;
 import com.dcz.mrecord.dto.UpdateSiteConfigDTO;
 import com.dcz.mrecord.entity.SysConfig;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -112,7 +114,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         // 获取邮件SSL
         Optional<SysConfig> sslAny = sysConfigs.stream().filter(s -> "mail.ssl".equals(s.getKey())).findAny();
-        sslAny.ifPresent(sysConfig -> emailConfigBo.setSsl(Boolean.parseBoolean(sysConfig.getValue())));
+        sslAny.ifPresent(sysConfig -> emailConfigBo.setSsl(Objects.equals(sysConfig.getValue(), "1")));
 
         // 获取邮件用户名
         Optional<SysConfig> usernameAny = sysConfigs.stream().filter(s -> "mail.userName".equals(s.getKey())).findAny();
@@ -191,6 +193,20 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         ADMIN_MAIL = sysConfigs.get(0).getValue();
         return ADMIN_MAIL;
+    }
+
+    /**
+     * 获取站点配置
+     *
+     * @return 站点配置
+     */
+    @Override
+    public SiteConfigBo getSiteConfig() {
+        SiteConfigBo bo = new SiteConfigBo();
+        bo.setWebSite(getWebSite());
+        bo.setAdminMail(getAdminMail());
+        bo.setRegisterEnabled(isRegisterEnabled());
+        return bo;
     }
 
     /**

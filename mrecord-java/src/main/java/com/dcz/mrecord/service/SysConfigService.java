@@ -1,6 +1,7 @@
 package com.dcz.mrecord.service;
 
 import com.dcz.mrecord.bo.EmailConfigBo;
+import com.dcz.mrecord.bo.SiteConfigBo;
 import com.dcz.mrecord.dto.UpdateEmailConfigDTO;
 import com.dcz.mrecord.dto.UpdateSiteConfigDTO;
 import com.dcz.mrecord.entity.SysConfig;
@@ -45,6 +46,13 @@ public interface SysConfigService extends IService<SysConfig> {
      * @return 是否已初始化
      */
     boolean isInitialized();
+
+    /**
+     * 获取站点配置
+     *
+     * @return 站点配置
+     */
+    SiteConfigBo getSiteConfig();
 
     /**
      * 修改邮件配置
