@@ -5,15 +5,11 @@ import com.dcz.mrecord.interceptor.LogInterceptor;
 import com.dcz.mrecord.interceptor.LoginInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * Web配置
- *
- * @author dcz
- * @since 2026/04/10
- */
 @Configuration
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
@@ -22,30 +18,33 @@ public class WebConfig implements WebMvcConfigurer {
     private final LogInterceptor logInterceptor;
 
     @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.addPathPrefix("/api/v2", c -> c.isAnnotationPresent(RestController.class));
+    }
+
+    @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/**")
+                .addPathPatterns("/api/v2/**")
                 .excludePathPatterns(
-                        // 注册、登录、忘记密码、重置密码放行
-                        "/user/register",
-                        "/user/login",
-                        "/user/forgotPassword",
-                        "/user/resetPassword",
-                        // 系统初始化状态检查放行
-                        "/config/initialized",
-                        // 注册开关状态查询放行
-                        "/config/registerEnabled",
-                        // 初始化管理员账户放行
-                        "/config/initAdmin"
+                        "/api/v2/user/register",
+                        "/api/v2/user/login",
+                        "/api/v2/user/forgotPassword",
+                        "/api/v2/user/resetPassword",
+                        "/api/v2/config/initialized",
+                        "/api/v2/config/registerEnabled",
+                        "/api/v2/config/initAdmin"
                 );
 
-        // 管理员权限校验拦截器，必须在登录拦截器之后
         registry.addInterceptor(checkAdminInterceptor)
-                .addPathPatterns("/**");
+                .addPathPatterns("/api/v2/**");
 
-        // 操作日志拦截器
         registry.addInterceptor(logInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns("/operateLog/list", "/config/initialized", "/config/registerEnabled");
+                .addPathPatterns("/api/v2/**")
+                .excludePathPatterns(
+                        "/api/v2/operateLog/list",
+                        "/api/v2/config/initialized",
+                        "/api/v2/config/registerEnabled"
+                );
     }
 }
