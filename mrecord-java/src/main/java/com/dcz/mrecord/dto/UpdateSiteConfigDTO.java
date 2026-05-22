@@ -22,4 +22,9 @@ public class UpdateSiteConfigDTO implements Serializable {
      * 管理员邮箱
      */
     private String adminMail;
+
+    /**
+     * 是否开启注册功能
+     */
+    private Boolean registerEnabled;
 }

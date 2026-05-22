@@ -39,6 +39,11 @@ public class SysConfigController {
         return Result.success(sysConfigService.isInitialized());
     }
 
+    @PostMapping("/registerEnabled")
+    public Result<Boolean> registerEnabled() {
+        return Result.success(sysConfigService.isRegisterEnabled());
+    }
+
     @CheckAdmin
     @PostMapping("/updateEmailConfig")
     public Result<String> updateEmailConfig(@RequestBody UpdateEmailConfigDTO dto) {

@@ -42,6 +42,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      */
     private static String ADMIN_MAIL = null;
 
+    /**
+     * 注册功能开关
+     */
+    private static String REGISTER_ENABLED = null;
+
     @Resource
     private SysConfigMapper sysConfigMapper;
 
@@ -56,6 +61,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         EMAIL_CONFIG = null;
         WEB_SITE = null;
         ADMIN_MAIL = null;
+        REGISTER_ENABLED = null;
     }
 
     /**
@@ -242,8 +248,29 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     public void updateSiteConfig(UpdateSiteConfigDTO dto) {
         updateConfigByKey("webSite", dto.getWebSite());
         updateConfigByKey("adminMail", dto.getAdminMail());
+        updateConfigByKey("sys.registerEnabled", dto.getRegisterEnabled() != null && dto.getRegisterEnabled() ? "1" : "0");
         WEB_SITE = null;
         ADMIN_MAIL = null;
+        REGISTER_ENABLED = null;
+    }
+
+    @Override
+    public boolean isRegisterEnabled() {
+        if (REGISTER_ENABLED != null) {
+            return "1".equals(REGISTER_ENABLED);
+        }
+
+        QueryWrapper qw = new QueryWrapper();
+        qw.eq(SysConfig::getKey, "sys.registerEnabled");
+        List<SysConfig> configs = sysConfigMapper.selectListByQuery(qw);
+
+        if (configs == null || configs.isEmpty()) {
+            REGISTER_ENABLED = "0";
+            return false;
+        }
+
+        REGISTER_ENABLED = configs.get(0).getValue();
+        return "1".equals(REGISTER_ENABLED);
     }
 
     /**

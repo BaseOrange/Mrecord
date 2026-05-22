@@ -32,7 +32,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user/forgotPassword",
                         "/user/resetPassword",
                         // 系统初始化状态检查放行
-                        "/config/initialized"
+                        "/config/initialized",
+                        // 注册开关状态查询放行
+                        "/config/registerEnabled"
                 );
 
         // 管理员权限校验拦截器，必须在登录拦截器之后
@@ -42,6 +44,6 @@ public class WebConfig implements WebMvcConfigurer {
         // 操作日志拦截器
         registry.addInterceptor(logInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/operateLog/list", "/config/initialized");
+                .excludePathPatterns("/operateLog/list", "/config/initialized", "/config/registerEnabled");
     }
 }

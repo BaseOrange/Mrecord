@@ -54,9 +54,16 @@ public interface SysConfigService extends IService<SysConfig> {
     void updateEmailConfig(UpdateEmailConfigDTO dto);
 
     /**
-     * 修改站点配置（站点地址、管理员邮箱）
+     * 修改站点配置（站点地址、管理员邮箱、注册开关）
      *
      * @param dto 站点配置
      */
     void updateSiteConfig(UpdateSiteConfigDTO dto);
+
+    /**
+     * 判断是否开启注册功能
+     *
+     * @return 是否开启注册
+     */
+    boolean isRegisterEnabled();
 }

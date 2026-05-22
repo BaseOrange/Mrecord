@@ -67,6 +67,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
      */
     @Override
     public String userRegister(UserDTO params) {
+        // 注册功能开关校验
+        if (!sysConfigService.isRegisterEnabled()) {
+            throw new MrecordException(ResCode.NO_PERMISSION.getCode(), "注册功能未开启");
+        }
+
         // 邮箱验证
         String email = params.getEmail();
         if (StrUtil.isBlankIfStr(email)) {
