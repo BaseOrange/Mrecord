@@ -41,6 +41,7 @@ public class SysConfigController {
 
     @PostMapping("/registerEnabled")
     public Result<Boolean> registerEnabled() {
+        log.info("获取是否开启注册功能[/config/registerEnabled]请求");
         return Result.success(sysConfigService.isRegisterEnabled());
     }
 
