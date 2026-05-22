@@ -35,6 +35,23 @@ export interface SiteConfig {
     registerEnabled: boolean
 }
 
+export interface InitAdminParams {
+    email: string
+    password: string
+    nickname: string
+}
+
+export interface TestEmailParams {
+    hostName: string
+    sslSmtpPort: number
+    smtpPort: number
+    ssl: boolean
+    userName: string
+    password: string
+    from: string
+    testTo: string
+}
+
 // ==================== 接口方法 ====================
 
 /** 刷新配置项缓存 */
@@ -65,4 +82,19 @@ export function updateEmailConfig(data: UpdateEmailConfigParams) {
 /** 修改站点配置 */
 export function updateSiteConfig(data: SiteConfig) {
     return post<void>('/config/updateSiteConfig', data)
+}
+
+/** 检查系统是否已初始化 */
+export function checkInitialized() {
+    return post<boolean>('/config/initialized')
+}
+
+/** 初始化管理员账户 */
+export function initAdmin(data: InitAdminParams) {
+    return post<string>('/config/initAdmin', data)
+}
+
+/** 发送测试邮件 */
+export function testEmail(data: TestEmailParams) {
+    return post<void>('/config/testEmail', data)
 }

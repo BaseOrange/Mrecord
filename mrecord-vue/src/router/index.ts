@@ -1,8 +1,16 @@
 import {createRouter, createWebHistory} from 'vue-router'
 import {useUserStore} from '@/stores/user'
+import {checkInitialized} from '@/api'
 
 // 无需登录即可访问的页面
-const PUBLIC_PAGES = ['/login', '/register', '/forgot-password', '/reset-password', '/activate-account']
+const PUBLIC_PAGES = ['/login', '/register', '/forgot-password', '/reset-password', '/activate-account', '/init']
+
+// 系统初始化状态缓存
+let systemInitialized: boolean | null = null
+
+export function markSystemInitialized() {
+    systemInitialized = true
+}
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -99,6 +107,12 @@ const router = createRouter({
             meta: {title: '登录'}
         },
         {
+            path: '/init',
+            name: 'SystemInit',
+            component: () => import('@/views/SystemInitPage.vue'),
+            meta: {title: '系统初始化'}
+        },
+        {
             path: '/register',
             name: 'Register',
             component: () => import('@/views/Register.vue'),
@@ -155,14 +169,32 @@ const router = createRouter({
     ]
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
     // 设置页面标题
     document.title = to.meta.title ? `${to.meta.title} | 月衡 Mrecord` : '月衡 Mrecord'
+
+    // 初始化状态检查
+    if (systemInitialized === null) {
+        try {
+            systemInitialized = await checkInitialized()
+        } catch {
+            systemInitialized = true
+        }
+    }
+
+    if (!systemInitialized && to.path !== '/init') {
+        next('/init')
+        return
+    }
+    if (systemInitialized && to.path === '/init') {
+        next('/login')
+        return
+    }
 
     const userStore = useUserStore()
     const isPublic = PUBLIC_PAGES.includes(to.path)
 
-    if (userStore.token && isPublic) {
+    if (userStore.token && isPublic && to.path !== '/init') {
         // 已登录访问公开页面 → 跳转首页
         next('/home')
     } else if (!userStore.token && !isPublic) {
