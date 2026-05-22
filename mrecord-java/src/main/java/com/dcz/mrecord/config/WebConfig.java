@@ -34,7 +34,9 @@ public class WebConfig implements WebMvcConfigurer {
                         // 系统初始化状态检查放行
                         "/config/initialized",
                         // 注册开关状态查询放行
-                        "/config/registerEnabled"
+                        "/config/registerEnabled",
+                        // 初始化管理员账户放行
+                        "/config/initAdmin"
                 );
 
         // 管理员权限校验拦截器，必须在登录拦截器之后

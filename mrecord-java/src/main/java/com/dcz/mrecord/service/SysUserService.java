@@ -1,6 +1,7 @@
 package com.dcz.mrecord.service;
 
 import com.dcz.mrecord.dto.ChangePasswordDTO;
+import com.dcz.mrecord.dto.InitAdminDTO;
 import com.dcz.mrecord.dto.QueryUserDTO;
 import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
@@ -16,6 +17,14 @@ import java.util.Set;
  * @since 2026/04/09
  */
 public interface SysUserService extends IService<SysUser> {
+
+    /**
+     * 初始化管理员账户
+     *
+     * @param params 管理员信息
+     * @return 管理员用户ID
+     */
+    String initAdmin(InitAdminDTO params);
 
     /**
      * 用户注册

@@ -4,9 +4,14 @@ import com.dcz.mrecord.bo.EmailConfigBo;
 import com.dcz.mrecord.bo.SiteConfigBo;
 import com.dcz.mrecord.common.CheckAdmin;
 import com.dcz.mrecord.common.Result;
+import com.dcz.mrecord.dto.InitAdminDTO;
+import com.dcz.mrecord.dto.TestEmailDTO;
 import com.dcz.mrecord.dto.UpdateEmailConfigDTO;
 import com.dcz.mrecord.dto.UpdateSiteConfigDTO;
+import com.dcz.mrecord.service.EmailService;
 import com.dcz.mrecord.service.SysConfigService;
+import com.dcz.mrecord.service.SysUserService;
+import com.dcz.mrecord.util.JwtUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +31,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class SysConfigController {
     @Resource
     private SysConfigService sysConfigService;
+
+    @Resource
+    private SysUserService sysUserService;
+
+    @Resource
+    private EmailService emailService;
+
+    @Resource
+    private JwtUtil jwtUtil;
 
     @CheckAdmin
     @PostMapping("/refreshCache")
@@ -74,6 +88,30 @@ public class SysConfigController {
     public Result<String> updateSiteConfig(@RequestBody UpdateSiteConfigDTO dto) {
         log.info("修改站点配置[/config/updateSiteConfig]请求");
         sysConfigService.updateSiteConfig(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/initAdmin")
+    public Result<String> initAdmin(@RequestBody InitAdminDTO dto) {
+        log.info("初始化管理员账户[/config/initAdmin]请求");
+        String userId = sysUserService.initAdmin(dto);
+        String token = jwtUtil.createToken(userId);
+        return Result.success(token);
+    }
+
+    @CheckAdmin
+    @PostMapping("/testEmail")
+    public Result<String> testEmail(@RequestBody TestEmailDTO dto) {
+        log.info("测试邮件发送[/config/testEmail]请求");
+        EmailConfigBo config = new EmailConfigBo();
+        config.setHostName(dto.getHostName());
+        config.setSslSmtpPort(dto.getSslSmtpPort());
+        config.setSmtpPort(dto.getSmtpPort());
+        config.setSsl(dto.getSsl());
+        config.setUsername(dto.getUserName());
+        config.setPassword(dto.getPassword());
+        config.setFrom(dto.getFrom());
+        emailService.sendTestEmail(config, dto.getTestTo());
         return Result.success();
     }
 }

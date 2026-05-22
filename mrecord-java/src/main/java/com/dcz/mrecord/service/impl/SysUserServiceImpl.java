@@ -12,6 +12,7 @@ import com.dcz.mrecord.common.UserContext;
 import com.dcz.mrecord.config.MrConf;
 import com.dcz.mrecord.constant.UserStatusConst;
 import com.dcz.mrecord.dto.ChangePasswordDTO;
+import com.dcz.mrecord.dto.InitAdminDTO;
 import com.dcz.mrecord.dto.QueryUserDTO;
 import com.dcz.mrecord.dto.UserDTO;
 import com.dcz.mrecord.entity.SysUser;
@@ -58,6 +59,59 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private JwtUtil jwtUtil;
     @Resource
     private MrConf mrConf;
+
+    /**
+     * 初始化管理员账户
+     *
+     * @param params 管理员信息
+     * @return 管理员用户ID
+     */
+    @Override
+    public String initAdmin(InitAdminDTO params) {
+        if (sysConfigService.isInitialized()) {
+            throw new MrecordException(ResCode.NO_PERMISSION.getCode(), "系统已初始化，不可重复操作");
+        }
+
+        String email = params.getEmail();
+        if (StrUtil.isBlankIfStr(email)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "邮箱不能为空");
+        }
+        if (!Validator.isEmail(email)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "邮箱格式错误");
+        }
+
+        String password = params.getPassword();
+        if (StrUtil.isBlankIfStr(password)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "密码不能为空");
+        }
+        if (password.length() < 6) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "密码长度不能小于6");
+        }
+
+        String nickname = params.getNickname();
+        if (StrUtil.isBlankIfStr(nickname)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "昵称不能为空");
+        }
+
+        if (userMapper.selectOneByQuery(QueryWrapper.create().and(SysUser::getEmail).eq(email)) != null) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "该邮箱已被注册");
+        }
+
+        SysUser user = new SysUser();
+        user.setId(IdUtil.simpleUUID());
+        user.setEmail(email);
+        user.setNickname(nickname);
+        user.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
+        user.setAdmin(1);
+        user.setStatus(UserStatusConst.NORMAL);
+
+        int insert = userMapper.insert(user);
+        if (insert <= 0) {
+            throw new MrecordException(ResCode.DATA_NOT_EXIST.getCode(), "管理员账户创建失败");
+        }
+
+        return user.getId();
+    }
 
     /**
      * 用户注册

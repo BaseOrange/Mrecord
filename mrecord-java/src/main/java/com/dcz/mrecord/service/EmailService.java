@@ -1,5 +1,6 @@
 package com.dcz.mrecord.service;
 
+import com.dcz.mrecord.bo.EmailConfigBo;
 import com.dcz.mrecord.bo.MailParamsBO;
 
 import java.util.List;
@@ -55,4 +56,12 @@ public interface EmailService {
      * @param attachment 附件文件
      */
     void sendExportSuccessEmail(String to, java.util.Map<String, String> params, java.io.File attachment);
+
+    /**
+     * 发送测试邮件
+     *
+     * @param config 邮件配置（使用传入配置而非数据库配置）
+     * @param to     收件人邮箱
+     */
+    void sendTestEmail(EmailConfigBo config, String to);
 }

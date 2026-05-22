@@ -215,6 +215,35 @@ public class EmailServiceImpl implements EmailService {
     }
 
     /**
+     * 发送测试邮件
+     *
+     * @param config 邮件配置
+     * @param to     收件人邮箱
+     */
+    @Override
+    public void sendTestEmail(EmailConfigBo config, String to) {
+        try {
+            HtmlEmail email = new HtmlEmail();
+            email.setHostName(config.getHostName());
+            email.setSSLOnConnect(config.getSsl() != null && config.getSsl());
+            email.setSslSmtpPort(String.valueOf(config.getSslSmtpPort()));
+            email.setSmtpPort(config.getSmtpPort());
+            email.setStartTLSEnabled(false);
+            email.setStartTLSRequired(false);
+            email.setAuthenticator(new DefaultAuthenticator(config.getUsername(), config.getPassword()));
+            email.setFrom(config.getFrom());
+            email.setCharset(EmailConstants.UTF_8);
+            email.addTo(to);
+            email.setSubject("月衡 Mrecord - 邮件配置测试");
+            email.setHtmlMsg("<p>这是一封来自 <b>月衡 Mrecord</b> 的测试邮件，收到此邮件说明邮箱配置正确。</p>");
+            email.send();
+        } catch (EmailException e) {
+            log.error("发送测试邮件失败", e);
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "邮件发送失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 获取邮件客户端
      *
      * @return 邮件客户端
