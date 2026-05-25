@@ -42,10 +42,12 @@ public class SysExportTaskServiceImpl extends ServiceImpl<SysExportTaskMapper, S
 
     @Override
     public Page<SysExportTask> listMyTasks(String userId, PageInfoDTO pageInfoDTO) {
-        Page<SysExportTask> page = new Page<>(pageInfoDTO.getPageNum(), pageInfoDTO.getPageSize());
-        QueryWrapper qw = QueryWrapper.create();
-        qw.eq(SysExportTask::getUserId, userId);
-        qw.orderBy(SysExportTask::getCreateTime, false);
-        return sysExportTaskMapper.paginate(page, qw);
+        QueryWrapper qw = QueryWrapper.create()
+                .select("t1.*", "b.MR_BOOK_NAME as bookName")
+                .from("SYS_EXPORT_TASK").as("t1")
+                .leftJoin("FIN_BOOK").as("b").on("t1.MR_BOOK_ID = b.MR_ID")
+                .where("t1.MR_USER_ID = '" + userId + "'")
+                .orderBy("t1.MR_CREATE_TIME desc");
+        return sysExportTaskMapper.paginate(pageInfoDTO.getPageNum(), pageInfoDTO.getPageSize(), qw);
     }
 }

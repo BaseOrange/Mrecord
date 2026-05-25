@@ -30,6 +30,12 @@ public class SysExportTask extends BaseEntity {
     private String bookId;
 
     /**
+     * 账簿名称
+     */
+    @Column(ignore = true)
+    private String bookName;
+
+    /**
      * 导出开始年月，格式yyyyMM
      */
     @Column(value = "MR_START_YEAR_MONTH")
