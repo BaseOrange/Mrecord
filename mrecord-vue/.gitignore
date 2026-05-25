@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Vue Compilation File
+*.vue.js
+*.vue.d.ts
+*.d.ts
+*.tsbuildinfo
+/src/api/modules/config.js
+/src/router/index.js
