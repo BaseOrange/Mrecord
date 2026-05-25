@@ -49,7 +49,7 @@ const handleExport = async () => {
     await exportBookData(params)
     Snackbar.success('导出任务已创建')
     // 刷新任务列表
-    await fetchTasks()
+    await fetchTasks(true)
   } catch {
     // 拦截器已处理
   } finally {
@@ -224,7 +224,7 @@ const onScroll = () => {
           >
             <div class="task-main">
               <div class="task-info">
-                <span class="task-book">{{ task.bookType || '全部账簿' }}</span>
+                <span class="task-book">账簿：{{ task.bookId ? task.bookName : '全部账簿' }}</span>
                 <span
                   class="task-status"
                   :style="{ color: formatStatus(task.status).color }"

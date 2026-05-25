@@ -9,6 +9,8 @@ export interface ExportTaskInfo extends BaseEntity {
     userId?: string
     /** 导出账簿ID */
     bookId?: string
+    /** 账簿名称 */
+    bookName?: string
     /** 账簿类型（YEARLY-年度，CATEGORY-分类） */
     bookType?: string
     /** 导出开始年月，格式yyyyMM */
