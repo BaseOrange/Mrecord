@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Snackbar } from '@varlet/ui'
-import { useUserStore } from '@/stores/user'
-import { changePassword, logout } from '@/api'
-import { md5 } from 'js-md5'
+import {ref} from 'vue'
+import {useRouter} from 'vue-router'
+import {Snackbar} from '@varlet/ui'
+import {useUserStore} from '@/stores/user'
+import {changePassword, logout} from '@/api'
+import {md5} from 'js-md5'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -72,8 +72,7 @@ const onSubmit = async () => {
       <div class="header-placeholder"></div>
     </div>
 
-    <div class="page-body">
-      <!-- 表单卡片 -->
+    <div class="page-body" @keydown.enter="onSubmit">
       <div class="form-card">
         <div class="form-item">
           <label class="form-label">旧密码</label>
@@ -86,7 +85,15 @@ const onSubmit = async () => {
               autocomplete="current-password"
             />
             <button class="eye-btn" @click="showOld = !showOld" type="button">
-              <span class="moon-toggle">{{ showOld ? '🌚' : '🌝' }}</span>
+              <svg v-if="!showOld" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
             </button>
           </div>
         </div>
@@ -102,7 +109,15 @@ const onSubmit = async () => {
               autocomplete="new-password"
             />
             <button class="eye-btn" @click="showNew = !showNew" type="button">
-              <span class="moon-toggle">{{ showNew ? '🌚' : '🌝' }}</span>
+              <svg v-if="!showNew" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
             </button>
           </div>
         </div>
@@ -118,7 +133,15 @@ const onSubmit = async () => {
               autocomplete="new-password"
             />
             <button class="eye-btn" @click="showConfirm = !showConfirm" type="button">
-              <span class="moon-toggle">{{ showConfirm ? '🌚' : '🌝' }}</span>
+              <svg v-if="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
             </button>
           </div>
         </div>
@@ -143,7 +166,6 @@ const onSubmit = async () => {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
-/* 顶部导航 */
 .page-header {
   background: #fff;
   padding: 12px 16px;
@@ -152,11 +174,13 @@ const onSubmit = async () => {
   align-items: center;
   justify-content: space-between;
 }
+
 .page-header h2 {
   font-size: 17px;
   font-weight: 600;
   color: #333;
 }
+
 .header-back {
   width: 32px;
   height: 32px;
@@ -169,19 +193,19 @@ const onSubmit = async () => {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+
 .header-back:active {
   background: #f5f5f5;
 }
+
 .header-placeholder {
   width: 32px;
 }
 
-/* 页面主体 */
 .page-body {
   padding: 16px;
 }
 
-/* 表单卡片 */
 .form-card {
   background: #fff;
   border-radius: 16px;
@@ -192,9 +216,11 @@ const onSubmit = async () => {
 .form-item {
   margin-bottom: 18px;
 }
+
 .form-item:last-of-type {
   margin-bottom: 24px;
 }
+
 .form-label {
   display: block;
   font-size: 13px;
@@ -214,6 +240,7 @@ const onSubmit = async () => {
   height: 48px;
   transition: all 0.2s;
 }
+
 .input-wrapper:focus-within {
   border-color: #FF6500;
   background: #fff;
@@ -229,6 +256,7 @@ const onSubmit = async () => {
   outline: none;
   letter-spacing: 0.5px;
 }
+
 .form-input::placeholder {
   color: #bbb;
 }
@@ -248,16 +276,11 @@ const onSubmit = async () => {
   padding: 0;
   flex-shrink: 0;
 }
+
 .eye-btn:active {
   color: #FF6500;
 }
 
-.moon-toggle {
-  font-size: 20px;
-  line-height: 1;
-}
-
-/* 提交按钮 */
 .submit-btn {
   width: 100%;
   height: 48px;
@@ -271,10 +294,12 @@ const onSubmit = async () => {
   transition: all 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
+
 .submit-btn:active:not(:disabled) {
   background: #e05800;
   transform: scale(0.98);
 }
+
 .submit-btn--loading {
   opacity: 0.7;
 }

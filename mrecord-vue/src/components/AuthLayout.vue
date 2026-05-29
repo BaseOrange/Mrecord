@@ -361,6 +361,74 @@ import loginBg from '@/assets/login_bg.png'
   margin-bottom: 24px;
 }
 
+/* Status card (shared by success + error) */
+.auth-status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 36px 24px 28px;
+}
+
+.auth-status-icon {
+  margin-bottom: 16px;
+}
+
+.auth-status-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.auth-status-desc {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+/* Secondary button (outlined) */
+.auth-secondary-btn {
+  width: 100%;
+  height: 48px;
+  margin-top: 12px;
+  border: 1.5px solid rgba(255, 160, 100, 0.35);
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #FF8C42;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-secondary-btn:active {
+  background: rgba(255, 140, 66, 0.06);
+  border-color: #FF8C42;
+}
+
+/* Card title/desc (for form cards with headers) */
+.auth-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.auth-card-desc {
+  font-size: 13px;
+  color: #999;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* Auth loading spinner (for status cards) */
+.auth-loading-spinner {
+  animation: authSpin 1s linear infinite;
+}
+
 /* Card transition */
 .auth-fade-enter-active,
 .auth-fade-leave-active {
