@@ -16,10 +16,11 @@ spring:
     url: jdbc:sqlite:./data/mrecord.db
     type: com.alibaba.druid.pool.DruidDataSource
     # Druid 连接池配置
+    # SQLite 写入串行,但读取可并行(WAL 模式);连接池适度放宽以支持并发读
     druid:
-      initial-size: 1
-      min-idle: 1
-      max-active: 1
+      initial-size: 2
+      min-idle: 2
+      max-active: 8
       max-wait: 6000
       test-while-idle: true
       test-on-borrow: false
@@ -42,7 +43,7 @@ mybatis-flex:
 logging:
   level:
     root: info
-    com.mrecord: debug
-    com.mybatis-flex: warn
+    com.dcz.mrecord: info
+    com.mybatisflex: warn
   pattern:
     console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

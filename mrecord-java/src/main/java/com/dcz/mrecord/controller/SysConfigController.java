@@ -65,7 +65,7 @@ public class SysConfigController {
     @PostMapping("/getEmailConfig")
     public Result<EmailConfigBo> getEmailConfig() {
         log.info("获取邮件配置[/config/getEmailConfig]请求");
-        return Result.success(sysConfigService.getEmailConfig());
+        return Result.success(sysConfigService.getMaskedEmailConfig());
     }
 
     @CheckAdmin

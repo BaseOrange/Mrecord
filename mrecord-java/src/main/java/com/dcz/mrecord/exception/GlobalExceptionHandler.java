@@ -3,9 +3,13 @@ package com.dcz.mrecord.exception;
 import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.common.Result;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
 
 /**
  * 全局异常处理
@@ -36,8 +40,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Result<Void> handleValidException(MethodArgumentNotValidException e) {
-        String msg = e.getBindingResult().getFieldError().getDefaultMessage();
-        log.error("参数校验异常：{}", msg);
+        String msg = extractFirstErrorMessage(e);
+        log.warn("参数校验异常：{}", msg);
         return Result.fail(ResCode.PARAM_ERROR.getCode(), msg);
     }
 
@@ -64,4 +68,23 @@ public class GlobalExceptionHandler {
         log.error("服务器异常", e);
         return Result.fail(ResCode.ERROR);
     }
+
+    /**
+     * 提取第一条错误消息
+     *
+     * @param e 异常
+     * @return 错误消息
+     */
+    private String extractFirstErrorMessage(MethodArgumentNotValidException e) {
+        FieldError fieldError = e.getBindingResult().getFieldError();
+        if (fieldError != null && fieldError.getDefaultMessage() != null) {
+            return fieldError.getDefaultMessage();
+        }
+        List<ObjectError> globalErrors = e.getBindingResult().getAllErrors();
+        if (!globalErrors.isEmpty() && globalErrors.get(0).getDefaultMessage() != null) {
+            return globalErrors.get(0).getDefaultMessage();
+        }
+        return ResCode.PARAM_ERROR.getMessage();
+    }
+
 }

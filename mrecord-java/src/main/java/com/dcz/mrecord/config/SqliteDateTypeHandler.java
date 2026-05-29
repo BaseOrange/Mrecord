@@ -4,8 +4,14 @@ import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedTypes;
 
-import java.sql.*;
-import java.text.SimpleDateFormat;
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -16,6 +22,8 @@ import java.util.Date;
  * <p>
  * 写入时将Date格式化为"yyyy-MM-dd HH:mm:ss"字符串存储，
  * 读取时支持解析日期字符串和epoch毫秒数两种格式，兼容历史数据。
+ * <p>
+ * 使用 {@link DateTimeFormatter}(线程安全、不可变)替代 SimpleDateFormat。
  *
  * @author dcz
  * @since 2026/05/21
@@ -23,14 +31,17 @@ import java.util.Date;
 @MappedTypes(Date.class)
 public class SqliteDateTypeHandler extends BaseTypeHandler<Date> {
 
-    private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static final ZoneId ZONE = ZoneId.systemDefault();
 
     /**
      * 写入参数时，将Date格式化为日期字符串
      */
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, Date parameter, JdbcType jdbcType) throws SQLException {
-        ps.setString(i, new SimpleDateFormat(DATE_FORMAT).format(parameter));
+        LocalDateTime ldt = parameter.toInstant().atZone(ZONE).toLocalDateTime();
+        ps.setString(i, FORMATTER.format(ldt));
     }
 
     /**
@@ -68,12 +79,13 @@ public class SqliteDateTypeHandler extends BaseTypeHandler<Date> {
             return null;
         }
         try {
-            if (value.matches("\\d+")) {
+            if (value.chars().allMatch(Character::isDigit)) {
                 return new Date(Long.parseLong(value));
             }
-            return new SimpleDateFormat(DATE_FORMAT).parse(value);
+            LocalDateTime ldt = LocalDateTime.parse(value, FORMATTER);
+            return Date.from(ldt.atZone(ZONE).toInstant());
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse date: " + value, e);
+            throw new IllegalArgumentException("Failed to parse date: " + value, e);
         }
     }
 }

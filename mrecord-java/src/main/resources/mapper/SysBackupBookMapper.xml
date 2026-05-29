@@ -6,7 +6,10 @@
 
     <insert id="backupByBookId">
         INSERT INTO SYS_BACKUP_BOOK
-        SELECT *
+            (MR_ID, MR_USER_ID, MR_BOOK_NAME,
+             MR_CREATE_BY, MR_CREATE_TIME, MR_UPDATE_BY, MR_UPDATE_TIME, MR_IS_DELETED)
+        SELECT MR_ID, MR_USER_ID, MR_BOOK_NAME,
+               MR_CREATE_BY, MR_CREATE_TIME, MR_UPDATE_BY, MR_UPDATE_TIME, MR_IS_DELETED
         FROM FIN_BOOK
         WHERE MR_ID = #{bookId}
           AND MR_IS_DELETED = 0

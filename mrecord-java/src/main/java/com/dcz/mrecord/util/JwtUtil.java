@@ -2,9 +2,12 @@ package com.dcz.mrecord.util;
 
 import com.dcz.mrecord.config.MrConf;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -17,6 +20,7 @@ import java.util.Date;
  * @author dcz
  * @since 2026/04/10
  */
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -40,14 +44,18 @@ public class JwtUtil {
     /**
      * 解析 userId
      * @param token  token
-     * @return userId
+     * @return userId,token 非法或过期时返回 null
      */
     public String getUserId(String token) {
         try {
             SecretKey key = Keys.hmacShaKeyFor(mrConf.getJwtSecret().getBytes(StandardCharsets.UTF_8));
             Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
             return claims.getSubject();
-        } catch (Exception e) {
+        } catch (ExpiredJwtException e) {
+            log.debug("JWT 已过期: {}", e.getMessage());
+            return null;
+        } catch (JwtException e) {
+            log.warn("JWT 解析失败: {}", e.getMessage());
             return null;
         }
     }

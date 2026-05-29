@@ -30,9 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -158,17 +159,19 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
         Set<String> bookIdSet = finBooks.stream().map(FinBook::getId).collect(Collectors.toSet());
         List<FinMonthRecord> finMonthRecordList = finMonthRecordService.getMyBookLastRecord(bookIdSet);
 
-        // 对象转换
+        // 构建 bookId -> FinBook 映射,避免 O(n*m) 线性扫描
+        Map<String, FinBook> bookMap = finBooks.stream()
+                .collect(Collectors.toMap(FinBook::getId, Function.identity(), (a, b) -> a));
+
         List<FinBookRecordDTO> resList = new ArrayList<>();
         for (FinMonthRecord finMonthRecord : finMonthRecordList) {
-            FinBookRecordDTO finBookRecordDTO = new FinBookRecordDTO();
-            BeanUtil.copyProperties(finMonthRecord, finBookRecordDTO);
-            Optional<FinBook> any = finBooks.stream().filter(book -> book.getId().equals(finMonthRecord.getBookId())).findAny();
-            if (any.isEmpty()) {
+            FinBook finBook = bookMap.get(finMonthRecord.getBookId());
+            if (finBook == null) {
                 log.warn("账目数据 {} 所属账簿不存在", finMonthRecord.getId());
                 continue;
             }
-            FinBook finBook = any.get();
+            FinBookRecordDTO finBookRecordDTO = new FinBookRecordDTO();
+            BeanUtil.copyProperties(finMonthRecord, finBookRecordDTO);
             finBookRecordDTO.setBookId(finBook.getId());
             finBookRecordDTO.setBookName(finBook.getBookName());
             resList.add(finBookRecordDTO);

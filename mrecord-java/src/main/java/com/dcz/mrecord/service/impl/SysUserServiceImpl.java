@@ -628,21 +628,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     /**
-     * 获取注册成功邮件参数
-     *
-     * @return 邮件参数
-     */
-    private MailParamsBO getRegisterSuccessEmailParam(SysUser user) {
-        MailParamsBO mailParamsBO = new MailParamsBO();
-        mailParamsBO.setTo(user.getEmail());
-        mailParamsBO.setUserName(user.getNickname());
-        mailParamsBO.setUserEmail(user.getEmail());
-        mailParamsBO.setWebSite(sysConfigService.getWebSite());
-        mailParamsBO.setAdminMail(sysConfigService.getAdminMail());
-        return mailParamsBO;
-    }
-
-    /**
      * 获取忘记密码邮件参数
      *
      * @param user    用户

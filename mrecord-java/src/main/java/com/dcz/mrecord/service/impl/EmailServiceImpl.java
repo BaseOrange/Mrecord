@@ -206,7 +206,10 @@ public class EmailServiceImpl implements EmailService {
      */
     private String readTemplate(String templatePath, Map<String, String> params) throws Exception {
         ClassPathResource resource = new ClassPathResource(templatePath);
-        String html = FileCopyUtils.copyToString(new InputStreamReader(resource.getStream(), StandardCharsets.UTF_8));
+        String html;
+        try (InputStreamReader reader = new InputStreamReader(resource.getStream(), StandardCharsets.UTF_8)) {
+            html = FileCopyUtils.copyToString(reader);
+        }
 
         for (Map.Entry<String, String> entry : params.entrySet()) {
             html = html.replace("${" + entry.getKey() + "}", entry.getValue());

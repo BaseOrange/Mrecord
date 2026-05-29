@@ -14,10 +14,12 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 配置项服务实现
@@ -29,25 +31,29 @@ import java.util.Optional;
 @Service
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> implements SysConfigService {
 
+    private static final String MASKED_PASSWORD = "******";
+
+    private final Object cacheLock = new Object();
+
     /**
-     * 缓存邮件配置
+     * 缓存邮件配置(volatile 保证可见性,双重检查锁保证发布安全)
      */
-    private static EmailConfigBo EMAIL_CONFIG = null;
+    private volatile EmailConfigBo emailConfigCache;
 
     /**
      * 网站站点
      */
-    private static String WEB_SITE = null;
+    private volatile String webSiteCache;
 
     /**
      * 管理员邮箱
      */
-    private static String ADMIN_MAIL = null;
+    private volatile String adminMailCache;
 
     /**
-     * 注册功能开关
+     * 注册功能开关(三态:null 未加载,"1" 开启,"0" 关闭)
      */
-    private static String REGISTER_ENABLED = null;
+    private volatile String registerEnabledCache;
 
     @Resource
     private SysConfigMapper sysConfigMapper;
@@ -60,10 +66,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      */
     @Override
     public void refreshCache() {
-        EMAIL_CONFIG = null;
-        WEB_SITE = null;
-        ADMIN_MAIL = null;
-        REGISTER_ENABLED = null;
+        synchronized (cacheLock) {
+            emailConfigCache = null;
+            webSiteCache = null;
+            adminMailCache = null;
+            registerEnabledCache = null;
+        }
     }
 
     /**
@@ -73,78 +81,41 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      */
     @Override
     public EmailConfigBo getEmailConfig() {
-        if (EMAIL_CONFIG != null) {
-            return EMAIL_CONFIG;
+        EmailConfigBo local = emailConfigCache;
+        if (local != null) {
+            return local;
         }
+        synchronized (cacheLock) {
+            if (emailConfigCache != null) {
+                return emailConfigCache;
+            }
+            emailConfigCache = loadEmailConfig();
+            return emailConfigCache;
+        }
+    }
 
-        QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.likeLeft(SysConfig::getKey, "mail");
-        List<SysConfig> sysConfigs = sysConfigMapper.selectListByQuery(queryWrapper);
-        if (sysConfigs == null || sysConfigs.isEmpty()) {
-            log.warn("管理员未配置邮件参数，返回空邮箱配置信息。");
+    /**
+     * 获取脱敏后的邮件配置,密码字段以星号代替
+     *
+     * @return 脱敏后的邮件配置
+     */
+    @Override
+    public EmailConfigBo getMaskedEmailConfig() {
+        EmailConfigBo origin = getEmailConfig();
+        if (origin == null) {
             return null;
         }
-
-        // 构建配置文件
-        EmailConfigBo emailConfigBo = new EmailConfigBo();
-        // 获取邮件服务器
-        Optional<SysConfig> hostAny = sysConfigs.stream().filter(s -> "mail.hostName".equals(s.getKey())).findAny();
-        if (hostAny.isPresent()) {
-            emailConfigBo.setHostName(hostAny.get().getValue());
-        } else {
-            log.warn("管理员未配置邮件服务器，返回空邮箱配置信息。");
-            return null;
+        EmailConfigBo masked = new EmailConfigBo();
+        masked.setHostName(origin.getHostName());
+        masked.setSslSmtpPort(origin.getSslSmtpPort());
+        masked.setSmtpPort(origin.getSmtpPort());
+        masked.setSsl(origin.getSsl());
+        masked.setUsername(origin.getUsername());
+        masked.setFrom(origin.getFrom());
+        if (origin.getPassword() != null && !origin.getPassword().isEmpty()) {
+            masked.setPassword(MASKED_PASSWORD);
         }
-
-        // 获取邮件端口
-        Optional<SysConfig> sslPortAny = sysConfigs.stream().filter(s -> "mail.sslSmtpPort".equals(s.getKey())).findAny();
-        if (sslPortAny.isPresent()) {
-            emailConfigBo.setSslSmtpPort(Integer.parseInt(sslPortAny.get().getValue()));
-        } else {
-            log.warn("管理员未配置邮件端口，返回空邮箱配置信息。");
-            return null;
-        }
-        Optional<SysConfig> portAny = sysConfigs.stream().filter(s -> "mail.smtpPort".equals(s.getKey())).findAny();
-        if (portAny.isPresent()) {
-            emailConfigBo.setSmtpPort(Integer.parseInt(portAny.get().getValue()));
-        } else {
-            log.warn("管理员未配置邮件端口，返回空邮箱配置信息。");
-            return null;
-        }
-
-        // 获取邮件SSL
-        Optional<SysConfig> sslAny = sysConfigs.stream().filter(s -> "mail.ssl".equals(s.getKey())).findAny();
-        sslAny.ifPresent(sysConfig -> emailConfigBo.setSsl(Objects.equals(sysConfig.getValue(), "1")));
-
-        // 获取邮件用户名
-        Optional<SysConfig> usernameAny = sysConfigs.stream().filter(s -> "mail.userName".equals(s.getKey())).findAny();
-        if (usernameAny.isPresent()) {
-            emailConfigBo.setUsername(usernameAny.get().getValue());
-        } else {
-            log.warn("管理员未配置邮件用户名，返回空邮箱配置信息。");
-            return null;
-        }
-
-        // 获取邮件密码
-        Optional<SysConfig> passwordAny = sysConfigs.stream().filter(s -> "mail.password".equals(s.getKey())).findAny();
-        if (passwordAny.isPresent()) {
-            emailConfigBo.setPassword(passwordAny.get().getValue());
-        } else {
-            log.warn("管理员未配置邮件密码，返回空邮箱配置信息。");
-            return null;
-        }
-
-        // 获取邮件发件人
-        Optional<SysConfig> fromAny = sysConfigs.stream().filter(s -> "mail.from".equals(s.getKey())).findAny();
-        if (fromAny.isPresent()) {
-            emailConfigBo.setFrom(fromAny.get().getValue());
-        } else {
-            log.warn("管理员未配置发件人邮箱，返回空邮箱配置信息。");
-            return null;
-        }
-
-        EMAIL_CONFIG = emailConfigBo;
-        return emailConfigBo;
+        return masked;
     }
 
     /**
@@ -154,21 +125,17 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      */
     @Override
     public String getWebSite() {
-        if (WEB_SITE != null){
-            return WEB_SITE;
+        String local = webSiteCache;
+        if (local != null) {
+            return local;
         }
-
-        QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.eq(SysConfig::getKey, "webSite");
-        List<SysConfig> sysConfigs = sysConfigMapper.selectListByQuery(queryWrapper);
-
-        if (sysConfigs == null || sysConfigs.isEmpty()) {
-            log.warn("管理员未配置站点地址参数，返回空站点配置信息。");
-            return null;
+        synchronized (cacheLock) {
+            if (webSiteCache != null) {
+                return webSiteCache;
+            }
+            webSiteCache = loadSingleConfig("webSite", "站点地址");
+            return webSiteCache;
         }
-
-        WEB_SITE = sysConfigs.get(0).getValue();
-        return WEB_SITE;
     }
 
     /**
@@ -178,21 +145,17 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      */
     @Override
     public String getAdminMail() {
-        if (ADMIN_MAIL != null) {
-            return ADMIN_MAIL;
+        String local = adminMailCache;
+        if (local != null) {
+            return local;
         }
-
-        QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.eq(SysConfig::getKey, "adminMail");
-        List<SysConfig> sysConfigs = sysConfigMapper.selectListByQuery(queryWrapper);
-
-        if (sysConfigs == null || sysConfigs.isEmpty()) {
-            log.warn("管理员未配置管理员邮箱参数，返回空管理员邮箱配置信息。");
-            return null;
+        synchronized (cacheLock) {
+            if (adminMailCache != null) {
+                return adminMailCache;
+            }
+            adminMailCache = loadSingleConfig("adminMail", "管理员邮箱");
+            return adminMailCache;
         }
-
-        ADMIN_MAIL = sysConfigs.get(0).getValue();
-        return ADMIN_MAIL;
     }
 
     /**
@@ -222,7 +185,6 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         long adminCount = sysUserMapper.selectCountByQuery(userQuery);
         boolean initialized = adminCount > 0;
 
-        // 将实际结果同步到SYS_CONFIG标记
         QueryWrapper configQuery = new QueryWrapper();
         configQuery.eq(SysConfig::getKey, "sys.initialized");
         List<SysConfig> configs = sysConfigMapper.selectListByQuery(configQuery);
@@ -239,62 +201,61 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     }
 
     /**
-     * 修改邮件配置
-     *
-     * @param dto 邮件配置
+     * 修改邮件配置(多条配置项原子更新)
+     * 密码字段如收到掩码值则保留原密码,避免脱敏后写回覆盖
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateEmailConfig(UpdateEmailConfigDTO dto) {
+        String password = dto.getPassword();
+        if (MASKED_PASSWORD.equals(password)) {
+            EmailConfigBo current = getEmailConfig();
+            password = current == null ? "" : current.getPassword();
+        }
+
         updateConfigByKey("mail.hostName", dto.getHostName());
         updateConfigByKey("mail.sslSmtpPort", String.valueOf(dto.getSslSmtpPort()));
         updateConfigByKey("mail.smtpPort", String.valueOf(dto.getSmtpPort()));
         updateConfigByKey("mail.ssl", dto.getSsl() != null && dto.getSsl() ? "1" : "0");
         updateConfigByKey("mail.userName", dto.getUserName());
-        updateConfigByKey("mail.password", dto.getPassword());
+        updateConfigByKey("mail.password", password);
         updateConfigByKey("mail.from", dto.getFrom());
-        EMAIL_CONFIG = null;
+        synchronized (cacheLock) {
+            emailConfigCache = null;
+        }
     }
 
-    /**
-     * 修改站点配置（站点地址、管理员邮箱）
-     *
-     * @param dto 站点配置
-     */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateSiteConfig(UpdateSiteConfigDTO dto) {
         updateConfigByKey("webSite", dto.getWebSite());
         updateConfigByKey("adminMail", dto.getAdminMail());
         updateConfigByKey("sys.registerEnabled", dto.getRegisterEnabled() != null && dto.getRegisterEnabled() ? "1" : "0");
-        WEB_SITE = null;
-        ADMIN_MAIL = null;
-        REGISTER_ENABLED = null;
+        synchronized (cacheLock) {
+            webSiteCache = null;
+            adminMailCache = null;
+            registerEnabledCache = null;
+        }
     }
 
     @Override
     public boolean isRegisterEnabled() {
-        if (REGISTER_ENABLED != null) {
-            return "1".equals(REGISTER_ENABLED);
+        String local = registerEnabledCache;
+        if (local != null) {
+            return "1".equals(local);
         }
-
-        QueryWrapper qw = new QueryWrapper();
-        qw.eq(SysConfig::getKey, "sys.registerEnabled");
-        List<SysConfig> configs = sysConfigMapper.selectListByQuery(qw);
-
-        if (configs == null || configs.isEmpty()) {
-            REGISTER_ENABLED = "0";
-            return false;
+        synchronized (cacheLock) {
+            if (registerEnabledCache != null) {
+                return "1".equals(registerEnabledCache);
+            }
+            QueryWrapper qw = new QueryWrapper();
+            qw.eq(SysConfig::getKey, "sys.registerEnabled");
+            List<SysConfig> configs = sysConfigMapper.selectListByQuery(qw);
+            registerEnabledCache = (configs == null || configs.isEmpty()) ? "0" : configs.get(0).getValue();
+            return "1".equals(registerEnabledCache);
         }
-
-        REGISTER_ENABLED = configs.get(0).getValue();
-        return "1".equals(REGISTER_ENABLED);
     }
 
-    /**
-     * 修改配置
-     *
-     * @param key   配置键
-     * @param value 配置值
-     */
     private void updateConfigByKey(String key, String value) {
         QueryWrapper qw = new QueryWrapper();
         qw.eq(SysConfig::getKey, key);
@@ -304,5 +265,66 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
             config.setValue(value);
             sysConfigMapper.update(config);
         }
+    }
+
+    private EmailConfigBo loadEmailConfig() {
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.likeLeft(SysConfig::getKey, "mail");
+        List<SysConfig> sysConfigs = sysConfigMapper.selectListByQuery(queryWrapper);
+        if (sysConfigs == null || sysConfigs.isEmpty()) {
+            log.warn("管理员未配置邮件参数，返回空邮箱配置信息。");
+            return null;
+        }
+
+        Map<String, String> configMap = sysConfigs.stream()
+                .filter(s -> s.getValue() != null)
+                .collect(Collectors.toMap(SysConfig::getKey, SysConfig::getValue, (a, b) -> a));
+
+        String hostName = configMap.get("mail.hostName");
+        String sslSmtpPort = configMap.get("mail.sslSmtpPort");
+        String smtpPort = configMap.get("mail.smtpPort");
+        String username = configMap.get("mail.userName");
+        String password = configMap.get("mail.password");
+        String from = configMap.get("mail.from");
+
+        if (isAnyBlank(hostName, sslSmtpPort, smtpPort, username, password, from)) {
+            log.warn("管理员邮件参数不完整，返回空邮箱配置信息。");
+            return null;
+        }
+
+        EmailConfigBo bo = new EmailConfigBo();
+        bo.setHostName(hostName);
+        try {
+            bo.setSslSmtpPort(Integer.parseInt(sslSmtpPort));
+            bo.setSmtpPort(Integer.parseInt(smtpPort));
+        } catch (NumberFormatException e) {
+            log.warn("邮件端口配置格式错误", e);
+            return null;
+        }
+        bo.setSsl(Objects.equals(configMap.get("mail.ssl"), "1"));
+        bo.setUsername(username);
+        bo.setPassword(password);
+        bo.setFrom(from);
+        return bo;
+    }
+
+    private boolean isAnyBlank(String... values) {
+        for (String v : values) {
+            if (v == null || v.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String loadSingleConfig(String key, String desc) {
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq(SysConfig::getKey, key);
+        List<SysConfig> sysConfigs = sysConfigMapper.selectListByQuery(queryWrapper);
+        if (sysConfigs == null || sysConfigs.isEmpty()) {
+            log.warn("管理员未配置{}参数。", desc);
+            return null;
+        }
+        return sysConfigs.get(0).getValue();
     }
 }

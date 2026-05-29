@@ -7,9 +7,11 @@
     <select id="selectListByBookIdAndUserId" resultType="com.dcz.mrecord.entity.FinTemplateItem">
         SELECT fti.*
         FROM FIN_BOOK fb
-                 LEFT JOIN FIN_TEMPLATE_ITEM fti ON fb.MR_ID = fti.MR_BOOK_ID
+                 INNER JOIN FIN_TEMPLATE_ITEM fti ON fb.MR_ID = fti.MR_BOOK_ID
         WHERE fb.MR_USER_ID = #{userId}
           AND fb.MR_ID = #{finBookId}
-        ORDER BY fti.MR_SORT
+          AND fb.MR_IS_DELETED = 0
+          AND fti.MR_IS_DELETED = 0
+        ORDER BY CAST(fti.MR_SORT AS INTEGER)
     </select>
 </mapper>

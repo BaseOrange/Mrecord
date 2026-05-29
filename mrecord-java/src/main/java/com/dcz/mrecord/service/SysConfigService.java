@@ -27,6 +27,13 @@ public interface SysConfigService extends IService<SysConfig> {
     EmailConfigBo getEmailConfig();
 
     /**
+     * 获取脱敏后的邮件配置(密码以星号替代),用于接口返回
+     *
+     * @return 脱敏邮件配置
+     */
+    EmailConfigBo getMaskedEmailConfig();
+
+    /**
      * 获取网站地址
      *
      * @return 网站地址

@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.dcz.mrecord.common.ResCode;
+import com.dcz.mrecord.constant.ExportTaskStatusConst;
 import com.dcz.mrecord.constant.TempItemTypeConst;
 import com.dcz.mrecord.entity.FinBook;
 import com.dcz.mrecord.entity.FinMonthItemRecord;
@@ -84,7 +85,7 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
             // 更新状态为执行中
             SysExportTask runningTask = new SysExportTask();
             runningTask.setId(taskId);
-            runningTask.setStatus("RUN");
+            runningTask.setStatus(ExportTaskStatusConst.RUN);
             sysExportTaskService.updateById(runningTask);
             SysUser user = sysUserService.getById(userId);
             if (user == null || StrUtil.isBlank(user.getEmail())) {
@@ -121,7 +122,7 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
 
             SysExportTask successTask = new SysExportTask();
             successTask.setId(taskId);
-            successTask.setStatus("SUCCESS");
+            successTask.setStatus(ExportTaskStatusConst.SUCCESS);
             successTask.setFileName(fileName);
             sysExportTaskService.updateById(successTask);
 
@@ -133,7 +134,7 @@ public class ExportTaskExecutorServiceImpl implements ExportTaskExecutorService 
             log.error("导出任务执行失败, taskId={}", taskId, e);
             SysExportTask failTask = new SysExportTask();
             failTask.setId(taskId);
-            failTask.setStatus("FAIL");
+            failTask.setStatus(ExportTaskStatusConst.FAIL);
             failTask.setFailReason(StrUtil.sub(e.getMessage(), 0, 500));
             sysExportTaskService.updateById(failTask);
 
