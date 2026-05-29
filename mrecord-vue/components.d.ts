@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AgreementPopup: typeof import('./src/components/AgreementPopup.vue')['default']
+    AuthLayout: typeof import('./src/components/AuthLayout.vue')['default']
     BookCard: typeof import('./src/components/BookCard.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     IconPicker: typeof import('./src/components/IconPicker.vue')['default']
