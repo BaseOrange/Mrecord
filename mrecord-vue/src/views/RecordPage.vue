@@ -41,10 +41,10 @@ const existingRecords = ref<FinMonthItemRecord[]>([])
 // 每个模板项对应的输入金额
 const itemValues = ref<Record<string, string>>({})
 
-// 按类型分组模板项
-const assetItems = computed(() => templateItems.value.filter(i => i.itemType === 1).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
-const liabilityItems = computed(() => templateItems.value.filter(i => i.itemType === -1).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
-const ignoreItems = computed(() => templateItems.value.filter(i => i.itemType === 0).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
+// 按类型分组模板项（防御性过滤 null：后端 LEFT JOIN 在无模板时可能返回 [null]）
+const assetItems = computed(() => templateItems.value.filter(i => i && i.itemType === 1).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
+const liabilityItems = computed(() => templateItems.value.filter(i => i && i.itemType === -1).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
+const ignoreItems = computed(() => templateItems.value.filter(i => i && i.itemType === 0).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
 
 // 实时汇总
 const totalAsset = computed(() => {
@@ -69,28 +69,23 @@ const formatMoney = (val: number) => {
 // ---- 数据拉取 ----
 const fetchData = async () => {
   loading.value = true
-  try {
-    // 并行拉取模板项和月度记录
-    const [templates, records] = await Promise.all([
-      listTempItems({ bookId }),
-      queryMonthItem({ bookId, year: currentYear.value, month: currentMonth.value })
-    ])
-    templateItems.value = templates || []
-    existingRecords.value = records || []
+  // 两个请求独立处理：模板项为空时后端会抛 14301 异常，不应阻塞另一个请求，也不应让 loading 卡住
+  const [tplRes, recRes] = await Promise.allSettled([
+    listTempItems({ bookId }),
+    queryMonthItem({ bookId, year: currentYear.value, month: currentMonth.value })
+  ])
+  templateItems.value = tplRes.status === 'fulfilled' && Array.isArray(tplRes.value) ? tplRes.value.filter((x): x is FinTemplateItem => x != null) : []
+  existingRecords.value = recRes.status === 'fulfilled' && Array.isArray(recRes.value) ? recRes.value.filter((x): x is FinMonthItemRecord => x != null) : []
 
-    // 填充已有金额
-    const values: Record<string, string> = {}
-    for (const r of existingRecords.value) {
-      if (r.templateItemId && r.itemValue !== undefined && r.itemValue !== null) {
-        values[r.templateItemId] = String(r.itemValue)
-      }
+  // 填充已有金额
+  const values: Record<string, string> = {}
+  for (const r of existingRecords.value) {
+    if (r.templateItemId && r.itemValue !== undefined && r.itemValue !== null) {
+      values[r.templateItemId] = String(r.itemValue)
     }
-    itemValues.value = values
-  } catch {
-    // 拦截器已处理
-  } finally {
-    loading.value = false
   }
+  itemValues.value = values
+  loading.value = false
 }
 
 onMounted(() => {
@@ -110,7 +105,7 @@ const handleSave = async () => {
     // 构建明细列表
     const itemList: FinMonthItemRecord[] = []
     for (const item of templateItems.value) {
-      if (!item.id) continue
+      if (!item || !item.id) continue
       const raw = itemValues.value[item.id]
       const val = parseFloat(raw || '0')
       if (isNaN(val) && raw !== '' && raw !== undefined) continue
