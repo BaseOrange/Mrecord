@@ -26,7 +26,7 @@ async fn main() {
     let app = router::build(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    println!("Server running at http://{}", addr);
+    println!("Mrecord-rs server running at http://{}", addr);
 
     axum::serve(tokio::net::TcpListener::bind(addr).await.unwrap(), app)
         .await
