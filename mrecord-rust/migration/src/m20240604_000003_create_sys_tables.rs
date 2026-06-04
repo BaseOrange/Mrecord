@@ -1,0 +1,265 @@
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // SYS_USER
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysUser::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysUser::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(SysUser::MrEmail).string().not_null())
+                    .col(ColumnDef::new(SysUser::MrPassword).string().not_null())
+                    .col(ColumnDef::new(SysUser::MrNickname).string().not_null())
+                    .col(
+                        ColumnDef::new(SysUser::MrAdmin)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(SysUser::MrStatus)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(ColumnDef::new(SysUser::MrCancelTime).date_time())
+                    .col(
+                        ColumnDef::new(SysUser::MrRemindEnabled)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(ColumnDef::new(SysUser::MrRemindDay).integer())
+                    .col(ColumnDef::new(SysUser::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysUser::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysUser::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysUser::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysUser::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // SYS_CONFIG
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysConfig::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysConfig::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(SysConfig::MrConfigKey).string().not_null())
+                    .col(ColumnDef::new(SysConfig::MrConfigValue).string().not_null())
+                    .col(ColumnDef::new(SysConfig::MrRemark).string())
+                    .col(ColumnDef::new(SysConfig::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysConfig::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysConfig::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysConfig::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysConfig::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // SYS_EXPORT_TASK
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysExportTask::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysExportTask::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(SysExportTask::MrUserId).string().not_null())
+                    .col(ColumnDef::new(SysExportTask::MrBookId).string().not_null())
+                    .col(
+                        ColumnDef::new(SysExportTask::MrStartYearMonth)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysExportTask::MrEndYearMonth)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(SysExportTask::MrStatus).string().not_null())
+                    .col(ColumnDef::new(SysExportTask::MrFileName).string())
+                    .col(ColumnDef::new(SysExportTask::MrFailReason).string())
+                    .col(ColumnDef::new(SysExportTask::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysExportTask::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysExportTask::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysExportTask::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysExportTask::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // SYS_USER_OPERATE_LOG
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysUserOperateLog::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysUserOperateLog::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(SysUserOperateLog::MrUserId).string().not_null())
+                    .col(
+                        ColumnDef::new(SysUserOperateLog::MrOperateType)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(SysUserOperateLog::MrContent).string().not_null())
+                    .col(ColumnDef::new(SysUserOperateLog::MrIp).string().not_null())
+                    .col(ColumnDef::new(SysUserOperateLog::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysUserOperateLog::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysUserOperateLog::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysUserOperateLog::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysUserOperateLog::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(Table::drop().table(SysUserOperateLog::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(SysExportTask::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(SysConfig::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(SysUser::Table).to_owned())
+            .await
+    }
+}
+
+#[derive(Iden)]
+enum SysUser {
+    Table,
+    MrId,
+    MrEmail,
+    MrPassword,
+    MrNickname,
+    MrAdmin,
+    MrStatus,
+    MrCancelTime,
+    MrRemindEnabled,
+    MrRemindDay,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}
+
+#[derive(Iden)]
+enum SysConfig {
+    Table,
+    MrId,
+    MrConfigKey,
+    MrConfigValue,
+    MrRemark,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}
+
+#[derive(Iden)]
+enum SysExportTask {
+    Table,
+    MrId,
+    MrUserId,
+    MrBookId,
+    MrStartYearMonth,
+    MrEndYearMonth,
+    MrStatus,
+    MrFileName,
+    MrFailReason,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}
+
+#[derive(Iden)]
+enum SysUserOperateLog {
+    Table,
+    MrId,
+    MrUserId,
+    MrOperateType,
+    MrContent,
+    MrIp,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}

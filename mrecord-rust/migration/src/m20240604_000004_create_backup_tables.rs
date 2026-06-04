@@ -1,0 +1,318 @@
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // SYS_BACKUP_BOOK
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysBackupBook::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysBackupBook::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(SysBackupBook::MrUserId).string().not_null())
+                    .col(ColumnDef::new(SysBackupBook::MrBookName).string().not_null())
+                    .col(ColumnDef::new(SysBackupBook::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysBackupBook::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysBackupBook::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysBackupBook::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysBackupBook::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // SYS_BACKUP_TEMPLATE_ITEM
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysBackupTemplateItem::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrBookId)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrItemName)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrItemType)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrIcon)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrSort)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(SysBackupTemplateItem::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysBackupTemplateItem::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysBackupTemplateItem::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysBackupTemplateItem::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // SYS_BACKUP_MONTH_RECORD
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysBackupMonthRecord::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrUserId)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrBookId)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(SysBackupMonthRecord::MrYear).integer().not_null())
+                    .col(ColumnDef::new(SysBackupMonthRecord::MrMonth).integer().not_null())
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrTotalAsset)
+                            .double()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrTotalLiability)
+                            .double()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrNetAsset)
+                            .double()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrMonthOnMonth)
+                            .double()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrYearOnYear)
+                            .double()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(SysBackupMonthRecord::MrNote).string())
+                    .col(ColumnDef::new(SysBackupMonthRecord::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysBackupMonthRecord::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysBackupMonthRecord::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // SYS_BACKUP_MONTH_ITEM_RECORD
+        manager
+            .create_table(
+                Table::create()
+                    .table(SysBackupMonthItemRecord::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrYear)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrMonth)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrBookId)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrTemplateItemId)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrItemValue)
+                            .double()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(SysBackupMonthItemRecord::MrCreateBy).string())
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrCreateTime)
+                            .date_time()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(ColumnDef::new(SysBackupMonthItemRecord::MrUpdateBy).string())
+                    .col(ColumnDef::new(SysBackupMonthItemRecord::MrUpdateTime).date_time())
+                    .col(
+                        ColumnDef::new(SysBackupMonthItemRecord::MrIsDeleted)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(SysBackupMonthItemRecord::Table)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(SysBackupMonthRecord::Table)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(SysBackupTemplateItem::Table)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(Table::drop().table(SysBackupBook::Table).to_owned())
+            .await
+    }
+}
+
+#[derive(Iden)]
+enum SysBackupBook {
+    Table,
+    MrId,
+    MrUserId,
+    MrBookName,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}
+
+#[derive(Iden)]
+enum SysBackupTemplateItem {
+    Table,
+    MrId,
+    MrBookId,
+    MrItemName,
+    MrItemType,
+    MrIcon,
+    MrSort,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}
+
+#[derive(Iden)]
+enum SysBackupMonthRecord {
+    Table,
+    MrId,
+    MrUserId,
+    MrBookId,
+    MrYear,
+    MrMonth,
+    MrTotalAsset,
+    MrTotalLiability,
+    MrNetAsset,
+    MrMonthOnMonth,
+    MrYearOnYear,
+    MrNote,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}
+
+#[derive(Iden)]
+enum SysBackupMonthItemRecord {
+    Table,
+    MrId,
+    MrYear,
+    MrMonth,
+    MrBookId,
+    MrTemplateItemId,
+    MrItemValue,
+    MrCreateBy,
+    MrCreateTime,
+    MrUpdateBy,
+    MrUpdateTime,
+    MrIsDeleted,
+}
