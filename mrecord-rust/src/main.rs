@@ -1,4 +1,5 @@
 mod config;
+mod constant;
 mod db;
 mod entity;
 mod error;
