@@ -3,6 +3,9 @@
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "outDir": "./node_modules/.tmp/tsc-output-app",
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
     "types": [
       "vite/client"
     ],
@@ -12,14 +15,13 @@
         "src/*"
       ]
     },
-    /* Linting */
+    "ignoreDeprecations": "6.0",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "strict": true,
-    "skipLibCheck": true,
-    "noEmit": false
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*.ts",
