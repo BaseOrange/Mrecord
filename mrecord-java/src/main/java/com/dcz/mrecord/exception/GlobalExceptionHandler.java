@@ -8,7 +8,10 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -55,6 +58,19 @@ public class GlobalExceptionHandler {
     public Result<Void> handleNullPointerException(NullPointerException e) {
         log.error("空指针异常", e);
         return Result.fail(ResCode.ERROR.getCode(), "发生数据取值异常，请联系管理员。");
+    }
+
+    /**
+     * 捕获静态资源不存在异常（如 Chrome DevTools 探测请求 / 旧版本缓存资源），
+     * 直接返回 HTTP 404 状态码，不输出 JSON 体，避免浏览器收到 JSON 后白屏。
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public void handleNoResourceFoundException(NoResourceFoundException e, HttpServletResponse response)
+            throws IOException {
+        log.debug("静态资源未找到：{}", e.getMessage());
+        if (!response.isCommitted()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
     }
 
     /**
