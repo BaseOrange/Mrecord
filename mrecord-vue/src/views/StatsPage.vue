@@ -33,18 +33,18 @@ const formatMoney = (val?: number) => {
   return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-// 环比/同比颜色
+// 环比/同比颜色：正红负绿
 const getChangeColor = (val?: number) => {
   if (val === undefined || val === null || val === 0) return '#8e8e93'
-  return val > 0 ? '#34c759' : '#ff3b30'
+  return val > 0 ? '#ff3b30' : '#34c759'
 }
 
-// 环比/同比文字
+// 环比/同比文字（百分比，保留正负号）
 const getChangeText = (val?: number) => {
   if (val === undefined || val === null) return '--'
   if (val === 0) return '持平'
   const prefix = val > 0 ? '+' : ''
-  return prefix + formatMoney(val)
+  return prefix + val.toFixed(2) + '%'
 }
 
 // 点击卡片 → 详情页
@@ -104,7 +104,7 @@ const onCardClick = (item: BookStatistics) => {
           <div class="card-body">
             <div class="main-value">
               <span class="main-label">净资产</span>
-              <span class="main-num" :style="{ color: (item.netAsset || 0) >= 0 ? '#34c759' : '#ff3b30' }">
+              <span class="main-num" style="color: #ff3b30;">
                 {{ formatMoney(item.netAsset) }}
               </span>
             </div>

@@ -45,6 +45,13 @@ const formatMoney = (val?: number) => {
   return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// 环比/同比格式化（百分比，保留正负号，0显示持平）
+const formatChange = (val?: number) => {
+  if (val === undefined || val === null) return '--'
+  if (val === 0) return '持平'
+  return (val > 0 ? '+' : '') + val.toFixed(2) + '%'
+}
+
 // 资产趋势图数据
 const assetDatasets = computed(() => [
   {
@@ -60,7 +67,7 @@ const assetDatasets = computed(() => [
   {
     label: '净资产',
     data: records.value.map(r => r.netAsset || 0),
-    color: '#FF6500',
+    color: '#2196F3',
   },
 ])
 
@@ -138,11 +145,15 @@ const latest = computed(() => {
             </div>
             <div class="summary-item">
               <span class="summary-label">环比</span>
-              <span class="summary-value" style="color: #2196F3;">{{ formatMoney(latest.monthOnMonth) }}</span>
+              <span class="summary-value" :style="{ color: (latest.monthOnMonth || 0) > 0 ? '#ff3b30' : (latest.monthOnMonth || 0) < 0 ? '#34c759' : '#8e8e93' }">
+                {{ formatChange(latest.monthOnMonth) }}
+              </span>
             </div>
             <div class="summary-item">
               <span class="summary-label">同比</span>
-              <span class="summary-value" style="color: #9C27B0;">{{ formatMoney(latest.yearOnYear) }}</span>
+              <span class="summary-value" :style="{ color: (latest.yearOnYear || 0) > 0 ? '#ff3b30' : (latest.yearOnYear || 0) < 0 ? '#34c759' : '#8e8e93' }">
+                {{ formatChange(latest.yearOnYear) }}
+              </span>
             </div>
           </div>
         </div>
@@ -156,6 +167,7 @@ const latest = computed(() => {
         <!-- 环比同比趋势图 -->
         <div class="chart-card">
           <div class="chart-title">环比 / 同比变动</div>
+          <div class="chart-subtitle">环比：与上月相比的变化&nbsp;&nbsp;|&nbsp;&nbsp;同比：与去年同月相比的变化</div>
           <TrendChart :labels="labels" :datasets="changeDatasets" />
         </div>
       </template>
@@ -319,5 +331,12 @@ const latest = computed(() => {
   font-weight: 600;
   color: #1d1d1f;
   padding: 4px 4px 8px;
+}
+
+.chart-subtitle {
+  font-size: 12px;
+  color: #aeaeb2;
+  padding: 0 4px 12px;
+  line-height: 1.5;
 }
 </style>
