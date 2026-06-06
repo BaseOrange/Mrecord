@@ -216,7 +216,7 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     public List<FinMonthRecord> getBookOneYearRecord(String id, DataStatisticsDTO dataStatisticsDTO) {
         QueryWrapper qwObj = QueryWrapper.create();
         qwObj.eq(FinMonthRecord::getBookId, id);
-        qwObj.where("MR_YEAR * 100 + MR_MONTH between ? and ?", dataStatisticsDTO.getStartYearMonth(), dataStatisticsDTO.getEndYearMonth());
+        //qwObj.where("MR_YEAR * 100 + MR_MONTH between ? and ?", dataStatisticsDTO.getStartYearMonth(), dataStatisticsDTO.getEndYearMonth());
         qwObj.orderBy(FinMonthRecord::getBookId, true);
         qwObj.orderBy(FinMonthRecord::getYear, true);
         qwObj.orderBy(FinMonthRecord::getMonth, true);
