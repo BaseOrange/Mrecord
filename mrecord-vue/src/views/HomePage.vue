@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
-import { formatMoney, getChangeColor, getChangePrefix } from '@/utils/format'
+import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
 
@@ -119,17 +119,14 @@ const onBookCardClick = (item: BookStatistics) => {
         <div class="overview-main">
           <span class="overview-label">净资产</span>
           <div class="overview-net-row">
-            <span
-              class="overview-net-value"
-              :style="{ color: overview.netAsset >= 0 ? '#34c759' : '#ff3b30' }"
-            >
+            <span class="overview-net-value" style="color: #ff3b30;">
               {{ formatMoney(overview.netAsset) }}
             </span>
             <span
-              class="overview-mom"
-              :style="{ color: getChangeColor(overview.monthOnMonth) }"
+              class="overview-mom-badge"
+              :style="{ color: overview.monthOnMonth > 0 ? '#ff3b30' : overview.monthOnMonth < 0 ? '#34c759' : '#8e8e93' }"
             >
-              {{ getChangePrefix(overview.monthOnMonth) }}{{ formatMoney(overview.monthOnMonth) }}
+              环比上月：{{ (overview.monthOnMonth > 0 ? '+' : '') + overview.monthOnMonth.toFixed(2) }}%
             </span>
           </div>
         </div>
@@ -158,17 +155,14 @@ const onBookCardClick = (item: BookStatistics) => {
           @click="onBookCardClick(item)"
         >
           <span class="book-mini-name">{{ item.bookName }}</span>
-          <span
-            class="book-mini-net"
-            :style="{ color: (item.netAsset || 0) >= 0 ? '#34c759' : '#ff3b30' }"
-          >
+          <span class="book-mini-net" style="color: #ff3b30;">
             {{ formatMoney(item.netAsset || 0) }}
           </span>
           <span
             class="book-mini-mom"
-            :style="{ color: getChangeColor(item.monthOnMonth || 0) }"
+            :style="{ color: (item.monthOnMonth || 0) > 0 ? '#ff3b30' : (item.monthOnMonth || 0) < 0 ? '#34c759' : '#8e8e93' }"
           >
-            {{ getChangePrefix(item.monthOnMonth || 0) }}{{ formatMoney(item.monthOnMonth || 0) }}
+            环比：{{ ((item.monthOnMonth || 0) > 0 ? '+' : '') + (item.monthOnMonth || 0).toFixed(2) }}%
           </span>
         </div>
       </div>
@@ -321,8 +315,12 @@ const onBookCardClick = (item: BookStatistics) => {
   letter-spacing: -1px;
 }
 
-.overview-mom {
-  font-size: 14px;
+.overview-mom-badge {
+  display: inline-block;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 13px;
   font-weight: 600;
 }
 
