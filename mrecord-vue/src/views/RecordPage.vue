@@ -345,8 +345,7 @@ const handleSave = async () => {
 /* 顶部导航 */
 .page-header {
   background: #fff;
-  padding: 12px 16px;
-  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
