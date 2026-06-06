@@ -240,7 +240,7 @@ const goBack = () => {
     <!-- 顶部导航 -->
     <div class="nav-header">
       <button class="nav-back" @click="goBack">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
@@ -469,8 +469,7 @@ const goBack = () => {
 /* 顶部导航 */
 .nav-header {
   background: #fff;
-  padding: 14px 16px;
-  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -481,7 +480,6 @@ const goBack = () => {
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 32px;
   border: none;
   background: none;
   color: #333;
@@ -492,9 +490,11 @@ const goBack = () => {
 }
 .nav-title {
   flex: 1;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: #333;
+  margin: 0;
+  line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

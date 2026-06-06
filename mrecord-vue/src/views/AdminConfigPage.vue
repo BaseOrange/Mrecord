@@ -25,7 +25,7 @@ async function handleRefreshCache() {
     <!-- 顶部导航 -->
     <div class="page-header">
       <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M15 18l-6-6 6-6" />
         </svg>
       </button>
@@ -80,23 +80,24 @@ async function handleRefreshCache() {
   font-size: 18px;
   font-weight: 600;
   color: #333;
+  margin: 0;
+  line-height: 1;
 }
 .back-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
-  height: 36px;
   border-radius: 50%;
   border: none;
-  background: #f5f5f5;
-  color: #666;
+  background: transparent;
+  color: #333;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s;
   padding: 0;
 }
 .back-btn:active {
-  background: #eee;
+  background: rgba(0, 0, 0, 0.06);
   color: #FF6500;
 }
 .header-spacer {

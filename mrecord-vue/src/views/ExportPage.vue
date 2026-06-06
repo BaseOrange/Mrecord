@@ -160,7 +160,7 @@ const onScroll = () => {
     <!-- 顶部标题 -->
     <div class="page-header">
       <button class="header-back" @click="router.back()">
-        <var-icon name="chevron-left" :size="24" color="#333" />
+        <var-icon name="chevron-left" :size="18" color="#333" />
       </button>
       <h2>数据导出</h2>
       <div class="header-placeholder"></div>
@@ -285,13 +285,15 @@ const onScroll = () => {
   justify-content: space-between;
 }
 .page-header h2 {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: #333;
+  margin: 0;
+  line-height: 1;
 }
 .header-back {
   width: 32px;
-  height: 32px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;

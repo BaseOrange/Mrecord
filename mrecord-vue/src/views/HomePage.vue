@@ -186,6 +186,8 @@ const onBookCardClick = (item: BookStatistics) => {
   font-size: 18px;
   font-weight: 600;
   color: #333;
+  margin: 0;
+  line-height: 1;
 }
 
 .header-en {

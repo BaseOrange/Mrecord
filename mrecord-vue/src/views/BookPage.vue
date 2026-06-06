@@ -374,10 +374,11 @@ const handleDelete = async () => {
   font-size: 18px;
   font-weight: 600;
   color: #333;
+  margin: 0;
+  line-height: 1;
 }
 .header-add-btn {
   width: 32px;
-  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -385,9 +386,10 @@ const handleDelete = async () => {
   border-radius: 50%;
   background: #FF6500;
   color: #fff;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 1;
+  padding: 0;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(255, 101, 0, 0.3);
   transition: all 0.2s;

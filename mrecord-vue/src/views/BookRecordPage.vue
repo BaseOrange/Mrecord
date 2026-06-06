@@ -90,7 +90,7 @@ const onMonthClick = (record: FinMonthRecord) => {
     <!-- 顶部导航 -->
     <div class="page-header">
       <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" width="24" height="24">
+        <svg viewBox="0 0 24 24" width="18" height="18">
           <path d="M15 19l-7-7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
@@ -197,8 +197,8 @@ const onMonthClick = (record: FinMonthRecord) => {
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
 }
 .back-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  padding: 0;
   border: none;
   background: transparent;
   color: #333;
@@ -214,12 +214,14 @@ const onMonthClick = (record: FinMonthRecord) => {
   background: rgba(0, 0, 0, 0.06);
 }
 .header-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: #1d1d1f;
+  margin: 0;
+  line-height: 1;
 }
 .header-placeholder {
-  width: 36px;
+  width: 32px;
 }
 
 /* 页面主体 */
