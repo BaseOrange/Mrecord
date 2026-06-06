@@ -6,6 +6,7 @@ import { listBooks } from '@/api/modules/book'
 import type { BookInfo } from '@/api/modules/book'
 import { exportBookData, listExportTasks } from '@/api/modules/exportTask'
 import type { ExportTaskInfo } from '@/api/modules/exportTask'
+import { getEmailConfig } from '@/api/modules/config'
 
 const router = useRouter()
 
@@ -32,6 +33,21 @@ const endMonth = ref('')
 const exporting = ref(false)
 
 const handleExport = async () => {
+  // 检查邮箱配置
+  exporting.value = true
+  try {
+    const emailConfig = await getEmailConfig()
+    if (!emailConfig) {
+      Snackbar.warning('邮箱服务尚未配置，请联系管理员完成邮箱配置后再导出数据')
+      return
+    }
+  } catch {
+    Snackbar.warning('邮箱服务尚未配置，请联系管理员完成邮箱配置后再导出数据')
+    return
+  } finally {
+    exporting.value = false
+  }
+
   const params: { bookId?: string; startYearMonth?: string; endYearMonth?: string } = {}
 
   if (selectedBookId.value) {
@@ -48,7 +64,6 @@ const handleExport = async () => {
   try {
     await exportBookData(params)
     Snackbar.success('导出任务已创建')
-    // 刷新任务列表
     await fetchTasks(true)
   } catch {
     // 拦截器已处理

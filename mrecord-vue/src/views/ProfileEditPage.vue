@@ -110,6 +110,7 @@ const onSubmit = async () => {
               {{ day }}
             </button>
           </div>
+          <p class="remind-day-hint">若当月无该日期（如2月无30/31号），将自动取月末最后一天</p>
         </div>
       </div>
 
@@ -286,6 +287,13 @@ const onSubmit = async () => {
   background: #FF6500;
   border-color: #FF6500;
   color: #fff;
+}
+
+.remind-day-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #999;
+  line-height: 1.5;
 }
 
 /* 提交按钮 */
