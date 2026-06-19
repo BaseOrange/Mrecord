@@ -19,3 +19,14 @@ sea-orm = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "w
 chrono = { version = "0.4", features = ["serde"] }
 sea-orm-migration = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-rustls"] }
 migration = { path = "migration" }
+# 用户模块所需依赖
+# bcrypt: 密码哈希（对应 Java BCrypt）
+bcrypt = "0.15"
+# jsonwebtoken: JWT 生成与解析（对应 Java io.jsonwebtoken）
+jsonwebtoken = "9"
+# uuid: 生成用户主键（对应 Java IdUtil.simpleUUID）
+uuid = { version = "1", features = ["v4"] }
+# regex: 邮箱格式校验（替代 Java Validator.isEmail）
+regex = "1"
+# once_cell: 进程级常量缓存（用于编译一次的 Regex）
+once_cell = "1"
