@@ -52,5 +52,34 @@ pub fn build(state: AppState) -> Router {
             post(handler::user::admin_enable_or_disable),
         )
         .route("/user/deleteUser", post(handler::user::admin_delete_user))
+        // ==================== 配置项模块 ====================
+        // 对应 Java: SysConfigController（@RequestMapping("/config")）
+        .route(
+            "/config/refreshCache",
+            post(handler::sys_config::refresh_cache),
+        )
+        .route("/config/initialized", post(handler::sys_config::initialized))
+        .route(
+            "/config/registerEnabled",
+            post(handler::sys_config::register_enabled),
+        )
+        .route(
+            "/config/getEmailConfig",
+            post(handler::sys_config::get_email_config),
+        )
+        .route(
+            "/config/getSiteConfig",
+            post(handler::sys_config::get_site_config),
+        )
+        .route(
+            "/config/updateEmailConfig",
+            post(handler::sys_config::update_email_config),
+        )
+        .route(
+            "/config/updateSiteConfig",
+            post(handler::sys_config::update_site_config),
+        )
+        .route("/config/initAdmin", post(handler::sys_config::init_admin))
+        .route("/config/testEmail", post(handler::sys_config::test_email))
         .with_state(state)
 }

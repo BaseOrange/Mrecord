@@ -8,11 +8,16 @@ mod handler;
 mod middleware;
 mod model;
 mod router;
+mod service;
 mod util;
+
+use std::sync::Arc;
 
 use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
 use tracing_subscriber;
+
+use crate::service::sys_config::SysConfigService;
 
 /// 全局应用状态，由 Axum 的 `with_state` 注入到所有 handler。
 ///
@@ -27,6 +32,10 @@ pub struct AppState {
     pub activate_token_secret: String,
     /// 重置密码令牌密钥（对应 Java `MrConf.resetPwdTokenSecret`）
     pub reset_pwd_token_secret: String,
+    /// 系统配置项服务（持有进程级缓存）
+    ///
+    /// 对应 Java `@Resource SysConfigService`。使用 `Arc` 在多个 handler 间共享同一份缓存。
+    pub config_service: Arc<SysConfigService>,
 }
 
 #[tokio::main]
@@ -40,6 +49,7 @@ async fn main() {
         jwt_secret: "mrecord-dev-jwt-secret-please-change-me".to_string(),
         activate_token_secret: "mrecord-dev-activate-secret-please-change".to_string(),
         reset_pwd_token_secret: "mrecord-dev-reset-pwd-secret-please-change".to_string(),
+        config_service: SysConfigService::new(),
     };
 
     let app = router::build(state);

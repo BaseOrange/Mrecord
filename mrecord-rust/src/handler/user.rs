@@ -56,6 +56,26 @@ fn hash_password(pwd: &str) -> Result<String, AppError> {
     hash(pwd, DEFAULT_COST).map_err(|e| AppError::Internal(anyhow::anyhow!(e)))
 }
 
+/// 拼接账户激活链接
+///
+/// 与 Java 端约定一致：站点地址 + `/active?token=`。未配置 webSite 则只返回 token。
+fn build_activate_link(web_site: Option<&str>, token: &str) -> String {
+    match web_site.filter(|s| !s.is_empty()) {
+        Some(prefix) => format!("{}/active?token={}", prefix.trim_end_matches('/'), token),
+        None => token.to_string(),
+    }
+}
+
+/// 拼接重置密码链接
+///
+/// 与 Java 端约定一致：站点地址 + `/reset?token=`。未配置 webSite 则只返回 token。
+fn build_reset_link(web_site: Option<&str>, token: &str) -> String {
+    match web_site.filter(|s| !s.is_empty()) {
+        Some(prefix) => format!("{}/reset?token={}", prefix.trim_end_matches('/'), token),
+        None => token.to_string(),
+    }
+}
+
 // ==================== 接口 handler ====================
 
 /// 初始化管理员账户：`POST /user/initAdmin`
@@ -136,7 +156,14 @@ pub async fn register(
     State(state): State<AppState>,
     Json(params): Json<UserDto>,
 ) -> Result<Json<ApiResponse<String>>, AppError> {
-    // TODO: 接入 SysConfigService 后增加 `isRegisterEnabled` 开关校验
+    // 校验注册功能是否开启（对应 Java `sysConfigService.isRegisterEnabled`）
+    if !state.config_service.is_register_enabled(&state.db).await? {
+        return Err(AppError::Business {
+            code: ResCode::NoPermission.code().to_string(),
+            message: "系统未开启注册功能".to_string(),
+        });
+    }
+
     let email = params.email.unwrap_or_default();
     if email.trim().is_empty() {
         return Err(param_err("邮箱不能为空"));
@@ -188,11 +215,14 @@ pub async fn register(
     // 生成激活链接（Java 端通过 SecureUtil.aes 加密；此处用专用 JWT 等价表达）
     let activate_token = token::create(&user_id, TokenPurpose::Activate, &state.activate_token_secret)
         .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+    // 与 Java 行为一致：以站点地址为前缀拼接激活链接，未配置 webSite 则只发 token
+    let web_site = state.config_service.get_web_site(&state.db).await?;
+    let activate_link = build_activate_link(web_site.as_deref(), &activate_token);
     // TODO: 接入邮件服务后改为真正发送
     tracing::info!(
-        "[stub email] 注册成功，激活 token 应通过邮件发送给 {}: {}",
+        "[stub email] 注册成功，激活链接应通过邮件发送给 {}: {}",
         email,
-        activate_token
+        activate_link
     );
 
     Ok(Json(ApiResponse::success(email)))
@@ -275,11 +305,13 @@ pub async fn resend_activate_email(
     let activate_token =
         token::create(&user.id, TokenPurpose::Activate, &state.activate_token_secret)
             .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+    let web_site = state.config_service.get_web_site(&state.db).await?;
+    let activate_link = build_activate_link(web_site.as_deref(), &activate_token);
     // TODO: 接入邮件服务后改为真正发送
     tracing::info!(
-        "[stub email] 重新发送激活 token 给 {}: {}",
+        "[stub email] 重新发送激活链接给 {}: {}",
         email,
-        activate_token
+        activate_link
     );
 
     Ok(Json(ApiResponse::<()>::success_empty()))
@@ -360,11 +392,13 @@ pub async fn forgot_password(
         &state.reset_pwd_token_secret,
     )
     .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+    let web_site = state.config_service.get_web_site(&state.db).await?;
+    let reset_link = build_reset_link(web_site.as_deref(), &reset_token);
     // TODO: 接入邮件服务后改为真正发送
     tracing::info!(
-        "[stub email] 找回密码 token 应通过邮件发送给 {}: {}",
+        "[stub email] 找回密码链接应通过邮件发送给 {}: {}",
         email,
-        reset_token
+        reset_link
     );
 
     Ok(Json(ApiResponse::<()>::success_empty()))
