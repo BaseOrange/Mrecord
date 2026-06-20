@@ -4,11 +4,11 @@
 //! 所有路由集中在此处注册，方便统一查阅。
 
 use axum::{
-    Router,
     routing::{get, post},
+    Router,
 };
 
-use crate::{AppState, handler};
+use crate::{handler, AppState};
 
 /// 构建应用路由
 pub fn build(state: AppState) -> Router {

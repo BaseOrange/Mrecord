@@ -6,8 +6,8 @@
 //! 每个 handler 仅负责参数提取与拼装响应，业务逻辑直接内联在这里
 //! （Rust 项目暂未拆分 service 层；后续若膨胀可按 Java 项目拆出 `service/user.rs`）。
 
-use axum::{Json, extract::State};
-use bcrypt::{DEFAULT_COST, hash, verify};
+use axum::{extract::State, Json};
+use bcrypt::{hash, verify, DEFAULT_COST};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use sea_orm::{
@@ -16,7 +16,6 @@ use sea_orm::{
 use uuid::Uuid;
 
 use crate::{
-    AppState,
     common::{
         page::PageResult,
         res_code::ResCode,
@@ -34,6 +33,7 @@ use crate::{
         jwt,
         token::{self, TokenPurpose},
     },
+    AppState,
 };
 
 /// 邮箱格式校验正则

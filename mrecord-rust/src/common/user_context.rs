@@ -19,8 +19,8 @@ use axum::{
 use sea_orm::EntityTrait;
 
 use crate::{
-    AppState, common::res_code::ResCode, constant::user_status::UserStatus, entity::sys_user,
-    error::AppError, util::jwt,
+    common::res_code::ResCode, constant::user_status::UserStatus, entity::sys_user, error::AppError,
+    util::jwt, AppState,
 };
 
 /// 已登录用户提取器，仅包含 userId

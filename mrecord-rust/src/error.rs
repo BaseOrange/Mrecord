@@ -7,7 +7,7 @@
 //! 在 Axum 中，`AppError` 实现 `IntoResponse` 即等价于 `@RestControllerAdvice` 的效果，
 //! handler 里直接 `?` 抛出即可被自动转为统一 JSON 响应。
 
-use axum::{Json, http::StatusCode, response::IntoResponse};
+use axum::{http::StatusCode, response::IntoResponse, Json};
 
 use crate::common::res_code::ResCode;
 use crate::common::result::ApiResponse;

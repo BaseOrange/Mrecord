@@ -19,9 +19,9 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
 use lettre::{
-    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
-    message::{Attachment, Mailbox, MultiPart, SinglePart, header::ContentType},
-    transport::smtp::{authentication::Credentials, client::Tls, client::TlsParameters},
+    message::{header::ContentType, Attachment, Mailbox, MultiPart, SinglePart}, transport::smtp::{authentication::Credentials, client::Tls, client::TlsParameters}, AsyncSmtpTransport, AsyncTransport,
+    Message,
+    Tokio1Executor,
 };
 use sea_orm::DatabaseConnection;
 
