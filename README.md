@@ -1,6 +1,7 @@
 <p align="center">
-  <img src="README/logo1.jpg" alt="Netcatty" width="128" height="128">
+  <img src="README/logo1.png" alt="Mrecord" width="128" height="128">
 </p>
+
 
 <h1 align="center">Mrecord</h1>
 
@@ -12,7 +13,7 @@
 
 
 <p align="center">
-  一个基于 Java、Vue3 构建的快照式月度记账服务。<br/>
+  一个基于 Java/Rust、Vue3 构建的快照式月度记账服务。<br/>
   多用户、多账簿、环比同比数据分析、一键导出、月度提醒
 </p>
 
