@@ -81,7 +81,8 @@ pub struct TemplateItemEntry {
     pub item_name: String,
     /// 账簿类型（-1:负债，0:不统计仅记录，1:资产）
     pub item_type: i32,
-    /// 图标标识
+    /// 图标标识；兼容前端旧请求未传 icon 的模板项，等同 Java 端空字符串默认值。
+    #[serde(default)]
     pub icon: String,
     /// 展示排序号
     pub sort: String,

@@ -156,7 +156,7 @@ pub async fn init_admin(
         is_deleted: Set(0),
         ..Default::default()
     };
-    active.insert(&state.db).await?;
+    UserEntity::insert(active).exec(&state.db).await?;
 
     Ok(Json(ApiResponse::success(user_id)))
 }
@@ -223,7 +223,7 @@ pub async fn register(
         is_deleted: Set(0),
         ..Default::default()
     };
-    active.insert(&state.db).await?;
+    UserEntity::insert(active).exec(&state.db).await?;
 
     // 生成激活链接（Java 端通过 SecureUtil.aes 加密；此处用专用 JWT 等价表达）
     let activate_token = token::create(

@@ -7,8 +7,7 @@ use std::sync::Arc;
 
 use chrono::Local;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, Set,
+    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 use uuid::Uuid;
 
@@ -51,7 +50,7 @@ impl SysUserOperateLogService {
         let user_id = user_id.unwrap_or_default();
         let content = truncate_content(content);
         let now = Local::now().naive_local();
-        OperateLogActive {
+        OperateLogEntity::insert(OperateLogActive {
             id: Set(Uuid::new_v4().simple().to_string()),
             user_id: Set(user_id.clone()),
             operate_type: Set(operate_type),
@@ -66,8 +65,8 @@ impl SysUserOperateLogService {
             update_by: Set(None),
             update_time: Set(None),
             is_deleted: Set(0),
-        }
-        .insert(db)
+        })
+        .exec(db)
         .await?;
         Ok(())
     }

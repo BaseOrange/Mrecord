@@ -39,8 +39,8 @@ impl IntoResponse for AppError {
                 let body = ApiResponse::<()>::fail_with(code, message);
                 (StatusCode::OK, Json(body)).into_response()
             }
-            AppError::Internal(e) => {
-                tracing::error!("internal error: {:?}", e);
+            AppError::Internal(err) => {
+                tracing::error!(?err, backtrace = %err.backtrace(), "系统内部异常");
                 let body = ApiResponse::<()>::fail(ResCode::Error);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(body)).into_response()
             }
