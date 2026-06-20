@@ -15,7 +15,6 @@ use std::sync::Arc;
 
 use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
-use tracing_subscriber;
 
 use crate::service::{
     email::EmailService, export_task::ExportTaskService,
@@ -60,7 +59,12 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "mrecord_rust=info,tower_http=info".into()),
+        )
+        .init();
 
     let db = db::connect().await;
     let config_service = SysConfigService::new();
