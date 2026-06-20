@@ -6,7 +6,10 @@
 use std::collections::HashMap;
 
 use axum::{Json, extract::State};
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder, Set,
+    TransactionTrait,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -37,15 +40,18 @@ fn param_err(msg: impl Into<String>) -> AppError {
 }
 
 /// 校验账簿存在且属于当前登录用户。
-async fn check_book_ownership(
-    state: &AppState,
+async fn check_book_ownership<C>(
+    db: &C,
     book_id: &str,
     user_id: &str,
-) -> Result<fin_book::Model, AppError> {
+) -> Result<fin_book::Model, AppError>
+where
+    C: ConnectionTrait,
+{
     let book = BookEntity::find_by_id(book_id.to_string())
         .filter(BookCol::UserId.eq(user_id))
         .filter(BookCol::IsDeleted.eq(0))
-        .one(&state.db)
+        .one(db)
         .await?
         .ok_or(AppError::ResCode(ResCode::FinBookNotFound))?;
 
@@ -53,19 +59,22 @@ async fn check_book_ownership(
 }
 
 /// 校验账簿存在且属于当前登录用户，并返回模板项列表。
-async fn check_book_and_get_template_items(
-    state: &AppState,
+async fn check_book_and_get_template_items<C>(
+    db: &C,
     book_id: &str,
     user_id: &str,
-) -> Result<Vec<fin_template_item::Model>, AppError> {
+) -> Result<Vec<fin_template_item::Model>, AppError>
+where
+    C: ConnectionTrait,
+{
     // 先校验账簿权限
-    let _ = check_book_ownership(state, book_id, user_id).await?;
+    let _ = check_book_ownership(db, book_id, user_id).await?;
 
     // 查询模板项
     let items = TemplateItemEntity::find()
         .filter(TemplateItemCol::BookId.eq(book_id))
         .filter(TemplateItemCol::IsDeleted.eq(0))
-        .all(&state.db)
+        .all(db)
         .await?;
 
     if items.is_empty() {
@@ -76,18 +85,21 @@ async fn check_book_and_get_template_items(
 }
 
 /// 获取指定年月的月度汇总记录。
-async fn get_month_record(
-    state: &AppState,
+async fn get_month_record<C>(
+    db: &C,
     book_id: &str,
     year: i32,
     month: i32,
-) -> Result<Option<fin_month_record::Model>, AppError> {
+) -> Result<Option<fin_month_record::Model>, AppError>
+where
+    C: ConnectionTrait,
+{
     let record = MonthRecordEntity::find()
         .filter(MonthRecordCol::BookId.eq(book_id))
         .filter(MonthRecordCol::Year.eq(year))
         .filter(MonthRecordCol::Month.eq(month))
         .filter(MonthRecordCol::IsDeleted.eq(0))
-        .one(&state.db)
+        .one(db)
         .await?;
     Ok(record)
 }
@@ -131,14 +143,17 @@ struct CalculatedMonthRecord {
 }
 
 /// 计算月度汇总数据。
-async fn calculate_month_record_data(
-    state: &AppState,
+async fn calculate_month_record_data<C>(
+    db: &C,
     book_id: &str,
     year: i32,
     month: i32,
     item_list: &[MonthItemEntry],
     template_items: &[fin_template_item::Model],
-) -> Result<CalculatedMonthRecord, AppError> {
+) -> Result<CalculatedMonthRecord, AppError>
+where
+    C: ConnectionTrait,
+{
     // 构建模板项类型映射
     let type_map: HashMap<_, _> = template_items
         .iter()
@@ -167,13 +182,13 @@ async fn calculate_month_record_data(
 
     // 计算环比（与上月比较）
     let (prev_year, prev_month) = prev_month(year, month);
-    let prev_record = get_month_record(state, book_id, prev_year, prev_month).await?;
+    let prev_record = get_month_record(db, book_id, prev_year, prev_month).await?;
     let month_on_month = prev_record
         .map(|r| calculate_growth_rate(net_asset, r.net_asset))
         .unwrap_or(0.0);
 
     // 计算同比（与去年同月比较）
-    let last_year_record = get_month_record(state, book_id, year - 1, month).await?;
+    let last_year_record = get_month_record(db, book_id, year - 1, month).await?;
     let year_on_year = last_year_record
         .map(|r| calculate_growth_rate(net_asset, r.net_asset))
         .unwrap_or(0.0);
@@ -188,16 +203,19 @@ async fn calculate_month_record_data(
 }
 
 /// 插入或更新月度汇总记录。
-async fn upsert_month_record(
-    state: &AppState,
+async fn upsert_month_record<C>(
+    db: &C,
     book_id: &str,
     year: i32,
     month: i32,
     user_id: &str,
     note: Option<String>,
     calculated: &CalculatedMonthRecord,
-) -> Result<fin_month_record::Model, AppError> {
-    let existing = get_month_record(state, book_id, year, month).await?;
+) -> Result<fin_month_record::Model, AppError>
+where
+    C: ConnectionTrait,
+{
+    let existing = get_month_record(db, book_id, year, month).await?;
 
     let record = if let Some(existing) = existing {
         let mut active: MonthRecordActive = existing.into();
@@ -209,7 +227,7 @@ async fn upsert_month_record(
         active.note = Set(note);
         active.update_by = Set(Some(user_id.to_string()));
         active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
-        active.update(&state.db).await?
+        active.update(db).await?
     } else {
         let active = MonthRecordActive {
             id: Set(Uuid::new_v4().simple().to_string()),
@@ -226,31 +244,34 @@ async fn upsert_month_record(
             create_by: Set(Some(user_id.to_string())),
             ..Default::default()
         };
-        active.insert(&state.db).await?
+        active.insert(db).await?
     };
 
     Ok(record)
 }
 
 /// 重新计算后续月份的环比和明年同月的同比。
-async fn recalculate_related_months(
-    state: &AppState,
+async fn recalculate_related_months<C>(
+    db: &C,
     book_id: &str,
     year: i32,
     month: i32,
     user_id: &str,
     template_items: &[fin_template_item::Model],
-) -> Result<(), AppError> {
+) -> Result<(), AppError>
+where
+    C: ConnectionTrait,
+{
     // 更新下个月的环比
     let (next_year, next_month_val) = next_month(year, month);
-    if let Some(next_record) = get_month_record(state, book_id, next_year, next_month_val).await? {
+    if let Some(next_record) = get_month_record(db, book_id, next_year, next_month_val).await? {
         // 获取下个月的明细项
         let next_items = MonthItemEntity::find()
             .filter(MonthItemCol::BookId.eq(book_id))
             .filter(MonthItemCol::Year.eq(next_year))
             .filter(MonthItemCol::Month.eq(next_month_val))
             .filter(MonthItemCol::IsDeleted.eq(0))
-            .all(&state.db)
+            .all(db)
             .await?;
 
         if !next_items.is_empty() {
@@ -264,7 +285,7 @@ async fn recalculate_related_months(
                 .collect();
 
             let calculated = calculate_month_record_data(
-                state,
+                db,
                 book_id,
                 next_year,
                 next_month_val,
@@ -282,19 +303,19 @@ async fn recalculate_related_months(
             active.year_on_year = Set(calculated.year_on_year);
             active.update_by = Set(Some(user_id.to_string()));
             active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
-            active.update(&state.db).await?;
+            active.update(db).await?;
         }
     }
 
     // 更新明年同月的同比
-    if let Some(next_year_record) = get_month_record(state, book_id, year + 1, month).await? {
+    if let Some(next_year_record) = get_month_record(db, book_id, year + 1, month).await? {
         // 获取明年同月的明细项
         let next_year_items = MonthItemEntity::find()
             .filter(MonthItemCol::BookId.eq(book_id))
             .filter(MonthItemCol::Year.eq(year + 1))
             .filter(MonthItemCol::Month.eq(month))
             .filter(MonthItemCol::IsDeleted.eq(0))
-            .all(&state.db)
+            .all(db)
             .await?;
 
         if !next_year_items.is_empty() {
@@ -307,15 +328,9 @@ async fn recalculate_related_months(
                 })
                 .collect();
 
-            let calculated = calculate_month_record_data(
-                state,
-                book_id,
-                year + 1,
-                month,
-                &entries,
-                template_items,
-            )
-            .await?;
+            let calculated =
+                calculate_month_record_data(db, book_id, year + 1, month, &entries, template_items)
+                    .await?;
 
             // 更新明年同月记录
             let mut active: MonthRecordActive = next_year_record.clone().into();
@@ -326,7 +341,7 @@ async fn recalculate_related_months(
             active.year_on_year = Set(calculated.year_on_year);
             active.update_by = Set(Some(user_id.to_string()));
             active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
-            active.update(&state.db).await?;
+            active.update(db).await?;
         }
     }
 
@@ -355,8 +370,9 @@ pub async fn insert_month_item(
         return Err(param_err("账目列表不能为空"));
     }
 
+    let txn = state.db.begin().await?;
     // 校验账簿权限并获取模板项
-    let template_items = check_book_and_get_template_items(&state, book_id, &user_id).await?;
+    let template_items = check_book_and_get_template_items(&txn, book_id, &user_id).await?;
 
     // 校验明细项
     let template_ids: std::collections::HashSet<_> =
@@ -386,7 +402,7 @@ pub async fn insert_month_item(
             create_by: Set(Some(user_id.clone())),
             ..Default::default()
         };
-        let model = active.insert(&state.db).await?;
+        let model = active.insert(&txn).await?;
         result.push(model.into());
     }
 
@@ -402,10 +418,9 @@ pub async fn insert_month_item(
 
     // 计算并插入月度汇总
     let calculated =
-        calculate_month_record_data(&state, book_id, year, month, &entries, &template_items)
-            .await?;
+        calculate_month_record_data(&txn, book_id, year, month, &entries, &template_items).await?;
     let _ = upsert_month_record(
-        &state,
+        &txn,
         book_id,
         year,
         month,
@@ -416,7 +431,8 @@ pub async fn insert_month_item(
     .await?;
 
     // 重新计算相关月份
-    recalculate_related_months(&state, book_id, year, month, &user_id, &template_items).await?;
+    recalculate_related_months(&txn, book_id, year, month, &user_id, &template_items).await?;
+    txn.commit().await?;
 
     Ok(Json(ApiResponse::success(result)))
 }
@@ -443,8 +459,9 @@ pub async fn update_month_item(
         return Err(param_err("账目列表不能为空"));
     }
 
+    let txn = state.db.begin().await?;
     // 校验账簿权限并获取模板项
-    let template_items = check_book_and_get_template_items(&state, book_id, &user_id).await?;
+    let template_items = check_book_and_get_template_items(&txn, book_id, &user_id).await?;
 
     // 校验明细项
     let template_ids: std::collections::HashSet<_> =
@@ -467,7 +484,7 @@ pub async fn update_month_item(
         .filter(MonthItemCol::Year.eq(year))
         .filter(MonthItemCol::Month.eq(month))
         .filter(MonthItemCol::IsDeleted.eq(0))
-        .all(&state.db)
+        .all(&txn)
         .await?;
     let existing_map: std::collections::HashMap<_, _> = existing_items
         .into_iter()
@@ -489,7 +506,7 @@ pub async fn update_month_item(
                 active.item_value = Set(item.item_value);
                 active.update_by = Set(Some(user_id.clone()));
                 active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
-                let model = active.update(&state.db).await?;
+                let model = active.update(&txn).await?;
                 result.push(model.into());
             }
             _ => {
@@ -504,7 +521,7 @@ pub async fn update_month_item(
                     create_by: Set(Some(user_id.clone())),
                     ..Default::default()
                 };
-                let model = active.insert(&state.db).await?;
+                let model = active.insert(&txn).await?;
                 result.push(model.into());
             }
         }
@@ -522,10 +539,9 @@ pub async fn update_month_item(
 
     // 计算并更新月度汇总
     let calculated =
-        calculate_month_record_data(&state, book_id, year, month, &entries, &template_items)
-            .await?;
+        calculate_month_record_data(&txn, book_id, year, month, &entries, &template_items).await?;
     let _ = upsert_month_record(
-        &state,
+        &txn,
         book_id,
         year,
         month,
@@ -536,7 +552,8 @@ pub async fn update_month_item(
     .await?;
 
     // 重新计算相关月份
-    recalculate_related_months(&state, book_id, year, month, &user_id, &template_items).await?;
+    recalculate_related_months(&txn, book_id, year, month, &user_id, &template_items).await?;
+    txn.commit().await?;
 
     Ok(Json(ApiResponse::success(result)))
 }
@@ -557,7 +574,7 @@ pub async fn query_month_item(
     let month = params.month.ok_or_else(|| param_err("月份不能为空"))?;
 
     // 校验账簿权限
-    let _ = check_book_ownership(&state, book_id, &user_id).await?;
+    let _ = check_book_ownership(&state.db, book_id, &user_id).await?;
 
     let items = MonthItemEntity::find()
         .filter(MonthItemCol::BookId.eq(book_id))
@@ -592,7 +609,7 @@ pub async fn query_all(
     }
 
     // 校验账簿权限并获取模板项（用于排序）
-    let template_items = check_book_and_get_template_items(&state, book_id, &user_id).await?;
+    let template_items = check_book_and_get_template_items(&state.db, book_id, &user_id).await?;
     let sort_map: HashMap<_, _> = template_items
         .into_iter()
         .map(|item| {

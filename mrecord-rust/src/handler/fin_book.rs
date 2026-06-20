@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use axum::{Json, extract::State};
 use chrono::{Datelike, Months, Utc};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
-    Set,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -56,14 +56,17 @@ fn no_permission(msg: impl Into<String>) -> AppError {
 /// 校验账簿存在且属于当前登录用户。
 ///
 /// 对应 Java: `FinBookServiceImpl.checkUpdateMyFinBook(String finBookId, String userId)`。
-async fn check_book_ownership(
-    state: &AppState,
+async fn check_book_ownership<C>(
+    db: &C,
     book_id: &str,
     user_id: &str,
-) -> Result<fin_book::Model, AppError> {
+) -> Result<fin_book::Model, AppError>
+where
+    C: ConnectionTrait,
+{
     let book = BookEntity::find_by_id(book_id.to_string())
         .filter(BookCol::IsDeleted.eq(0))
-        .one(&state.db)
+        .one(db)
         .await?
         .ok_or(AppError::ResCode(ResCode::FinBookNotFound))?;
 
@@ -115,7 +118,7 @@ pub async fn update(
         return Err(param_err("账簿名称不能为空"));
     }
 
-    let book = check_book_ownership(&state, book_id, &user_id).await?;
+    let book = check_book_ownership(&state.db, book_id, &user_id).await?;
     let mut active: BookActive = book.into();
     active.book_name = Set(params.book_name);
     active.update_by = Set(Some(user_id));
@@ -139,19 +142,20 @@ pub async fn delete(
         return Err(param_err("账簿ID不能为空"));
     }
 
-    let book = check_book_ownership(&state, book_id, &user_id).await?;
+    let txn = state.db.begin().await?;
+    let book = check_book_ownership(&txn, book_id, &user_id).await?;
 
     MonthItemEntity::delete_many()
         .filter(MonthItemCol::BookId.eq(book.id.clone()))
-        .exec(&state.db)
+        .exec(&txn)
         .await?;
     MonthRecordEntity::delete_many()
         .filter(MonthRecordCol::BookId.eq(book.id.clone()))
-        .exec(&state.db)
+        .exec(&txn)
         .await?;
     TemplateItemEntity::delete_many()
         .filter(TemplateItemCol::BookId.eq(book.id.clone()))
-        .exec(&state.db)
+        .exec(&txn)
         .await?;
 
     BackupBookActive {
@@ -164,10 +168,11 @@ pub async fn delete(
         update_time: Set(book.update_time),
         is_deleted: Set(book.is_deleted),
     }
-    .insert(&state.db)
+    .insert(&txn)
     .await?;
 
-    BookEntity::delete_by_id(book.id).exec(&state.db).await?;
+    BookEntity::delete_by_id(book.id).exec(&txn).await?;
+    txn.commit().await?;
 
     Ok(Json(ApiResponse::<()>::success_empty()))
 }
@@ -273,7 +278,7 @@ pub async fn get_book_detailed_statistics(
     if book_id.is_empty() {
         return Err(param_err("账簿ID不能为空"));
     }
-    check_book_ownership(&state, book_id, &user_id).await?;
+    check_book_ownership(&state.db, book_id, &user_id).await?;
 
     let today = Utc::now().date_naive();
     let start = today.checked_sub_months(Months::new(12)).unwrap_or(today);

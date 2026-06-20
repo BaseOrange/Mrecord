@@ -5,7 +5,8 @@
 
 use axum::{Json, extract::State};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set, sea_query::Expr,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder, Set,
+    TransactionTrait, sea_query::Expr,
 };
 use uuid::Uuid;
 
@@ -34,17 +35,20 @@ fn param_err(msg: impl Into<String>) -> AppError {
 /// 校验账簿存在且属于当前登录用户，并返回模板项列表。
 ///
 /// 对应 Java: `FinTemplateItemServiceImpl.selectByFinBookIdExternal`
-async fn check_book_and_get_template_items(
-    state: &AppState,
+async fn check_book_and_get_template_items<C>(
+    db: &C,
     book_id: &str,
     user_id: &str,
-) -> Result<Vec<fin_template_item::Model>, AppError> {
+) -> Result<Vec<fin_template_item::Model>, AppError>
+where
+    C: ConnectionTrait,
+{
     // 通过 JOIN 查询校验所有权并获取模板项
     // 对应 SQL: SELECT fti.* FROM FIN_BOOK fb INNER JOIN FIN_TEMPLATE_ITEM fti ...
     let _book = BookEntity::find_by_id(book_id.to_string())
         .filter(BookCol::UserId.eq(user_id))
         .filter(BookCol::IsDeleted.eq(0))
-        .one(&state.db)
+        .one(db)
         .await?
         .ok_or(AppError::ResCode(ResCode::FinBookNotFound))?;
 
@@ -53,7 +57,7 @@ async fn check_book_and_get_template_items(
         .filter(TemplateItemCol::BookId.eq(book_id))
         .filter(TemplateItemCol::IsDeleted.eq(0))
         .order_by_asc(Expr::cust("CAST(MR_SORT AS INTEGER)"))
-        .all(&state.db)
+        .all(db)
         .await?;
 
     Ok(items)
@@ -82,7 +86,7 @@ pub async fn create(
     }
 
     // 校验账簿权限（通过查询操作隐式校验）
-    let _ = check_book_and_get_template_items(&state, book_id, &user_id).await?;
+    let _ = check_book_and_get_template_items(&state.db, book_id, &user_id).await?;
 
     let item_list = params
         .item_list
@@ -130,19 +134,20 @@ pub async fn update(
         return Err(param_err("账簿ID不能为空"));
     }
 
-    // 获取现有模板项并校验权限
-    let existing_items = check_book_and_get_template_items(&state, book_id, &user_id).await?;
-    let existing_map: std::collections::HashMap<_, _> = existing_items
-        .into_iter()
-        .map(|item| (item.id.clone(), item))
-        .collect();
-
     let item_list = params
         .item_list
         .ok_or_else(|| param_err("模板项列表不能为空"))?;
     if item_list.is_empty() {
         return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
     }
+
+    let txn = state.db.begin().await?;
+    // 获取现有模板项并校验权限
+    let existing_items = check_book_and_get_template_items(&txn, book_id, &user_id).await?;
+    let existing_map: std::collections::HashMap<_, _> = existing_items
+        .into_iter()
+        .map(|item| (item.id.clone(), item))
+        .collect();
 
     let mut result = Vec::with_capacity(item_list.len());
 
@@ -171,7 +176,7 @@ pub async fn update(
                 active.update_by = Set(Some(user_id.clone()));
                 active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
 
-                let model = active.update(&state.db).await?;
+                let model = active.update(&txn).await?;
                 result.push(model.into());
             }
             _ => {
@@ -192,12 +197,13 @@ pub async fn update(
                     ..Default::default()
                 };
 
-                let model = active.insert(&state.db).await?;
+                let model = active.insert(&txn).await?;
                 result.push(model.into());
             }
         }
     }
 
+    txn.commit().await?;
     Ok(Json(ApiResponse::success(result)))
 }
 
@@ -223,10 +229,10 @@ pub async fn copy(
     }
 
     // 校验旧账簿权限并获取模板项
-    let source_items = check_book_and_get_template_items(&state, old_book_id, &user_id).await?;
+    let source_items = check_book_and_get_template_items(&state.db, old_book_id, &user_id).await?;
 
     // 校验新账簿权限
-    let _ = check_book_and_get_template_items(&state, new_book_id, &user_id).await?;
+    let _ = check_book_and_get_template_items(&state.db, new_book_id, &user_id).await?;
 
     if source_items.is_empty() {
         return Ok(Json(ApiResponse::success(vec![])));
@@ -266,7 +272,7 @@ pub async fn list(
         return Err(param_err("账簿ID不能为空"));
     }
 
-    let items = check_book_and_get_template_items(&state, book_id, &user_id).await?;
+    let items = check_book_and_get_template_items(&state.db, book_id, &user_id).await?;
 
     if items.is_empty() {
         return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
