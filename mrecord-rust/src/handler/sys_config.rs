@@ -18,6 +18,7 @@ use crate::{
         site::{SiteConfigVo, UpdateSiteConfigDto},
         user::InitAdminDto,
     },
+    util::jwt,
 };
 /// 刷新缓存：`POST /config/refreshCache`
 ///
@@ -115,12 +116,18 @@ pub async fn update_site_config(
 /// 初始化管理员账户：`POST /config/initAdmin`
 ///
 /// 对应 Java: `SysConfigController.initAdmin`。
-/// 业务逻辑与 `/user/initAdmin` 完全相同，这里只是路径别名，直接复用同一个 handler。
 pub async fn init_admin(
     state: State<AppState>,
     params: Json<InitAdminDto>,
 ) -> Result<Json<ApiResponse<String>>, AppError> {
-    user_handler::init_admin(state, params).await
+    let jwt_secret = state.jwt_secret.clone();
+    let Json(response) = user_handler::init_admin(state, params).await?;
+    let user_id = response.data.ok_or_else(|| AppError::Internal(anyhow::anyhow!(
+        "initAdmin succeeded without user id"
+    )))?;
+    let token = jwt::create_token(&user_id, &jwt_secret)
+        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+    Ok(Json(ApiResponse::success(token)))
 }
 
 /// 测试邮件发送：`POST /config/testEmail`
