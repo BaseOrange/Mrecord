@@ -106,7 +106,9 @@ impl ResCode {
             Self::FinItemTempNameRequired => "账目模板项名称不能为空",
             Self::FinItemTempTypeRequired => "账目模板项类型不能为空",
             Self::FinItemTempTypeError => "账目模板项类型错误",
-            Self::FinItemTempUpdateError => "账目模板项仅支持修改名称、图标、顺序，无法进行修改类型、删除模板项操作",
+            Self::FinItemTempUpdateError => {
+                "账目模板项仅支持修改名称、图标、顺序，无法进行修改类型、删除模板项操作"
+            }
             Self::Error => "服务器内部错误",
             Self::BusinessError => "业务异常",
         }

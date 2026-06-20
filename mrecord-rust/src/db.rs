@@ -1,6 +1,6 @@
 use migration::Migrator;
-use sea_orm_migration::MigratorTrait;
 use sea_orm::{Database, DatabaseConnection};
+use sea_orm_migration::MigratorTrait;
 
 pub async fn connect() -> DatabaseConnection {
     let db_url = "sqlite://data.db?mode=rwc";

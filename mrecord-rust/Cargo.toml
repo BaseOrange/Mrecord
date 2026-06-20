@@ -30,3 +30,6 @@ uuid = { version = "1", features = ["v4"] }
 regex = "1"
 # once_cell: 进程级常量缓存（用于编译一次的 Regex）
 once_cell = "1"
+# 邮件模块所需依赖
+# lettre: SMTP 客户端（对应 Java apache-commons-email 的 HtmlEmail）
+lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "builder", "hostname"] }

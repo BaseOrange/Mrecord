@@ -3,9 +3,12 @@
 //! 对应 Java 中各 `@RestController` 的 `@RequestMapping`。
 //! 所有路由集中在此处注册，方便统一查阅。
 
-use axum::{routing::{get, post}, Router};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 
-use crate::{handler, AppState};
+use crate::{AppState, handler};
 
 /// 构建应用路由
 pub fn build(state: AppState) -> Router {
@@ -36,7 +39,10 @@ pub fn build(state: AppState) -> Router {
         .route("/user/changePassword", post(handler::user::change_password))
         .route("/user/queryMyInfo", post(handler::user::query_my_info))
         .route("/user/updateMyInfo", post(handler::user::update_my_info))
-        .route("/user/canceledMyUser", post(handler::user::canceled_my_user))
+        .route(
+            "/user/canceledMyUser",
+            post(handler::user::canceled_my_user),
+        )
         // 管理员接口（内部通过 AdminUser 提取器进行权限校验）
         .route("/user/list", post(handler::user::admin_query_list))
         .route(
@@ -58,7 +64,10 @@ pub fn build(state: AppState) -> Router {
             "/config/refreshCache",
             post(handler::sys_config::refresh_cache),
         )
-        .route("/config/initialized", post(handler::sys_config::initialized))
+        .route(
+            "/config/initialized",
+            post(handler::sys_config::initialized),
+        )
         .route(
             "/config/registerEnabled",
             post(handler::sys_config::register_enabled),

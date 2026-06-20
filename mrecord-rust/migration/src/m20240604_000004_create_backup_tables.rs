@@ -19,7 +19,11 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(SysBackupBook::MrUserId).string().not_null())
-                    .col(ColumnDef::new(SysBackupBook::MrBookName).string().not_null())
+                    .col(
+                        ColumnDef::new(SysBackupBook::MrBookName)
+                            .string()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(SysBackupBook::MrCreateBy).string())
                     .col(
                         ColumnDef::new(SysBackupBook::MrCreateTime)
@@ -117,8 +121,16 @@ impl MigrationTrait for Migration {
                             .string()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(SysBackupMonthRecord::MrYear).integer().not_null())
-                    .col(ColumnDef::new(SysBackupMonthRecord::MrMonth).integer().not_null())
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrYear)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SysBackupMonthRecord::MrMonth)
+                            .integer()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(SysBackupMonthRecord::MrTotalAsset)
                             .double()
@@ -232,18 +244,10 @@ impl MigrationTrait for Migration {
             )
             .await?;
         manager
-            .drop_table(
-                Table::drop()
-                    .table(SysBackupMonthRecord::Table)
-                    .to_owned(),
-            )
+            .drop_table(Table::drop().table(SysBackupMonthRecord::Table).to_owned())
             .await?;
         manager
-            .drop_table(
-                Table::drop()
-                    .table(SysBackupTemplateItem::Table)
-                    .to_owned(),
-            )
+            .drop_table(Table::drop().table(SysBackupTemplateItem::Table).to_owned())
             .await?;
         manager
             .drop_table(Table::drop().table(SysBackupBook::Table).to_owned())

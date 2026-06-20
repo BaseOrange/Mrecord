@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年度财务总结 | MRecord 月衡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f5f7fa;
+            padding: 20px;
+            color: #333;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .email-header {
+            background-color: #FF7D00; /* 橙色主题色 */
+            padding: 25px 30px;
+            text-align: center;
+            color: white;
+        }
+        .email-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .email-body {
+            padding: 40px 35px;
+            line-height: 1.7;
+            position: relative;
+        }
+        .email-body h2 {
+            color: #FF7D00;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .email-body p {
+            font-size: 15px;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        /* 卡片宽度 85%，居中显示 */
+        .info-box {
+            background-color: #fff6ec;
+            border-left: 4px solid #FF7D00;
+            padding: 20px 28px;
+            margin: 25px auto;
+            width: 85%;
+            border-radius: 6px;
+        }
+        .btn-box {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .login-btn {
+            display: inline-block;
+            background-color: #FF7D00;
+            color: #fff !important;
+            text-decoration: none !important;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .login-btn:hover {
+            background-color: #e67000;
+        }
+        .email-footer {
+            background-color: #f5f7fa;
+            padding: 25px 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+        }
+        .email-footer a {
+            color: #FF7D00;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- 邮件头部 -->
+        <div class="email-header">
+            <h1>MRecord 月衡</h1>
+        </div>
+
+        <!-- 邮件内容 -->
+        <div class="email-body">
+            <h2>年度财务总结 · 请手动开启新年度账簿</h2>
+            <p>亲爱的${MR-UserName}，你好：</p>
+            <p>旧年度已圆满结束，系统已为你生成专属年度财务总结报告，新年度财务记账需你手动开启后即可正常使用。</p>
+
+            <div class="info-box">
+                <p><strong>年度总结：</strong>查看全年资产负债趋势、同比环比分析</p>
+                <p><strong>新年度：</strong>请登录系统手动开启新年度账簿</p>
+            </div>
+
+            <p>你可以登录系统查看完整年度数据总结、资产变化趋势与数据导出，并手动开启新年度账簿，继续进行月度记账，持续严谨、高效地管理个人财务数据。</p>
+
+            <div class="btn-box">
+                <a href="${MR-WebSite}" class="login-btn" target="_blank">查看年度总结</a>
+            </div>
+
+            <p>感谢你一路相伴，祝你新的一年财务稳健，万事顺遂！</p>
+            <p style="margin-top:20px;">MRecord 月衡 团队</p>
+        </div>
+
+        <!-- 邮件底部 -->
+        <div class="email-footer">
+            <p>本邮件由系统自动发送，请勿直接回复</p>
+            <p>如需帮助，请联系：<a href="mailto:${MR-AdminMail}">${MR-AdminMail}</a></p>
+            <p>© ${MR-Year} MRecord 月衡 版权所有</p>
+        </div>
+    </div>
+</body>
+</html>

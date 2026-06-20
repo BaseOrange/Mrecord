@@ -4,7 +4,7 @@
 //!
 //! 仅存放用户主键（`sub` 字段），过期时间默认 7 天。
 
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
 /// 默认登录令牌过期时间：7 天（单位：秒）

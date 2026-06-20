@@ -152,13 +152,21 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(SysUserOperateLog::MrUserId).string().not_null())
+                    .col(
+                        ColumnDef::new(SysUserOperateLog::MrUserId)
+                            .string()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(SysUserOperateLog::MrOperateType)
                             .string()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(SysUserOperateLog::MrContent).string().not_null())
+                    .col(
+                        ColumnDef::new(SysUserOperateLog::MrContent)
+                            .string()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(SysUserOperateLog::MrIp).string().not_null())
                     .col(ColumnDef::new(SysUserOperateLog::MrCreateBy).string())
                     .col(

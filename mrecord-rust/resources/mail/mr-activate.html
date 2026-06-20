@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账户激活 | MRecord 月衡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f5f7fa;
+            padding: 20px;
+            color: #333;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .email-header {
+            background-color: #FF7D00;
+            padding: 25px 30px;
+            text-align: center;
+            color: white;
+        }
+        .email-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .email-body {
+            padding: 40px 35px;
+            line-height: 1.7;
+            position: relative;
+        }
+        .email-body h2 {
+            color: #FF7D00;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .email-body p {
+            font-size: 15px;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        .info-box {
+            background-color: #fff6ec;
+            border-left: 4px solid #FF7D00;
+            padding: 20px 28px;
+            margin: 25px auto;
+            width: 85%;
+            border-radius: 6px;
+        }
+        .btn-box {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .login-btn {
+            display: inline-block;
+            background-color: #FF7D00;
+            color: #fff !important;
+            text-decoration: none !important;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .login-btn:hover {
+            background-color: #e67000;
+        }
+        .email-footer {
+            background-color: #f5f7fa;
+            padding: 25px 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+        }
+        .email-footer a {
+            color: #FF7D00;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <h1>MRecord 月衡</h1>
+        </div>
+        <div class="email-body">
+            <h2>欢迎注册，请激活你的账户</h2>
+            <p>亲爱的${MR-UserName}，你好：</p>
+            <p>感谢你注册<strong>MRecord 月衡</strong>，你的账户已创建成功，请点击下方按钮完成账户激活。</p>
+            <div class="info-box">
+                <p><strong>注册账号：</strong>${MR-UserEmail}</p>
+                <p><strong>有效时间：</strong>链接 24 小时内有效，请尽快操作</p>
+            </div>
+            <p>激活成功后即可登录使用月度快照式记账功能，完整记录每月资产与负债数据。</p>
+            <div class="btn-box">
+                <a href="${MR-ActivateUrl}" class="login-btn" target="_blank">立即激活账户</a>
+            </div>
+            <p>如你无法点击按钮，可复制以下链接到浏览器地址栏打开：</p>
+            <p style="word-break:break-all;color:#888;font-size:13px;">${MR-ActivateUrl}</p>
+            <p>如你没有发起注册申请，请忽略本邮件。</p>
+            <p style="margin-top:20px;">MRecord 月衡 团队</p>
+        </div>
+        <div class="email-footer">
+            <p>本邮件由系统自动发送，请勿直接回复</p>
+            <p>如需帮助，请联系：<a href="mailto:${MR-AdminMail}">${MR-AdminMail}</a></p>
+            <p>© ${MR-Year} MRecord 月衡 版权所有</p>
+        </div>
+    </div>
+</body>
+</html>

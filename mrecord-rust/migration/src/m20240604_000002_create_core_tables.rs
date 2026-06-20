@@ -51,8 +51,16 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(FinTemplateItem::MrBookId).string().not_null())
-                    .col(ColumnDef::new(FinTemplateItem::MrItemName).string().not_null())
+                    .col(
+                        ColumnDef::new(FinTemplateItem::MrBookId)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(FinTemplateItem::MrItemName)
+                            .string()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(FinTemplateItem::MrItemType)
                             .integer()
@@ -152,9 +160,21 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(FinMonthItemRecord::MrYear).integer().not_null())
-                    .col(ColumnDef::new(FinMonthItemRecord::MrMonth).integer().not_null())
-                    .col(ColumnDef::new(FinMonthItemRecord::MrBookId).string().not_null())
+                    .col(
+                        ColumnDef::new(FinMonthItemRecord::MrYear)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(FinMonthItemRecord::MrMonth)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(FinMonthItemRecord::MrBookId)
+                            .string()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(FinMonthItemRecord::MrTemplateItemId)
                             .string()

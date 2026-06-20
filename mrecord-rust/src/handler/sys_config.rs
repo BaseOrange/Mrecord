@@ -6,9 +6,10 @@
 //! 管理员保护通过 [`crate::common::user_context::AdminUser`] 提取器实现，
 //! 等价于 Java 端的 `@CheckAdmin` 注解。
 
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 
 use crate::{
+    AppState,
     common::{result::ApiResponse, user_context::AdminUser},
     error::AppError,
     handler::user as user_handler,
@@ -17,9 +18,7 @@ use crate::{
         site::{SiteConfigVo, UpdateSiteConfigDto},
         user::InitAdminDto,
     },
-    AppState,
 };
-
 /// 刷新缓存：`POST /config/refreshCache`
 ///
 /// 对应 Java: `SysConfigController.refreshCache`
@@ -127,11 +126,10 @@ pub async fn init_admin(
 /// 测试邮件发送：`POST /config/testEmail`
 ///
 /// 对应 Java: `SysConfigController.testEmail`。
-///
-/// 当前 Rust 端尚未接入邮件发送实现，仅做日志记录后返回成功。
-/// TODO: 接入 `EmailService` 后改为真正发送测试邮件。
+/// 使用前端传入的临时配置直接连 SMTP 发送一封测试邮件，不读 DB 配置。
 pub async fn test_email(
     _admin: AdminUser,
+    State(state): State<AppState>,
     Json(dto): Json<TestEmailDto>,
 ) -> Result<Json<ApiResponse<()>>, AppError> {
     tracing::info!(
@@ -140,6 +138,20 @@ pub async fn test_email(
         dto.from,
         dto.test_to
     );
-    // TODO: 接入邮件服务后改为真正发送
+
+    // 把 DTO 映射到内部 BO，复用 EmailService 的发送通道
+    let cfg = EmailConfigBo {
+        host_name: dto.host_name,
+        ssl_smtp_port: dto.ssl_smtp_port,
+        smtp_port: dto.smtp_port,
+        ssl: dto.ssl,
+        username: dto.user_name,
+        password: dto.password,
+        from: dto.from,
+    };
+    state
+        .email_service
+        .send_test_email(&cfg, &dto.test_to)
+        .await?;
     Ok(Json(ApiResponse::<()>::success_empty()))
 }

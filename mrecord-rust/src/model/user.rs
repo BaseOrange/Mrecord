@@ -106,7 +106,9 @@ impl From<crate::entity::sys_user::Model> for UserResponse {
             status: m.status,
             remind_enabled: m.remind_enabled,
             remind_day: m.remind_day,
-            cancel_time: m.cancel_time.map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
+            cancel_time: m
+                .cancel_time
+                .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
             create_time: m.create_time.format("%Y-%m-%d %H:%M:%S").to_string(),
         }
     }

@@ -131,7 +131,9 @@ impl From<crate::entity::fin_book::Model> for FinBookResponse {
             id: m.id,
             book_name: m.book_name,
             create_time: m.create_time.format("%Y-%m-%d %H:%M:%S").to_string(),
-            update_time: m.update_time.map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
+            update_time: m
+                .update_time
+                .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
         }
     }
 }
@@ -203,7 +205,9 @@ impl From<crate::entity::fin_month_record::Model> for MonthRecordResponse {
             year_on_year: m.year_on_year,
             note: m.note,
             create_time: m.create_time.format("%Y-%m-%d %H:%M:%S").to_string(),
-            update_time: m.update_time.map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
+            update_time: m
+                .update_time
+                .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
         }
     }
 }

@@ -25,7 +25,9 @@ use uuid::Uuid;
 
 use crate::{
     entity::{
-        sys_config::{self, ActiveModel as ConfigActive, Column as ConfigCol, Entity as ConfigEntity},
+        sys_config::{
+            self, ActiveModel as ConfigActive, Column as ConfigCol, Entity as ConfigEntity,
+        },
         sys_user::{Column as UserCol, Entity as UserEntity},
     },
     error::AppError,
@@ -186,10 +188,7 @@ impl SysConfigService {
     /// 获取网站地址
     ///
     /// 对应 Java: `getWebSite`
-    pub async fn get_web_site(
-        &self,
-        db: &DatabaseConnection,
-    ) -> Result<Option<String>, AppError> {
+    pub async fn get_web_site(&self, db: &DatabaseConnection) -> Result<Option<String>, AppError> {
         if let Some(cached) = self.cache.read().await.web_site.clone() {
             return Ok(cached);
         }
@@ -229,10 +228,7 @@ impl SysConfigService {
     /// 获取站点配置（聚合 webSite / adminMail / registerEnabled）
     ///
     /// 对应 Java: `getSiteConfig`
-    pub async fn get_site_config(
-        &self,
-        db: &DatabaseConnection,
-    ) -> Result<SiteConfigVo, AppError> {
+    pub async fn get_site_config(&self, db: &DatabaseConnection) -> Result<SiteConfigVo, AppError> {
         Ok(SiteConfigVo {
             web_site: self.get_web_site(db).await?,
             admin_mail: self.get_admin_mail(db).await?,
@@ -304,10 +300,7 @@ impl SysConfigService {
 // ==================== 内部辅助函数 ====================
 
 /// 按 key 加载单条配置的 value
-async fn load_single(
-    db: &DatabaseConnection,
-    key: &str,
-) -> Result<Option<String>, AppError> {
+async fn load_single(db: &DatabaseConnection, key: &str) -> Result<Option<String>, AppError> {
     let row = ConfigEntity::find()
         .filter(ConfigCol::Key.eq(key))
         .filter(ConfigCol::IsDeleted.eq(0))
@@ -319,9 +312,7 @@ async fn load_single(
 /// 按 key 加载邮件配置（多个 mail.* 行组合成 `EmailConfigBo`）
 ///
 /// 任一必填项缺失时返回 `None`（Java 行为一致）。
-async fn load_email_config(
-    db: &DatabaseConnection,
-) -> Result<Option<EmailConfigBo>, AppError> {
+async fn load_email_config(db: &DatabaseConnection) -> Result<Option<EmailConfigBo>, AppError> {
     let rows: Vec<sys_config::Model> = ConfigEntity::find()
         .filter(ConfigCol::Key.starts_with("mail."))
         .filter(ConfigCol::IsDeleted.eq(0))
@@ -381,11 +372,7 @@ async fn load_email_config(
 ///
 /// Java 原版 `updateConfigByKey` 只在已存在时更新；这里扩展为不存在时自动插入，
 /// 让前端首次写配置即可生效，避免要求用户手工 INSERT 一行占位。
-async fn upsert_config(
-    db: &DatabaseConnection,
-    key: &str,
-    value: &str,
-) -> Result<(), AppError> {
+async fn upsert_config(db: &DatabaseConnection, key: &str, value: &str) -> Result<(), AppError> {
     let existing = ConfigEntity::find()
         .filter(ConfigCol::Key.eq(key))
         .filter(ConfigCol::IsDeleted.eq(0))

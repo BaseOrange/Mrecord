@@ -17,7 +17,7 @@ use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
 use tracing_subscriber;
 
-use crate::service::sys_config::SysConfigService;
+use crate::service::{email::EmailService, sys_config::SysConfigService};
 
 /// 全局应用状态，由 Axum 的 `with_state` 注入到所有 handler。
 ///
@@ -36,6 +36,10 @@ pub struct AppState {
     ///
     /// 对应 Java `@Resource SysConfigService`。使用 `Arc` 在多个 handler 间共享同一份缓存。
     pub config_service: Arc<SysConfigService>,
+    /// 邮件发送服务
+    ///
+    /// 对应 Java `@Resource EmailService`。SMTP 配置从 `config_service` 现取，便于热更新。
+    pub email_service: Arc<EmailService>,
 }
 
 #[tokio::main]
@@ -43,13 +47,17 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let db = db::connect().await;
+    let config_service = SysConfigService::new();
+    let email_service = EmailService::new(config_service.clone());
+
     // TODO: 这些密钥应从配置文件 / 环境变量加载，避免硬编码
     let state = AppState {
         db,
         jwt_secret: "mrecord-dev-jwt-secret-please-change-me".to_string(),
         activate_token_secret: "mrecord-dev-activate-secret-please-change".to_string(),
         reset_pwd_token_secret: "mrecord-dev-reset-pwd-secret-please-change".to_string(),
-        config_service: SysConfigService::new(),
+        config_service,
+        email_service,
     };
 
     let app = router::build(state);

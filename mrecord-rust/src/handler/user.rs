@@ -6,8 +6,8 @@
 //! 每个 handler 仅负责参数提取与拼装响应，业务逻辑直接内联在这里
 //! （Rust 项目暂未拆分 service 层；后续若膨胀可按 Java 项目拆出 `service/user.rs`）。
 
-use axum::{extract::State, Json};
-use bcrypt::{hash, verify, DEFAULT_COST};
+use axum::{Json, extract::State};
+use bcrypt::{DEFAULT_COST, hash, verify};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use sea_orm::{
@@ -16,27 +16,32 @@ use sea_orm::{
 use uuid::Uuid;
 
 use crate::{
+    AppState,
     common::{
-        page::PageResult, res_code::ResCode, result::ApiResponse, user_context::{AdminUser, AuthUser},
+        page::PageResult,
+        res_code::ResCode,
+        result::ApiResponse,
+        user_context::{AdminUser, AuthUser},
     },
     constant::user_status::UserStatus,
     entity::sys_user::{self, ActiveModel as UserActive, Column as UserCol, Entity as UserEntity},
     error::AppError,
-    model::user::{ChangePasswordDto, InitAdminDto, QueryUserDto, UserDto, UserResponse},
+    model::{
+        mail_params::MailParams,
+        user::{ChangePasswordDto, InitAdminDto, QueryUserDto, UserDto, UserResponse},
+    },
     util::{
         jwt,
         token::{self, TokenPurpose},
     },
-    AppState,
 };
 
 /// 邮箱格式校验正则
 ///
 /// 替代 Java 的 `Validator.isEmail`。仅做简易校验，覆盖常见情况，
 /// 不追求 RFC 5322 完整性。
-static EMAIL_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$").unwrap()
-});
+static EMAIL_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$").unwrap());
 
 /// 校验邮箱格式
 fn is_valid_email(email: &str) -> bool {
@@ -58,20 +63,28 @@ fn hash_password(pwd: &str) -> Result<String, AppError> {
 
 /// 拼接账户激活链接
 ///
-/// 与 Java 端约定一致：站点地址 + `/active?token=`。未配置 webSite 则只返回 token。
+/// 与 Java `getActivateAccountUrl` 保持一致：站点地址 + `activate-account?token=`。
+/// 未配置 webSite 则只返回 token，便于本地调试。
 fn build_activate_link(web_site: Option<&str>, token: &str) -> String {
     match web_site.filter(|s| !s.is_empty()) {
-        Some(prefix) => format!("{}/active?token={}", prefix.trim_end_matches('/'), token),
+        Some(prefix) => {
+            // 与 Java 直接字符串拼接对齐：webSite 通常以 `/` 结尾。这里规范化一次。
+            let trimmed = prefix.trim_end_matches('/');
+            format!("{}/activate-account?token={}", trimmed, token)
+        }
         None => token.to_string(),
     }
 }
 
 /// 拼接重置密码链接
 ///
-/// 与 Java 端约定一致：站点地址 + `/reset?token=`。未配置 webSite 则只返回 token。
+/// 与 Java `getResetPasswordUrl` 保持一致：站点地址 + `reset-password?token=`。
 fn build_reset_link(web_site: Option<&str>, token: &str) -> String {
     match web_site.filter(|s| !s.is_empty()) {
-        Some(prefix) => format!("{}/reset?token={}", prefix.trim_end_matches('/'), token),
+        Some(prefix) => {
+            let trimmed = prefix.trim_end_matches('/');
+            format!("{}/reset-password?token={}", trimmed, token)
+        }
         None => token.to_string(),
     }
 }
@@ -150,8 +163,8 @@ pub async fn init_admin(
 
 /// 用户注册：`POST /user/register`
 ///
-/// 对应 Java: `SysUserService.userRegister`
-/// 注：邮件服务尚未在 Rust 端实现，这里仅在日志中打印激活链接（TODO）。
+/// 对应 Java: `SysUserService.userRegister`。
+/// 注册成功后会同步发送账户激活邮件。
 pub async fn register(
     State(state): State<AppState>,
     Json(params): Json<UserDto>,
@@ -199,7 +212,7 @@ pub async fn register(
         id: Set(user_id.clone()),
         email: Set(email.clone()),
         password: Set(hash_password(&password)?),
-        nickname: Set(nickname),
+        nickname: Set(nickname.clone()),
         admin: Set(0),
         // 与 Java 行为一致：初始为「未激活」，待用户点击邮件中的激活链接
         status: Set(UserStatus::Unactivated as i32),
@@ -213,17 +226,25 @@ pub async fn register(
     active.insert(&state.db).await?;
 
     // 生成激活链接（Java 端通过 SecureUtil.aes 加密；此处用专用 JWT 等价表达）
-    let activate_token = token::create(&user_id, TokenPurpose::Activate, &state.activate_token_secret)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
-    // 与 Java 行为一致：以站点地址为前缀拼接激活链接，未配置 webSite 则只发 token
+    let activate_token = token::create(
+        &user_id,
+        TokenPurpose::Activate,
+        &state.activate_token_secret,
+    )
+    .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     let web_site = state.config_service.get_web_site(&state.db).await?;
     let activate_link = build_activate_link(web_site.as_deref(), &activate_token);
-    // TODO: 接入邮件服务后改为真正发送
-    tracing::info!(
-        "[stub email] 注册成功，激活链接应通过邮件发送给 {}: {}",
-        email,
-        activate_link
-    );
+
+    // 发送账户激活邮件（对应 Java `emailService.sendActivateAccountEmail`）
+    let mut mail = MailParams::new();
+    mail.to = email.clone();
+    mail.user_name = nickname;
+    mail.user_email = email.clone();
+    mail.activate_url = activate_link;
+    state
+        .email_service
+        .send_activate_account_email(&state.db, mail)
+        .await?;
 
     Ok(Json(ApiResponse::success(email)))
 }
@@ -241,8 +262,12 @@ pub async fn activate(
     }
 
     // 解析并校验令牌
-    let user_id = token::parse(&token_str, TokenPurpose::Activate, &state.activate_token_secret)
-        .ok_or_else(|| param_err("激活令牌错误或已过期"))?;
+    let user_id = token::parse(
+        &token_str,
+        TokenPurpose::Activate,
+        &state.activate_token_secret,
+    )
+    .ok_or_else(|| param_err("激活令牌错误或已过期"))?;
 
     let user = UserEntity::find_by_id(user_id)
         .one(&state.db)
@@ -302,17 +327,24 @@ pub async fn resend_activate_email(
         });
     }
 
-    let activate_token =
-        token::create(&user.id, TokenPurpose::Activate, &state.activate_token_secret)
-            .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+    let activate_token = token::create(
+        &user.id,
+        TokenPurpose::Activate,
+        &state.activate_token_secret,
+    )
+    .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     let web_site = state.config_service.get_web_site(&state.db).await?;
     let activate_link = build_activate_link(web_site.as_deref(), &activate_token);
-    // TODO: 接入邮件服务后改为真正发送
-    tracing::info!(
-        "[stub email] 重新发送激活链接给 {}: {}",
-        email,
-        activate_link
-    );
+
+    let mut mail = MailParams::new();
+    mail.to = email.clone();
+    mail.user_name = user.nickname.clone();
+    mail.user_email = email.clone();
+    mail.activate_url = activate_link;
+    state
+        .email_service
+        .send_activate_account_email(&state.db, mail)
+        .await?;
 
     Ok(Json(ApiResponse::<()>::success_empty()))
 }
@@ -335,9 +367,7 @@ pub async fn login(
         .ok_or(AppError::ResCode(ResCode::LoginInfoError))?;
 
     // BCrypt 验证密码
-    if !verify(&password, &user.password)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?
-    {
+    if !verify(&password, &user.password).map_err(|e| AppError::Internal(anyhow::anyhow!(e)))? {
         return Err(AppError::ResCode(ResCode::LoginInfoError));
     }
 
@@ -382,7 +412,11 @@ pub async fn forgot_password(
         return Ok(Json(ApiResponse::<()>::success_empty()));
     };
     if user.status != UserStatus::Normal as i32 {
-        tracing::warn!("用户状态异常，尝试找回密码：id={}, status={}", user.id, user.status);
+        tracing::warn!(
+            "用户状态异常，尝试找回密码：id={}, status={}",
+            user.id,
+            user.status
+        );
         return Ok(Json(ApiResponse::<()>::success_empty()));
     }
 
@@ -394,12 +428,16 @@ pub async fn forgot_password(
     .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     let web_site = state.config_service.get_web_site(&state.db).await?;
     let reset_link = build_reset_link(web_site.as_deref(), &reset_token);
-    // TODO: 接入邮件服务后改为真正发送
-    tracing::info!(
-        "[stub email] 找回密码链接应通过邮件发送给 {}: {}",
-        email,
-        reset_link
-    );
+
+    let mut mail = MailParams::new();
+    mail.to = email.clone();
+    mail.user_name = user.nickname.clone();
+    mail.user_email = email.clone();
+    mail.repassword = reset_link;
+    state
+        .email_service
+        .send_retrieve_password_email(&state.db, mail)
+        .await?;
 
     Ok(Json(ApiResponse::<()>::success_empty()))
 }
