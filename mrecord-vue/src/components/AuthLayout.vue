@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import loginBg from '@/assets/login_bg.png'
+
 const appIcon = '/app-icon.svg'
 </script>
 
@@ -8,14 +10,16 @@ const appIcon = '/app-icon.svg'
       <div class="bg-glow bg-glow--top"></div>
       <div class="bg-glow bg-glow--bottom"></div>
       <div class="bg-icon-wrapper">
-        <img :src="appIcon" alt="月衡" class="bg-icon" />
+        <img :src="loginBg" alt="月衡" class="bg-icon" />
       </div>
     </div>
 
     <div class="auth-container">
       <div class="brand">
-        <img :src="appIcon" alt="月衡 Logo" class="brand-logo" />
-        <h1 class="brand-name">月衡</h1>
+        <div class="brand-title">
+          <img :src="appIcon" alt="月衡 Logo" class="brand-logo" />
+          <h1 class="brand-name">月衡</h1>
+        </div>
         <p class="brand-en">Mrecord</p>
         <p class="brand-slogan">逐月记账，衡知资产</p>
       </div>
@@ -97,15 +101,23 @@ const appIcon = '/app-icon.svg'
 
 .brand {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 36px;
+}
+
+.brand-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 2px;
 }
 
 .brand-logo {
-  width: 88px;
-  height: 88px;
-  border-radius: 24px;
-  margin-bottom: 14px;
-  box-shadow: 0 12px 30px rgba(249, 114, 22, 0.22);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(249, 114, 22, 0.18);
+  flex-shrink: 0;
 }
 
 .brand-name {
