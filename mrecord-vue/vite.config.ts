@@ -36,6 +36,17 @@ export default defineConfig(({mode}) => {
             // 直接输出到 Rust 后端 static 目录，避免手动复制
             outDir: '../mrecord-rust/static',
             emptyOutDir: true,
+            chunkSizeWarningLimit: 700,
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (id.includes('node_modules/chart.js')) return 'vendor-chart'
+                        if (id.includes('node_modules/@varlet/ui')) return 'vendor-varlet'
+                        if (id.includes('node_modules/vue-router')) return 'vendor-router'
+                        if (id.includes('node_modules/vuedraggable')) return 'vendor-draggable'
+                    }
+                }
+            }
         },
         plugins: [
             vue(),

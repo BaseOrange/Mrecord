@@ -3,8 +3,7 @@ import {createPinia} from 'pinia'
 import './style.css'
 import App from './App.vue'
 import router from './router'
-import Varlet, {StyleProvider} from '@varlet/ui'
-import '@varlet/ui/es/style'
+import {StyleProvider} from '@varlet/ui'
 
 // 配置月衡 Mrecord 橙色主题
 StyleProvider({
@@ -50,7 +49,6 @@ app.config.errorHandler = (err, _instance, info) => {
 
 app.use(createPinia())
 app.use(router)
-app.use(Varlet)
 
 // 路由加载失败处理
 router.onError((error) => {
