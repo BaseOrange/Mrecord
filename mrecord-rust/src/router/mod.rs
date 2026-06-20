@@ -58,6 +58,20 @@ pub fn build(state: AppState) -> Router {
             post(handler::user::admin_enable_or_disable),
         )
         .route("/user/deleteUser", post(handler::user::admin_delete_user))
+        // ==================== 账簿模块 ====================
+        // 对应 Java: FinBookController（@RequestMapping("/book")）
+        .route("/book/create", post(handler::fin_book::create))
+        .route("/book/update", post(handler::fin_book::update))
+        .route("/book/delete", post(handler::fin_book::delete))
+        .route("/book/list", post(handler::fin_book::list))
+        .route(
+            "/book/getMyDataStatistics",
+            post(handler::fin_book::get_my_data_statistics),
+        )
+        .route(
+            "/book/getBookDetailedStatistics",
+            post(handler::fin_book::get_book_detailed_statistics),
+        )
         // ==================== 配置项模块 ====================
         // 对应 Java: SysConfigController（@RequestMapping("/config")）
         .route(

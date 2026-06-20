@@ -85,6 +85,16 @@ pub struct TemplateItemEntry {
     pub sort: String,
 }
 
+/// 创建 / 更新账簿请求
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateUpdateBookDto {
+    /// 主键 ID（更新时传）
+    pub id: Option<String>,
+    /// 账簿名称
+    pub book_name: String,
+}
+
 /// 查询账簿请求参数（继承分页参数）
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -138,14 +148,49 @@ impl From<crate::entity::fin_book::Model> for FinBookResponse {
     }
 }
 
-/// 账簿详情响应（含月度汇总记录列表）
+/// 账簿最新月度统计响应
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FinBookRecordResponse {
     pub book_id: String,
     pub book_name: String,
-    /// 月度汇总记录列表
-    pub record_list: Vec<crate::entity::fin_month_record::Model>,
+    pub id: String,
+    pub year: i32,
+    pub month: i32,
+    pub total_asset: f64,
+    pub total_liability: f64,
+    pub net_asset: f64,
+    pub month_on_month: f64,
+    pub year_on_year: f64,
+    pub note: Option<String>,
+    pub create_time: String,
+    pub update_time: Option<String>,
+}
+
+impl FinBookRecordResponse {
+    pub fn new(
+        book_id: String,
+        book_name: String,
+        record: crate::entity::fin_month_record::Model,
+    ) -> Self {
+        Self {
+            book_id,
+            book_name,
+            id: record.id,
+            year: record.year,
+            month: record.month,
+            total_asset: record.total_asset,
+            total_liability: record.total_liability,
+            net_asset: record.net_asset,
+            month_on_month: record.month_on_month,
+            year_on_year: record.year_on_year,
+            note: record.note,
+            create_time: record.create_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+            update_time: record
+                .update_time
+                .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
+        }
+    }
 }
 
 /// 模板项列表响应
