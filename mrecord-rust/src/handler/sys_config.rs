@@ -122,9 +122,9 @@ pub async fn init_admin(
 ) -> Result<Json<ApiResponse<String>>, AppError> {
     let jwt_secret = state.jwt_secret.clone();
     let Json(response) = user_handler::init_admin(state, params).await?;
-    let user_id = response.data.ok_or_else(|| AppError::Internal(anyhow::anyhow!(
-        "initAdmin succeeded without user id"
-    )))?;
+    let user_id = response.data.ok_or_else(|| {
+        AppError::Internal(anyhow::anyhow!("initAdmin succeeded without user id"))
+    })?;
     let token = jwt::create_token(&user_id, &jwt_secret)
         .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     Ok(Json(ApiResponse::success(token)))

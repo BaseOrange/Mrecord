@@ -1,4 +1,5 @@
 pub mod email;
+pub mod export_task;
 pub mod finance;
 pub mod id_dto;
 pub mod mail_params;

@@ -31,6 +31,8 @@ pub struct MailParams {
     pub repassword: String,
     /// 账户激活链接 → 模板 `${MR-ActivateUrl}`
     pub activate_url: String,
+    /// 导出文件名 → 模板 `${MR-FileName}`
+    pub file_name: String,
 }
 
 impl MailParams {
@@ -66,6 +68,7 @@ impl MailParams {
         );
         m.insert("MR-Repassword".to_string(), self.repassword.clone());
         m.insert("MR-ActivateUrl".to_string(), self.activate_url.clone());
+        m.insert("MR-FileName".to_string(), self.file_name.clone());
         m.insert("MR-RegisterDate".to_string(), self.register_date.clone());
         m
     }

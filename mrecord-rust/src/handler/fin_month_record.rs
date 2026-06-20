@@ -15,9 +15,7 @@ use crate::{
         fin_month_record::{Column as MonthRecordCol, Entity as MonthRecordEntity},
     },
     error::AppError,
-    model::{
-        finance::{MonthRecordDto, MonthRecordResponse},
-    },
+    model::finance::{MonthRecordDto, MonthRecordResponse},
 };
 
 /// 构造参数错误业务异常。

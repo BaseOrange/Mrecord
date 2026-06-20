@@ -10,3 +10,6 @@
 # SQLite database files
 *.db
 *.sqlite
+
+# Exported Excel files
+/exports/

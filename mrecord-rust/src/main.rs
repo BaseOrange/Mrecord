@@ -17,7 +17,9 @@ use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
 use tracing_subscriber;
 
-use crate::service::{email::EmailService, sys_config::SysConfigService};
+use crate::service::{
+    email::EmailService, export_task::ExportTaskService, sys_config::SysConfigService,
+};
 
 /// 全局应用状态，由 Axum 的 `with_state` 注入到所有 handler。
 ///
@@ -40,6 +42,10 @@ pub struct AppState {
     ///
     /// 对应 Java `@Resource EmailService`。SMTP 配置从 `config_service` 现取，便于热更新。
     pub email_service: Arc<EmailService>,
+    /// 导出任务服务
+    ///
+    /// 对应 Java `@Resource ExportTaskService`，负责创建异步导出任务并生成 Excel 附件。
+    pub export_task_service: Arc<ExportTaskService>,
 }
 
 #[tokio::main]
@@ -49,6 +55,7 @@ async fn main() {
     let db = db::connect().await;
     let config_service = SysConfigService::new();
     let email_service = EmailService::new(config_service.clone());
+    let export_task_service = ExportTaskService::new(email_service.clone());
 
     // TODO: 这些密钥应从配置文件 / 环境变量加载，避免硬编码
     let state = AppState {
@@ -58,6 +65,7 @@ async fn main() {
         reset_pwd_token_secret: "mrecord-dev-reset-pwd-secret-please-change".to_string(),
         config_service,
         email_service,
+        export_task_service,
     };
 
     let app = router::build(state);

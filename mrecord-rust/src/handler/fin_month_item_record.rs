@@ -6,9 +6,7 @@
 use std::collections::HashMap;
 
 use axum::{Json, extract::State};
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 use crate::{
@@ -21,14 +19,13 @@ use crate::{
             ActiveModel as MonthItemActive, Column as MonthItemCol, Entity as MonthItemEntity,
         },
         fin_month_record::{
-            self, ActiveModel as MonthRecordActive, Column as MonthRecordCol, Entity as MonthRecordEntity,
+            self, ActiveModel as MonthRecordActive, Column as MonthRecordCol,
+            Entity as MonthRecordEntity,
         },
         fin_template_item::{self, Column as TemplateItemCol, Entity as TemplateItemEntity},
     },
     error::AppError,
-    model::{
-        finance::{MonthItemDto, MonthItemEntry, MonthItemRecordResponse},
-    },
+    model::finance::{MonthItemDto, MonthItemEntry, MonthItemRecordResponse},
 };
 
 /// 构造参数错误业务异常。
@@ -155,9 +152,9 @@ async fn calculate_month_record_data(
     for item in item_list {
         if let Some(&item_type) = type_map.get(&item.template_item_id) {
             match item_type {
-                1 => total_asset += item.item_value,  // 资产
+                1 => total_asset += item.item_value,      // 资产
                 -1 => total_liability += item.item_value, // 负债
-                0 => {} // 仅记录，不计入
+                0 => {}                                   // 仅记录，不计入
                 _ => {}
             }
         }
@@ -351,7 +348,9 @@ pub async fn insert_month_item(
     let year = params.year.ok_or_else(|| param_err("年份不能为空"))?;
     let month = params.month.ok_or_else(|| param_err("月份不能为空"))?;
 
-    let item_list = params.item_list.ok_or_else(|| param_err("账目列表不能为空"))?;
+    let item_list = params
+        .item_list
+        .ok_or_else(|| param_err("账目列表不能为空"))?;
     if item_list.is_empty() {
         return Err(param_err("账目列表不能为空"));
     }
@@ -360,7 +359,8 @@ pub async fn insert_month_item(
     let template_items = check_book_and_get_template_items(&state, book_id, &user_id).await?;
 
     // 校验明细项
-    let template_ids: std::collections::HashSet<_> = template_items.iter().map(|i| i.id.as_str()).collect();
+    let template_ids: std::collections::HashSet<_> =
+        template_items.iter().map(|i| i.id.as_str()).collect();
     for item in &item_list {
         if item.template_item_id.trim().is_empty() {
             return Err(param_err("模板项ID不能为空"));
@@ -401,8 +401,19 @@ pub async fn insert_month_item(
         .collect();
 
     // 计算并插入月度汇总
-    let calculated = calculate_month_record_data(&state, book_id, year, month, &entries, &template_items).await?;
-    let _ = upsert_month_record(&state, book_id, year, month, &user_id, params.note, &calculated).await?;
+    let calculated =
+        calculate_month_record_data(&state, book_id, year, month, &entries, &template_items)
+            .await?;
+    let _ = upsert_month_record(
+        &state,
+        book_id,
+        year,
+        month,
+        &user_id,
+        params.note,
+        &calculated,
+    )
+    .await?;
 
     // 重新计算相关月份
     recalculate_related_months(&state, book_id, year, month, &user_id, &template_items).await?;
@@ -425,7 +436,9 @@ pub async fn update_month_item(
     let year = params.year.ok_or_else(|| param_err("年份不能为空"))?;
     let month = params.month.ok_or_else(|| param_err("月份不能为空"))?;
 
-    let item_list = params.item_list.ok_or_else(|| param_err("账目列表不能为空"))?;
+    let item_list = params
+        .item_list
+        .ok_or_else(|| param_err("账目列表不能为空"))?;
     if item_list.is_empty() {
         return Err(param_err("账目列表不能为空"));
     }
@@ -434,7 +447,8 @@ pub async fn update_month_item(
     let template_items = check_book_and_get_template_items(&state, book_id, &user_id).await?;
 
     // 校验明细项
-    let template_ids: std::collections::HashSet<_> = template_items.iter().map(|i| i.id.as_str()).collect();
+    let template_ids: std::collections::HashSet<_> =
+        template_items.iter().map(|i| i.id.as_str()).collect();
     for item in &item_list {
         if item.template_item_id.trim().is_empty() {
             return Err(param_err("模板项ID不能为空"));
@@ -507,8 +521,19 @@ pub async fn update_month_item(
         .collect();
 
     // 计算并更新月度汇总
-    let calculated = calculate_month_record_data(&state, book_id, year, month, &entries, &template_items).await?;
-    let _ = upsert_month_record(&state, book_id, year, month, &user_id, params.note, &calculated).await?;
+    let calculated =
+        calculate_month_record_data(&state, book_id, year, month, &entries, &template_items)
+            .await?;
+    let _ = upsert_month_record(
+        &state,
+        book_id,
+        year,
+        month,
+        &user_id,
+        params.note,
+        &calculated,
+    )
+    .await?;
 
     // 重新计算相关月份
     recalculate_related_months(&state, book_id, year, month, &user_id, &template_items).await?;
@@ -542,7 +567,10 @@ pub async fn query_month_item(
         .all(&state.db)
         .await?;
 
-    let result = items.into_iter().map(MonthItemRecordResponse::from).collect();
+    let result = items
+        .into_iter()
+        .map(MonthItemRecordResponse::from)
+        .collect();
 
     Ok(Json(ApiResponse::success(result)))
 }
@@ -554,7 +582,10 @@ pub async fn query_all(
     AuthUser(user_id): AuthUser,
     State(state): State<AppState>,
     Json(params): Json<MonthItemDto>,
-) -> Result<Json<ApiResponse<std::collections::HashMap<String, Vec<MonthItemRecordResponse>>>>, AppError> {
+) -> Result<
+    Json<ApiResponse<std::collections::HashMap<String, Vec<MonthItemRecordResponse>>>>,
+    AppError,
+> {
     let book_id = params.book_id.trim();
     if book_id.is_empty() {
         return Err(param_err("账簿ID不能为空"));
@@ -580,7 +611,8 @@ pub async fn query_all(
         .await?;
 
     // 按年月分组
-    let mut grouped: std::collections::HashMap<String, Vec<MonthItemRecordResponse>> = std::collections::HashMap::new();
+    let mut grouped: std::collections::HashMap<String, Vec<MonthItemRecordResponse>> =
+        std::collections::HashMap::new();
     for item in items {
         let key = format!("{:04}{:02}", item.year, item.month);
         grouped.entry(key).or_default().push(item.into());
@@ -588,7 +620,12 @@ pub async fn query_all(
 
     // 对每个月的条目按模板项排序
     for list in grouped.values_mut() {
-        list.sort_by_key(|item| sort_map.get(&item.template_item_id).copied().unwrap_or(i32::MAX));
+        list.sort_by_key(|item| {
+            sort_map
+                .get(&item.template_item_id)
+                .copied()
+                .unwrap_or(i32::MAX)
+        });
     }
 
     Ok(Json(ApiResponse::success(grouped)))

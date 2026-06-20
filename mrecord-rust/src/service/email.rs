@@ -16,11 +16,11 @@
 //! 即仅支持 SSL/SMTPS（隐式 TLS）。Rust 端按相同策略：使用 `SmtpTransport::relay`
 //! 的 SMTPS 连接器，端口取 `mail.sslSmtpPort`。
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use lettre::{
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
-    message::{Mailbox, header::ContentType},
+    message::{Attachment, Mailbox, MultiPart, SinglePart, header::ContentType},
     transport::smtp::{authentication::Credentials, client::Tls, client::TlsParameters},
 };
 use sea_orm::DatabaseConnection;
@@ -125,6 +125,26 @@ impl EmailService {
         .await
     }
 
+    /// 发送账簿导出完成邮件。
+    ///
+    /// 对应 Java: `EmailServiceImpl.sendExportBookEmail`。
+    pub async fn send_export_book_email(
+        &self,
+        db: &DatabaseConnection,
+        params: MailParams,
+        attachment_path: &Path,
+    ) -> Result<(), AppError> {
+        self.send_with_db_config_and_attachment(
+            db,
+            &params,
+            "【MRecord｜月衡】账簿导出完成",
+            TEMPLATE_EXPORT,
+            "账簿导出完成邮件发送失败",
+            attachment_path,
+        )
+        .await
+    }
+
     /// 发送测试邮件（使用前端传入的临时配置，不读 DB）
     ///
     /// 对应 Java: `EmailServiceImpl.sendTestEmail`
@@ -159,28 +179,11 @@ impl EmailService {
         err_hint: &str,
         mandatory: bool,
     ) -> Result<(), AppError> {
-        // 读 SMTP 配置
-        let mail_cfg = match self.config_service.get_email_config(db).await? {
-            Some(cfg) => cfg,
-            None => {
-                if mandatory {
-                    tracing::warn!("管理员未配置邮件参数，跳过 {}", err_hint);
-                    return Err(AppError::Business {
-                        code: ResCode::BusinessError.code().to_string(),
-                        message: "管理员未配置邮箱参数，请联系管理员".to_string(),
-                    });
-                } else {
-                    tracing::warn!("管理员未配置邮件参数，跳过邮件发送：{}", subject);
-                    return Ok(());
-                }
-            }
+        let Some(mail_cfg) = self.load_mail_config(db, err_hint, mandatory).await? else {
+            tracing::warn!("管理员未配置邮件参数，跳过邮件发送：{}", subject);
+            return Ok(());
         };
-
-        // 读站点信息（webSite / adminMail）填充模板
-        let web_site = self.config_service.get_web_site(db).await?;
-        let admin_mail = self.config_service.get_admin_mail(db).await?;
-        let placeholders = params.to_placeholders(web_site.as_deref(), admin_mail.as_deref());
-        let html = render_template(template, &placeholders);
+        let html = self.render_with_site_config(db, params, template).await?;
 
         let message = build_message(&mail_cfg, &params.to, subject, &html)?;
         let transport = build_transport(&mail_cfg)?;
@@ -192,6 +195,88 @@ impl EmailService {
             }
         })?;
         Ok(())
+    }
+
+    /// 通用发送：从 DB 读取邮件配置并添加附件。
+    ///
+    /// 对应 Java `HtmlEmail.attach` 的导出文件附件场景。
+    async fn send_with_db_config_and_attachment(
+        &self,
+        db: &DatabaseConnection,
+        params: &MailParams,
+        subject: &str,
+        template: &str,
+        err_hint: &str,
+        attachment_path: &Path,
+    ) -> Result<(), AppError> {
+        let Some(mail_cfg) = self.load_mail_config(db, err_hint, true).await? else {
+            return Ok(());
+        };
+        let html = self.render_with_site_config(db, params, template).await?;
+        let bytes = std::fs::read(attachment_path).map_err(|e| AppError::Business {
+            code: ResCode::Error.code().to_string(),
+            message: format!("读取导出附件失败：{}", e),
+        })?;
+        let file_name = params.file_name.clone();
+        let content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            .parse()
+            .map_err(|e| AppError::Business {
+                code: ResCode::Error.code().to_string(),
+                message: format!("附件类型构造失败：{}", e),
+            })?;
+        let body = MultiPart::mixed()
+            .singlepart(
+                SinglePart::builder()
+                    .header(ContentType::TEXT_HTML)
+                    .body(html),
+            )
+            .singlepart(Attachment::new(file_name).body(bytes, content_type));
+        let message = build_multipart_message(&mail_cfg, &params.to, subject, body)?;
+        let transport = build_transport(&mail_cfg)?;
+        transport.send(message).await.map_err(|e| {
+            tracing::error!("{}: {:?}", err_hint, e);
+            AppError::Business {
+                code: ResCode::Error.code().to_string(),
+                message: format!("{}，请联系管理员", err_hint),
+            }
+        })?;
+        Ok(())
+    }
+
+    /// 读取 SMTP 配置，保留 Java 中强制/非强制发送的差异。
+    async fn load_mail_config(
+        &self,
+        db: &DatabaseConnection,
+        err_hint: &str,
+        mandatory: bool,
+    ) -> Result<Option<EmailConfigBo>, AppError> {
+        match self.config_service.get_email_config(db).await? {
+            Some(cfg) => Ok(Some(cfg)),
+            None => {
+                if mandatory {
+                    tracing::warn!("管理员未配置邮件参数，跳过 {}", err_hint);
+                    Err(AppError::Business {
+                        code: ResCode::BusinessError.code().to_string(),
+                        message: "管理员未配置邮箱参数，请联系管理员".to_string(),
+                    })
+                } else {
+                    Ok(None)
+                }
+            }
+        }
+    }
+
+    /// 填充站点地址、管理员邮箱等通用模板占位符。
+    async fn render_with_site_config(
+        &self,
+        db: &DatabaseConnection,
+        params: &MailParams,
+        template: &str,
+    ) -> Result<String, AppError> {
+        let web_site = self.config_service.get_web_site(db).await?;
+        let admin_mail = self.config_service.get_admin_mail(db).await?;
+        let placeholders = params.to_placeholders(web_site.as_deref(), admin_mail.as_deref());
+        Ok(render_template(template, &placeholders))
     }
 }
 
@@ -217,6 +302,36 @@ fn build_message(
     subject: &str,
     html: &str,
 ) -> Result<Message, AppError> {
+    base_message_builder(cfg, to, subject)?
+        .header(ContentType::TEXT_HTML)
+        .body(html.to_string())
+        .map_err(|e| AppError::Business {
+            code: ResCode::Error.code().to_string(),
+            message: format!("邮件构建失败：{}", e),
+        })
+}
+
+/// 构造一封带附件的多段邮件。
+fn build_multipart_message(
+    cfg: &EmailConfigBo,
+    to: &str,
+    subject: &str,
+    body: MultiPart,
+) -> Result<Message, AppError> {
+    base_message_builder(cfg, to, subject)?
+        .multipart(body)
+        .map_err(|e| AppError::Business {
+            code: ResCode::Error.code().to_string(),
+            message: format!("邮件构建失败：{}", e),
+        })
+}
+
+/// 构造邮件基础头信息。
+fn base_message_builder(
+    cfg: &EmailConfigBo,
+    to: &str,
+    subject: &str,
+) -> Result<lettre::message::MessageBuilder, AppError> {
     let from: Mailbox = cfg.from.parse().map_err(|e| AppError::Business {
         code: ResCode::ParamError.code().to_string(),
         message: format!("发件人邮箱格式错误：{}", e),
@@ -226,16 +341,7 @@ fn build_message(
         message: format!("收件人邮箱格式错误：{}", e),
     })?;
 
-    Message::builder()
-        .from(from)
-        .to(to)
-        .subject(subject)
-        .header(ContentType::TEXT_HTML)
-        .body(html.to_string())
-        .map_err(|e| AppError::Business {
-            code: ResCode::Error.code().to_string(),
-            message: format!("邮件构建失败：{}", e),
-        })
+    Ok(Message::builder().from(from).to(to).subject(subject))
 }
 
 /// 构造 SMTP 客户端

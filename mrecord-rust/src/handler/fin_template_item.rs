@@ -5,8 +5,7 @@
 
 use axum::{Json, extract::State};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set,
-    sea_query::Expr,
+    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set, sea_query::Expr,
 };
 use uuid::Uuid;
 
@@ -15,12 +14,13 @@ use crate::{
     common::{res_code::ResCode, result::ApiResponse, user_context::AuthUser},
     entity::{
         fin_book::{Column as BookCol, Entity as BookEntity},
-        fin_template_item::{self, ActiveModel as TemplateItemActive, Column as TemplateItemCol, Entity as TemplateItemEntity},
+        fin_template_item::{
+            self, ActiveModel as TemplateItemActive, Column as TemplateItemCol,
+            Entity as TemplateItemEntity,
+        },
     },
     error::AppError,
-    model::{
-        finance::{FinTempItemDto, TemplateItemResponse},
-    },
+    model::finance::{FinTempItemDto, TemplateItemResponse},
 };
 
 /// 构造参数错误业务异常。
@@ -84,7 +84,9 @@ pub async fn create(
     // 校验账簿权限（通过查询操作隐式校验）
     let _ = check_book_and_get_template_items(&state, book_id, &user_id).await?;
 
-    let item_list = params.item_list.ok_or_else(|| param_err("模板项列表不能为空"))?;
+    let item_list = params
+        .item_list
+        .ok_or_else(|| param_err("模板项列表不能为空"))?;
     if item_list.is_empty() {
         return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
     }
@@ -135,7 +137,9 @@ pub async fn update(
         .map(|item| (item.id.clone(), item))
         .collect();
 
-    let item_list = params.item_list.ok_or_else(|| param_err("模板项列表不能为空"))?;
+    let item_list = params
+        .item_list
+        .ok_or_else(|| param_err("模板项列表不能为空"))?;
     if item_list.is_empty() {
         return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
     }
@@ -205,7 +209,9 @@ pub async fn copy(
     State(state): State<AppState>,
     Json(params): Json<FinTempItemDto>,
 ) -> Result<Json<ApiResponse<Vec<TemplateItemResponse>>>, AppError> {
-    let old_book_id = params.old_book_id.ok_or_else(|| param_err("原账簿ID不能为空"))?;
+    let old_book_id = params
+        .old_book_id
+        .ok_or_else(|| param_err("原账簿ID不能为空"))?;
     let old_book_id = old_book_id.trim();
     if old_book_id.is_empty() {
         return Err(param_err("原账簿ID不能为空"));

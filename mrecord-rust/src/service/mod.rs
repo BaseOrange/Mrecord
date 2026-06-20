@@ -9,4 +9,5 @@
 //! - [`email::EmailService`] — 邮件发送服务（SMTP/SMTPS via lettre）
 
 pub mod email;
+pub mod export_task;
 pub mod sys_config;

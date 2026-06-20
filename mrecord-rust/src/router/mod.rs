@@ -106,6 +106,10 @@ pub fn build(state: AppState) -> Router {
             "/monthItem/queryAll",
             post(handler::fin_month_item_record::query_all),
         )
+        // ==================== 导出任务模块 ====================
+        // 对应 Java: ExportTaskController（@RequestMapping("/exportTask")）
+        .route("/exportTask/export", post(handler::sys_export_task::export))
+        .route("/exportTask/list", post(handler::sys_export_task::list))
         // ==================== 配置项模块 ====================
         // 对应 Java: SysConfigController（@RequestMapping("/config")）
         .route(
