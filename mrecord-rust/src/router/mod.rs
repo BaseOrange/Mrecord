@@ -72,6 +72,40 @@ pub fn build(state: AppState) -> Router {
             "/book/getBookDetailedStatistics",
             post(handler::fin_book::get_book_detailed_statistics),
         )
+        // ==================== 模板项模块 ====================
+        // 对应 Java: FinTemplateItemController（@RequestMapping("/tempItem")）
+        .route("/tempItem/create", post(handler::fin_template_item::create))
+        .route("/tempItem/update", post(handler::fin_template_item::update))
+        .route("/tempItem/copy", post(handler::fin_template_item::copy))
+        .route("/tempItem/list", post(handler::fin_template_item::list))
+        // ==================== 月度汇总模块 ====================
+        // 对应 Java: FinMonthRecordController（@RequestMapping("/monthRecord")）
+        .route(
+            "/monthRecord/getMonthRecord",
+            post(handler::fin_month_record::get_month_record),
+        )
+        .route(
+            "/monthRecord/getYearRecordList",
+            post(handler::fin_month_record::get_year_record_list),
+        )
+        // ==================== 月度明细模块 ====================
+        // 对应 Java: FinMonthItemRecordController（@RequestMapping("/monthItem")）
+        .route(
+            "/monthItem/insertMonthItem",
+            post(handler::fin_month_item_record::insert_month_item),
+        )
+        .route(
+            "/monthItem/updateMonthItem",
+            post(handler::fin_month_item_record::update_month_item),
+        )
+        .route(
+            "/monthItem/queryMonthItem",
+            post(handler::fin_month_item_record::query_month_item),
+        )
+        .route(
+            "/monthItem/queryAll",
+            post(handler::fin_month_item_record::query_all),
+        )
         // ==================== 配置项模块 ====================
         // 对应 Java: SysConfigController（@RequestMapping("/config")）
         .route(

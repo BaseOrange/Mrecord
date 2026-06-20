@@ -22,9 +22,9 @@ pub struct MonthRecordDto {
     /// 账簿 ID
     pub book_id: String,
     /// 年份
-    pub year: i32,
+    pub year: Option<i32>,
     /// 月份
-    pub month: i32,
+    pub month: Option<i32>,
     /// 备注
     pub note: Option<String>,
 }
@@ -36,11 +36,11 @@ pub struct MonthItemDto {
     /// 账簿 ID
     pub book_id: String,
     /// 年份
-    pub year: i32,
+    pub year: Option<i32>,
     /// 月份
-    pub month: i32,
+    pub month: Option<i32>,
     /// 明细列表
-    pub item_list: Vec<MonthItemEntry>,
+    pub item_list: Option<Vec<MonthItemEntry>>,
     /// 备注
     pub note: Option<String>,
 }
@@ -66,7 +66,7 @@ pub struct FinTempItemDto {
     /// 旧账簿 ID（复制场景）
     pub old_book_id: Option<String>,
     /// 账本模板项列表
-    pub item_list: Vec<TemplateItemEntry>,
+    pub item_list: Option<Vec<TemplateItemEntry>>,
 }
 
 /// 模板项条目（用于 FinTempItemDto 内嵌列表）
