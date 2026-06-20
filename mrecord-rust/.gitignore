@@ -13,3 +13,6 @@
 
 # Exported Excel files
 /exports/
+
+# Frontend build artifacts
+/static/

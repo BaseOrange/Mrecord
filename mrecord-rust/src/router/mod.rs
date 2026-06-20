@@ -7,13 +7,13 @@ use axum::{
     Router, middleware,
     routing::{get, post},
 };
+use tower_http::services::{ServeDir, ServeFile};
 
 use crate::{AppState, handler};
 
 /// 构建应用路由
 pub fn build(state: AppState) -> Router {
-    Router::new()
-        .route("/", get(|| async { "Hello! Welcome To Mrecord!" }))
+    let api_routes = Router::new()
         // record 模块（示例 / 旧测试用）
         .route(
             "/records",
@@ -151,6 +151,10 @@ pub fn build(state: AppState) -> Router {
         .layer(middleware::from_fn_with_state(
             state.clone(),
             crate::middleware::log::operate_log,
-        ))
+        ));
+
+    Router::new()
+        .nest("/api/v2", api_routes)
+        .fallback_service(ServeDir::new("static").fallback(ServeFile::new("static/index.html")))
         .with_state(state)
 }

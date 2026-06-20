@@ -37,3 +37,6 @@ lettre = { version = "0.11", default-features = false, features = ["smtp-transpo
 # 导出任务模块所需依赖
 # rust_xlsxwriter: 生成 Excel 文件（对应 Java EasyExcel / POI 导出能力）
 rust_xlsxwriter = "0.88"
+# 静态资源模块所需依赖
+# tower-http: 托管前端构建产物（对应 Java static resources）
+tower-http = { version = "0.5", features = ["fs"] }

@@ -33,9 +33,9 @@ export default defineConfig(({mode}) => {
         // 显式声明 base，确保构建产物路径绝对正确
         base: '/',
         build: {
-            // 直接输出到 Java 后端 static 目录，避免手动复制
-            outDir: '../mrecord-java/src/main/resources/static',
-            emptyOutDir: false,
+            // 直接输出到 Rust 后端 static 目录，避免手动复制
+            outDir: '../mrecord-rust/static',
+            emptyOutDir: true,
         },
         plugins: [
             vue(),
