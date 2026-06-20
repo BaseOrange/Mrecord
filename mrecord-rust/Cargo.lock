@@ -1470,6 +1470,7 @@ dependencies = [
  "migration",
  "once_cell",
  "regex",
+ "rust_decimal",
  "rust_xlsxwriter",
  "sea-orm",
  "sea-orm-migration",

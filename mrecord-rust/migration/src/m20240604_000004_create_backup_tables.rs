@@ -133,27 +133,27 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(SysBackupMonthRecord::MrTotalAsset)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(SysBackupMonthRecord::MrTotalLiability)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(SysBackupMonthRecord::MrNetAsset)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(SysBackupMonthRecord::MrMonthOnMonth)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(SysBackupMonthRecord::MrYearOnYear)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(ColumnDef::new(SysBackupMonthRecord::MrNote).string())
@@ -210,7 +210,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(SysBackupMonthItemRecord::MrItemValue)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(ColumnDef::new(SysBackupMonthItemRecord::MrCreateBy).string())

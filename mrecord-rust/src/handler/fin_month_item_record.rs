@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 
 use axum::{Json, extract::State};
+use rust_decimal::Decimal;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder, Set,
     TransactionTrait,
@@ -14,7 +15,12 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    common::{res_code::ResCode, result::ApiResponse, user_context::AuthUser},
+    common::{
+        money::{round_money, zero_money},
+        res_code::ResCode,
+        result::ApiResponse,
+        user_context::AuthUser,
+    },
     entity::{
         fin_book,
         fin_book::{Column as BookCol, Entity as BookEntity},
@@ -123,23 +129,21 @@ fn next_month(year: i32, month: i32) -> (i32, i32) {
 }
 
 /// 计算同比/环比增长率。
-/// 返回百分比值（如 10.5 表示 10.5%）。
-fn calculate_growth_rate(current: f64, base: f64) -> f64 {
-    if base == 0.0 {
-        return 0.0;
+/// 返回百分比值（如 10.50 表示 10.50%），对应 Java BigDecimal 的两位 HALF_UP 规则。
+fn calculate_growth_rate(current: Decimal, base: Decimal) -> Decimal {
+    if base.is_zero() {
+        return zero_money();
     }
-    // (本期 - 上期) / |上期| * 100，保留两位小数
-    let rate = (current - base) / base.abs() * 100.0;
-    (rate * 100.0).round() / 100.0
+    round_money((current - base) / base.abs() * Decimal::from(100))
 }
 
 /// 月度汇总计算结果。
 struct CalculatedMonthRecord {
-    total_asset: f64,
-    total_liability: f64,
-    net_asset: f64,
-    month_on_month: f64,
-    year_on_year: f64,
+    total_asset: Decimal,
+    total_liability: Decimal,
+    net_asset: Decimal,
+    month_on_month: Decimal,
+    year_on_year: Decimal,
 }
 
 /// 计算月度汇总数据。
@@ -161,37 +165,38 @@ where
         .collect();
 
     // 计算总资产和总负债
-    let mut total_asset = 0.0;
-    let mut total_liability = 0.0;
+    let mut total_asset = Decimal::ZERO;
+    let mut total_liability = Decimal::ZERO;
 
     for item in item_list {
+        let item_value = round_money(item.item_value);
         if let Some(&item_type) = type_map.get(&item.template_item_id) {
             match item_type {
-                1 => total_asset += item.item_value,      // 资产
-                -1 => total_liability += item.item_value, // 负债
-                0 => {}                                   // 仅记录，不计入
+                1 => total_asset += item_value,      // 资产
+                -1 => total_liability += item_value, // 负债
+                0 => {}                              // 仅记录，不计入
                 _ => {}
             }
         }
     }
 
     // 保留两位小数
-    total_asset = (total_asset * 100.0).round() / 100.0;
-    total_liability = (total_liability * 100.0).round() / 100.0;
-    let net_asset = ((total_asset - total_liability) * 100.0).round() / 100.0;
+    total_asset = round_money(total_asset);
+    total_liability = round_money(total_liability);
+    let net_asset = round_money(total_asset - total_liability);
 
     // 计算环比（与上月比较）
     let (prev_year, prev_month) = prev_month(year, month);
     let prev_record = get_month_record(db, book_id, prev_year, prev_month).await?;
     let month_on_month = prev_record
         .map(|r| calculate_growth_rate(net_asset, r.net_asset))
-        .unwrap_or(0.0);
+        .unwrap_or_else(zero_money);
 
     // 计算同比（与去年同月比较）
     let last_year_record = get_month_record(db, book_id, year - 1, month).await?;
     let year_on_year = last_year_record
         .map(|r| calculate_growth_rate(net_asset, r.net_asset))
-        .unwrap_or(0.0);
+        .unwrap_or_else(zero_money);
 
     Ok(CalculatedMonthRecord {
         total_asset,
@@ -384,7 +389,7 @@ pub async fn insert_month_item(
         if !template_ids.contains(item.template_item_id.as_str()) {
             return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
         }
-        if item.item_value < 0.0 {
+        if item.item_value < Decimal::ZERO {
             return Err(param_err("账目金额不能为负数"));
         }
     }
@@ -398,7 +403,7 @@ pub async fn insert_month_item(
             month: Set(month),
             book_id: Set(book_id.to_string()),
             template_item_id: Set(item.template_item_id),
-            item_value: Set(item.item_value),
+            item_value: Set(round_money(item.item_value)),
             create_by: Set(Some(user_id.clone())),
             ..Default::default()
         };
@@ -473,7 +478,7 @@ pub async fn update_month_item(
         if !template_ids.contains(item.template_item_id.as_str()) {
             return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
         }
-        if item.item_value < 0.0 {
+        if item.item_value < Decimal::ZERO {
             return Err(param_err("账目金额不能为负数"));
         }
     }
@@ -517,7 +522,7 @@ pub async fn update_month_item(
                     month: Set(month),
                     book_id: Set(book_id.to_string()),
                     template_item_id: Set(item.template_item_id),
-                    item_value: Set(item.item_value),
+                    item_value: Set(round_money(item.item_value)),
                     create_by: Set(Some(user_id.clone())),
                     ..Default::default()
                 };

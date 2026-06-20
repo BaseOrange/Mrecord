@@ -9,6 +9,7 @@
 //! - `com.dcz.mrecord.dto.ExportBookDTO`
 //! - `com.dcz.mrecord.dto.DataStatisticsDTO`
 
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use super::page_info::PageInfo;
@@ -54,7 +55,8 @@ pub struct MonthItemEntry {
     /// 关联模板项 ID，FIN_TEMPLATE_ITEM.MR_ID
     pub template_item_id: String,
     /// 当月该记账项实际金额
-    pub item_value: f64,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub item_value: Decimal,
 }
 
 /// 创建 / 复制账本模板项请求
@@ -157,11 +159,16 @@ pub struct FinBookRecordResponse {
     pub id: String,
     pub year: i32,
     pub month: i32,
-    pub total_asset: f64,
-    pub total_liability: f64,
-    pub net_asset: f64,
-    pub month_on_month: f64,
-    pub year_on_year: f64,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub total_asset: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub total_liability: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub net_asset: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub month_on_month: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub year_on_year: Decimal,
     pub note: Option<String>,
     pub create_time: String,
     pub update_time: Option<String>,
@@ -226,11 +233,16 @@ pub struct MonthRecordResponse {
     pub book_id: String,
     pub year: i32,
     pub month: i32,
-    pub total_asset: f64,
-    pub total_liability: f64,
-    pub net_asset: f64,
-    pub month_on_month: f64,
-    pub year_on_year: f64,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub total_asset: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub total_liability: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub net_asset: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub month_on_month: Decimal,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub year_on_year: Decimal,
     pub note: Option<String>,
     pub create_time: String,
     pub update_time: Option<String>,
@@ -266,7 +278,8 @@ pub struct MonthItemRecordResponse {
     pub year: i32,
     pub month: i32,
     pub template_item_id: String,
-    pub item_value: f64,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub item_value: Decimal,
 }
 
 impl From<crate::entity::fin_month_item_record::Model> for MonthItemRecordResponse {

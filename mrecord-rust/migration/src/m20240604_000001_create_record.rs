@@ -19,7 +19,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Record::Title).string().not_null())
-                    .col(ColumnDef::new(Record::Amount).double().not_null())
+                    .col(ColumnDef::new(Record::Amount).string().not_null())
                     .col(
                         ColumnDef::new(Record::CreatedAt)
                             .date_time()

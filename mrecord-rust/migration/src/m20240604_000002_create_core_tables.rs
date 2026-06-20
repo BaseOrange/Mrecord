@@ -105,27 +105,27 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(FinMonthRecord::MrMonth).integer().not_null())
                     .col(
                         ColumnDef::new(FinMonthRecord::MrTotalAsset)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(FinMonthRecord::MrTotalLiability)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(FinMonthRecord::MrNetAsset)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(FinMonthRecord::MrMonthOnMonth)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(
                         ColumnDef::new(FinMonthRecord::MrYearOnYear)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(ColumnDef::new(FinMonthRecord::MrNote).string())
@@ -182,7 +182,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(FinMonthItemRecord::MrItemValue)
-                            .double()
+                            .string()
                             .not_null(),
                     )
                     .col(ColumnDef::new(FinMonthItemRecord::MrCreateBy).string())

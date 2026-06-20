@@ -6,6 +6,7 @@
 //! 数据库表: `SYS_BACKUP_MONTH_RECORD`
 
 use chrono::NaiveDateTime;
+use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
 use serde::Serialize;
 
@@ -29,19 +30,19 @@ pub struct Model {
     pub month: i32,
     /// 当月总资产，所有资产项之和
     #[sea_orm(column_name = "MR_TOTAL_ASSET")]
-    pub total_asset: f64,
+    pub total_asset: Decimal,
     /// 当月总负债，所有负债项之和
     #[sea_orm(column_name = "MR_TOTAL_LIABILITY")]
-    pub total_liability: f64,
+    pub total_liability: Decimal,
     /// 当月净资产，总资产 - 总负债
     #[sea_orm(column_name = "MR_NET_ASSET")]
-    pub net_asset: f64,
+    pub net_asset: Decimal,
     /// 环比增长/下跌金额，对比上月
     #[sea_orm(column_name = "MR_MONTH_ON_MONTH")]
-    pub month_on_month: f64,
+    pub month_on_month: Decimal,
     /// 同比增长/下跌金额，对比去年同月
     #[sea_orm(column_name = "MR_YEAR_ON_YEAR")]
-    pub year_on_year: f64,
+    pub year_on_year: Decimal,
     /// 用户本月汇总备注
     #[sea_orm(column_name = "MR_NOTE")]
     pub note: Option<String>,

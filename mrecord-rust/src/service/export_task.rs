@@ -7,6 +7,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use chrono::Utc;
+use rust_decimal::{Decimal, prelude::ToPrimitive};
 use rust_xlsxwriter::{Workbook, XlsxError};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter,
@@ -406,19 +407,19 @@ fn write_summary_sheet(
             .write_number(row, 2, record.month)
             .map_err(map_xlsx_error)?;
         worksheet
-            .write_number(row, 3, record.total_asset)
+            .write_number(row, 3, decimal_to_f64(record.total_asset))
             .map_err(map_xlsx_error)?;
         worksheet
-            .write_number(row, 4, record.total_liability)
+            .write_number(row, 4, decimal_to_f64(record.total_liability))
             .map_err(map_xlsx_error)?;
         worksheet
-            .write_number(row, 5, record.net_asset)
+            .write_number(row, 5, decimal_to_f64(record.net_asset))
             .map_err(map_xlsx_error)?;
         worksheet
-            .write_number(row, 6, record.month_on_month)
+            .write_number(row, 6, decimal_to_f64(record.month_on_month))
             .map_err(map_xlsx_error)?;
         worksheet
-            .write_number(row, 7, record.year_on_year)
+            .write_number(row, 7, decimal_to_f64(record.year_on_year))
             .map_err(map_xlsx_error)?;
         worksheet
             .write_string(row, 8, record.note.as_deref().unwrap_or(""))
@@ -463,10 +464,15 @@ fn write_detail_sheet(
             .write_string(row, 3, item_name)
             .map_err(map_xlsx_error)?;
         worksheet
-            .write_number(row, 4, item.item_value)
+            .write_number(row, 4, decimal_to_f64(item.item_value))
             .map_err(map_xlsx_error)?;
     }
     Ok(())
+}
+
+/// 将两位小数 Decimal 转为 Excel 数字单元格需要的浮点值。
+fn decimal_to_f64(value: Decimal) -> f64 {
+    value.to_f64().unwrap_or(0.0)
 }
 
 /// 构造导出完成邮件参数。

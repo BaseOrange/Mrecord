@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
 use serde::Serialize;
 
@@ -9,7 +10,7 @@ pub struct Model {
     pub id: i32,
     pub title: String,
     #[serde(skip)]
-    pub amount: f64,
+    pub amount: Decimal,
     pub created_at: NaiveDateTime,
 }
 

@@ -1,16 +1,19 @@
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct CreateRecord {
     pub title: String,
-    pub amount: f64,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub amount: Decimal,
 }
 
 #[derive(Serialize)]
 pub struct RecordResponse {
     pub id: i32,
     pub title: String,
-    pub amount: f64,
+    #[serde(with = "rust_decimal::serde::str")]
+    pub amount: Decimal,
     pub created_at: String,
 }
 

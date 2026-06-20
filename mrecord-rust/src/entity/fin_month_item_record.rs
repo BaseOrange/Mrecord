@@ -6,6 +6,7 @@
 //! 数据库表: `FIN_MONTH_ITEM_RECORD`
 
 use chrono::NaiveDateTime;
+use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
 use serde::Serialize;
 
@@ -29,7 +30,7 @@ pub struct Model {
     pub template_item_id: String,
     /// 当月该记账项实际金额
     #[sea_orm(column_name = "MR_ITEM_VALUE")]
-    pub item_value: f64,
+    pub item_value: Decimal,
     /// 创建人
     #[sea_orm(column_name = "MR_CREATE_BY")]
     pub create_by: Option<String>,

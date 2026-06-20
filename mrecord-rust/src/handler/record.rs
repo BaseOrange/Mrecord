@@ -4,6 +4,7 @@ use sea_orm::EntityTrait;
 use crate::entity::record::{ActiveModel, Entity};
 use crate::{
     AppState,
+    common::money::round_money,
     error::AppError,
     model::record::{CreateRecord, RecordResponse},
 };
@@ -35,7 +36,7 @@ pub async fn create(
 ) -> Result<(StatusCode, Json<RecordResponse>), AppError> {
     let active = ActiveModel {
         title: Set(payload.title),
-        amount: Set(payload.amount),
+        amount: Set(round_money(payload.amount)),
         ..Default::default()
     };
 
