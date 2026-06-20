@@ -74,7 +74,7 @@ pub fn parse(token: &str, expected: TokenPurpose, secret: &str) -> Option<String
         &DecodingKey::from_secret(secret.as_bytes()),
         &Validation::default(),
     )
-    .ok()?;
+        .ok()?;
     if data.claims.purpose != expected {
         return None;
     }

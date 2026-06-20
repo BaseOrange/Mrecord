@@ -231,7 +231,7 @@ pub async fn register(
         TokenPurpose::Activate,
         &state.activate_token_secret,
     )
-    .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     let web_site = state.config_service.get_web_site(&state.db).await?;
     let activate_link = build_activate_link(web_site.as_deref(), &activate_token);
 
@@ -267,7 +267,7 @@ pub async fn activate(
         TokenPurpose::Activate,
         &state.activate_token_secret,
     )
-    .ok_or_else(|| param_err("激活令牌错误或已过期"))?;
+        .ok_or_else(|| param_err("激活令牌错误或已过期"))?;
 
     let user = UserEntity::find_by_id(user_id)
         .one(&state.db)
@@ -332,7 +332,7 @@ pub async fn resend_activate_email(
         TokenPurpose::Activate,
         &state.activate_token_secret,
     )
-    .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     let web_site = state.config_service.get_web_site(&state.db).await?;
     let activate_link = build_activate_link(web_site.as_deref(), &activate_token);
 
@@ -425,7 +425,7 @@ pub async fn forgot_password(
         TokenPurpose::ResetPassword,
         &state.reset_pwd_token_secret,
     )
-    .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     let web_site = state.config_service.get_web_site(&state.db).await?;
     let reset_link = build_reset_link(web_site.as_deref(), &reset_token);
 
@@ -458,7 +458,7 @@ pub async fn reset_password(
         TokenPurpose::ResetPassword,
         &state.reset_pwd_token_secret,
     )
-    .ok_or_else(|| param_err("重置密码令牌错误"))?;
+        .ok_or_else(|| param_err("重置密码令牌错误"))?;
 
     let password = params.password.unwrap_or_default();
     if password.trim().is_empty() {

@@ -47,6 +47,6 @@ pub fn parse_user_id(token: &str, secret: &str) -> Option<String> {
         &DecodingKey::from_secret(secret.as_bytes()),
         &Validation::default(),
     )
-    .ok()
-    .map(|data| data.claims.sub)
+        .ok()
+        .map(|data| data.claims.sub)
 }

@@ -164,8 +164,8 @@ pub async fn delete(
         update_time: Set(book.update_time),
         is_deleted: Set(book.is_deleted),
     }
-    .insert(&state.db)
-    .await?;
+        .insert(&state.db)
+        .await?;
 
     BookEntity::delete_by_id(book.id).exec(&state.db).await?;
 

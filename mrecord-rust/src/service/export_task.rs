@@ -84,8 +84,8 @@ impl ExportTaskService {
                 create_by: Set(Some(user_id.clone())),
                 ..Default::default()
             }
-            .insert(&db)
-            .await?;
+                .insert(&db)
+                .await?;
 
             let service = self.clone();
             let db_for_task = db.clone();
@@ -142,7 +142,7 @@ impl ExportTaskService {
                     Some(file_name.clone()),
                     None,
                 )
-                .await?;
+                    .await?;
 
                 if let Err(e) = self
                     .send_completion_email(&db, &task, &file_name, file_path)
@@ -194,8 +194,8 @@ impl ExportTaskService {
                 template_names,
             )
         })
-        .await
-        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))??;
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))??;
 
         Ok(file_path)
     }
@@ -359,7 +359,7 @@ fn write_excel(
             .parent()
             .unwrap_or_else(|| std::path::Path::new(".")),
     )
-    .context("创建导出目录失败")?;
+        .context("创建导出目录失败")?;
 
     let mut workbook = Workbook::new();
     write_summary_sheet(&mut workbook, &book, &month_records)?;

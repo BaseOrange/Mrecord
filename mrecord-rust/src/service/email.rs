@@ -83,7 +83,7 @@ impl EmailService {
             "账户激活邮件发送失败",
             true,
         )
-        .await
+            .await
     }
 
     /// 发送注册成功欢迎邮件
@@ -122,7 +122,7 @@ impl EmailService {
             "重置密码邮件发送失败",
             true,
         )
-        .await
+            .await
     }
 
     /// 发送账簿导出完成邮件。
@@ -142,7 +142,7 @@ impl EmailService {
             "账簿导出完成邮件发送失败",
             attachment_path,
         )
-        .await
+            .await
     }
 
     /// 发送测试邮件（使用前端传入的临时配置，不读 DB）
