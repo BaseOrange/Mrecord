@@ -8,6 +8,7 @@ import {markSystemInitialized} from '@/router'
 import {md5} from 'js-md5'
 import agreementText from '@/assets/agreement.md?raw'
 
+const appIcon = '/app-icon.svg'
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -242,6 +243,7 @@ function onEnterSystem() {
     <div class="init-container">
       <!-- 品牌标识 -->
       <div class="brand">
+        <img :src="appIcon" alt="月衡 Logo" class="brand-logo" />
         <h1 class="brand-name">月衡</h1>
         <p class="brand-slogan">系统初始化向导</p>
       </div>
@@ -468,6 +470,13 @@ function onEnterSystem() {
 .brand {
   text-align: center;
   margin-bottom: 28px;
+}
+.brand-logo {
+  width: 78px;
+  height: 78px;
+  border-radius: 22px;
+  margin-bottom: 12px;
+  box-shadow: 0 12px 28px rgba(249, 114, 22, 0.2);
 }
 .brand-name {
   font-size: 32px;

@@ -6,6 +6,7 @@ import type { BookStatistics } from '@/api/modules/book'
 import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
+const appIcon = '/app-icon.svg'
 
 const quickEntries = [
   { icon: 'plus-circle', label: '记账', color: '#FF6500', action: 'record' },
@@ -81,7 +82,10 @@ const onBookCardClick = (item: BookStatistics) => {
   <div class="home-page">
     <!-- 顶部区域 -->
     <div class="page-header">
-      <h2>月衡 <span class="header-en">Mrecord</span></h2>
+      <div class="header-brand">
+        <img :src="appIcon" alt="月衡 Logo" class="header-logo" />
+        <h2>月衡 <span class="header-en">Mrecord</span></h2>
+      </div>
     </div>
 
     <!-- 快捷入口 -->
@@ -180,6 +184,19 @@ const onBookCardClick = (item: BookStatistics) => {
 .page-header {
   background: #fff;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(249, 114, 22, 0.18);
 }
 
 .page-header h2 {

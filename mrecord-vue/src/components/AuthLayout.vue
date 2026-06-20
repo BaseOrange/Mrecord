@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import loginBg from '@/assets/login_bg.png'
+const appIcon = '/app-icon.svg'
 </script>
 
 <template>
@@ -8,12 +8,13 @@ import loginBg from '@/assets/login_bg.png'
       <div class="bg-glow bg-glow--top"></div>
       <div class="bg-glow bg-glow--bottom"></div>
       <div class="bg-icon-wrapper">
-        <img :src="loginBg" alt="月衡" class="bg-icon" />
+        <img :src="appIcon" alt="月衡" class="bg-icon" />
       </div>
     </div>
 
     <div class="auth-container">
       <div class="brand">
+        <img :src="appIcon" alt="月衡 Logo" class="brand-logo" />
         <h1 class="brand-name">月衡</h1>
         <p class="brand-en">Mrecord</p>
         <p class="brand-slogan">逐月记账，衡知资产</p>
@@ -96,7 +97,15 @@ import loginBg from '@/assets/login_bg.png'
 
 .brand {
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
+}
+
+.brand-logo {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  margin-bottom: 14px;
+  box-shadow: 0 12px 30px rgba(249, 114, 22, 0.22);
 }
 
 .brand-name {
