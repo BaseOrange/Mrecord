@@ -19,6 +19,7 @@ use tracing_subscriber;
 
 use crate::service::{
     email::EmailService, export_task::ExportTaskService, sys_config::SysConfigService,
+    sys_user_operate_log::SysUserOperateLogService,
 };
 
 /// 全局应用状态，由 Axum 的 `with_state` 注入到所有 handler。
@@ -46,6 +47,10 @@ pub struct AppState {
     ///
     /// 对应 Java `@Resource ExportTaskService`，负责创建异步导出任务并生成 Excel 附件。
     pub export_task_service: Arc<ExportTaskService>,
+    /// 用户操作审计日志服务
+    ///
+    /// 对应 Java `@Resource SysUserOperateLogService`，负责记录请求日志和管理员查询审计日志。
+    pub operate_log_service: Arc<SysUserOperateLogService>,
 }
 
 #[tokio::main]
@@ -56,6 +61,7 @@ async fn main() {
     let config_service = SysConfigService::new();
     let email_service = EmailService::new(config_service.clone());
     let export_task_service = ExportTaskService::new(email_service.clone());
+    let operate_log_service = SysUserOperateLogService::new();
 
     // TODO: 这些密钥应从配置文件 / 环境变量加载，避免硬编码
     let state = AppState {
@@ -66,6 +72,7 @@ async fn main() {
         config_service,
         email_service,
         export_task_service,
+        operate_log_service,
     };
 
     let app = router::build(state);

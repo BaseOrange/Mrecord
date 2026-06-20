@@ -1,11 +1,11 @@
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 use sea_orm::EntityTrait;
 
 use crate::entity::record::{ActiveModel, Entity};
 use crate::{
+    AppState,
     error::AppError,
     model::record::{CreateRecord, RecordResponse},
-    AppState,
 };
 use sea_orm::{ActiveModelTrait, Set};
 

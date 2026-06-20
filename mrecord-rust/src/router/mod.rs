@@ -4,11 +4,11 @@
 //! 所有路由集中在此处注册，方便统一查阅。
 
 use axum::{
+    Router, middleware,
     routing::{get, post},
-    Router,
 };
 
-use crate::{handler, AppState};
+use crate::{AppState, handler};
 
 /// 构建应用路由
 pub fn build(state: AppState) -> Router {
@@ -110,6 +110,12 @@ pub fn build(state: AppState) -> Router {
         // 对应 Java: ExportTaskController（@RequestMapping("/exportTask")）
         .route("/exportTask/export", post(handler::sys_export_task::export))
         .route("/exportTask/list", post(handler::sys_export_task::list))
+        // ==================== 操作审计日志模块 ====================
+        // 对应 Java: SysUserOperateLogController（@RequestMapping("/operateLog")）
+        .route(
+            "/operateLog/list",
+            post(handler::sys_user_operate_log::list),
+        )
         // ==================== 配置项模块 ====================
         // 对应 Java: SysConfigController（@RequestMapping("/config")）
         .route(
@@ -142,5 +148,9 @@ pub fn build(state: AppState) -> Router {
         )
         .route("/config/initAdmin", post(handler::sys_config::init_admin))
         .route("/config/testEmail", post(handler::sys_config::test_email))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            crate::middleware::log::operate_log,
+        ))
         .with_state(state)
 }

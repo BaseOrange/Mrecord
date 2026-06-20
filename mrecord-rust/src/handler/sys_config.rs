@@ -6,9 +6,10 @@
 //! 管理员保护通过 [`crate::common::user_context::AdminUser`] 提取器实现，
 //! 等价于 Java 端的 `@CheckAdmin` 注解。
 
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 
 use crate::{
+    AppState,
     common::{result::ApiResponse, user_context::AdminUser},
     error::AppError,
     handler::user as user_handler,
@@ -18,7 +19,6 @@ use crate::{
         user::InitAdminDto,
     },
     util::jwt,
-    AppState,
 };
 /// 刷新缓存：`POST /config/refreshCache`
 ///

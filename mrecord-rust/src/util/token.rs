@@ -8,7 +8,7 @@
 //! - 内置过期时间，无需自行比较时间戳
 //! - 通过 `purpose` 字段防止令牌串用（重置密码 token 不能拿来激活）
 
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
 /// 令牌用途
@@ -74,7 +74,7 @@ pub fn parse(token: &str, expected: TokenPurpose, secret: &str) -> Option<String
         &DecodingKey::from_secret(secret.as_bytes()),
         &Validation::default(),
     )
-        .ok()?;
+    .ok()?;
     if data.claims.purpose != expected {
         return None;
     }

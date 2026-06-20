@@ -11,3 +11,4 @@
 pub mod email;
 pub mod export_task;
 pub mod sys_config;
+pub mod sys_user_operate_log;

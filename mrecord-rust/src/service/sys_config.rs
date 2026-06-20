@@ -161,19 +161,19 @@ impl SysConfigService {
             KEY_MAIL_SSL_SMTP_PORT,
             &dto.ssl_smtp_port.map(|v| v.to_string()).unwrap_or_default(),
         )
-            .await?;
+        .await?;
         upsert_config(
             db,
             KEY_MAIL_SMTP_PORT,
             &dto.smtp_port.map(|v| v.to_string()).unwrap_or_default(),
         )
-            .await?;
+        .await?;
         upsert_config(
             db,
             KEY_MAIL_SSL,
             if dto.ssl.unwrap_or(false) { "1" } else { "0" },
         )
-            .await?;
+        .await?;
         upsert_config(db, KEY_MAIL_USER_NAME, &dto.user_name).await?;
         upsert_config(db, KEY_MAIL_PASSWORD, &password).await?;
         upsert_config(db, KEY_MAIL_FROM, &dto.from).await?;
@@ -255,7 +255,7 @@ impl SysConfigService {
                 "0"
             },
         )
-            .await?;
+        .await?;
 
         let mut state = self.cache.write().await;
         state.web_site = None;

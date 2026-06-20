@@ -5,11 +5,12 @@
 
 use std::collections::HashMap;
 
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 use crate::{
+    AppState,
     common::{res_code::ResCode, result::ApiResponse, user_context::AuthUser},
     entity::{
         fin_book,
@@ -25,7 +26,6 @@ use crate::{
     },
     error::AppError,
     model::finance::{MonthItemDto, MonthItemEntry, MonthItemRecordResponse},
-    AppState,
 };
 
 /// 构造参数错误业务异常。
@@ -271,7 +271,7 @@ async fn recalculate_related_months(
                 &entries,
                 template_items,
             )
-                .await?;
+            .await?;
 
             // 更新下个月记录（保持原有的 note）
             let mut active: MonthRecordActive = next_record.clone().into();
@@ -315,7 +315,7 @@ async fn recalculate_related_months(
                 &entries,
                 template_items,
             )
-                .await?;
+            .await?;
 
             // 更新明年同月记录
             let mut active: MonthRecordActive = next_year_record.clone().into();
@@ -413,7 +413,7 @@ pub async fn insert_month_item(
         params.note,
         &calculated,
     )
-        .await?;
+    .await?;
 
     // 重新计算相关月份
     recalculate_related_months(&state, book_id, year, month, &user_id, &template_items).await?;
@@ -533,7 +533,7 @@ pub async fn update_month_item(
         params.note,
         &calculated,
     )
-        .await?;
+    .await?;
 
     // 重新计算相关月份
     recalculate_related_months(&state, book_id, year, month, &user_id, &template_items).await?;
