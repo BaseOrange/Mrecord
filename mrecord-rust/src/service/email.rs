@@ -43,7 +43,6 @@ const TEMPLATE_REGISTER: &str = include_str!("../../resources/mail/mr-register.h
 /// 找回密码邮件模板（对应 Java `mail/mr-password.html`）
 const TEMPLATE_PASSWORD: &str = include_str!("../../resources/mail/mr-password.html");
 /// 月度记账提醒模板（对应 Java `mail/mr-bookkeep.html`）
-#[allow(dead_code)]
 const TEMPLATE_BOOKKEEP: &str = include_str!("../../resources/mail/mr-bookkeep.html");
 /// 新财年总结模板（对应 Java `mail/mr-year.html`）
 #[allow(dead_code)]
@@ -121,6 +120,25 @@ impl EmailService {
             TEMPLATE_PASSWORD,
             "重置密码邮件发送失败",
             true,
+        )
+        .await
+    }
+
+    /// 发送月度记账提醒邮件。
+    ///
+    /// 对应 Java: `EmailServiceImpl.sendMonthReportEmail`。
+    pub async fn send_month_report_email(
+        &self,
+        db: &DatabaseConnection,
+        params: MailParams,
+    ) -> Result<(), AppError> {
+        self.send_with_db_config(
+            db,
+            &params,
+            "【MRecord｜月衡】新月度记账提醒",
+            TEMPLATE_BOOKKEEP,
+            "月度记账提醒邮件发送失败",
+            false,
         )
         .await
     }

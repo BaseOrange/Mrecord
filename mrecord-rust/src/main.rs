@@ -18,7 +18,8 @@ use std::net::SocketAddr;
 use tracing_subscriber;
 
 use crate::service::{
-    email::EmailService, export_task::ExportTaskService, sys_config::SysConfigService,
+    email::EmailService, export_task::ExportTaskService,
+    monthly_reminder_task::MonthlyReminderTask, sys_config::SysConfigService,
     sys_user_operate_log::SysUserOperateLogService,
 };
 
@@ -51,6 +52,10 @@ pub struct AppState {
     ///
     /// 对应 Java `@Resource SysUserOperateLogService`，负责记录请求日志和管理员查询审计日志。
     pub operate_log_service: Arc<SysUserOperateLogService>,
+    /// 月度记账提醒定时任务
+    ///
+    /// 对应 Java `@Resource MonthlyReminderTask`，由启动流程注册 Tokio 后台循环执行。
+    pub monthly_reminder_task: Arc<MonthlyReminderTask>,
 }
 
 #[tokio::main]
@@ -62,6 +67,8 @@ async fn main() {
     let email_service = EmailService::new(config_service.clone());
     let export_task_service = ExportTaskService::new(email_service.clone());
     let operate_log_service = SysUserOperateLogService::new();
+    let monthly_reminder_task = MonthlyReminderTask::new(email_service.clone());
+    monthly_reminder_task.clone().start(db.clone());
 
     // TODO: 这些密钥应从配置文件 / 环境变量加载，避免硬编码
     let state = AppState {
@@ -73,6 +80,7 @@ async fn main() {
         email_service,
         export_task_service,
         operate_log_service,
+        monthly_reminder_task,
     };
 
     let app = router::build(state);

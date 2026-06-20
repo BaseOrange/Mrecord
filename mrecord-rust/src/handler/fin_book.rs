@@ -22,6 +22,15 @@ use crate::{
         fin_month_record::{Column as MonthRecordCol, Entity as MonthRecordEntity},
         fin_template_item::{Column as TemplateItemCol, Entity as TemplateItemEntity},
         sys_backup_book::ActiveModel as BackupBookActive,
+        sys_backup_month_item_record::{
+            ActiveModel as BackupMonthItemActive, Entity as BackupMonthItemEntity,
+        },
+        sys_backup_month_record::{
+            ActiveModel as BackupMonthRecordActive, Entity as BackupMonthRecordEntity,
+        },
+        sys_backup_template_item::{
+            ActiveModel as BackupTemplateItemActive, Entity as BackupTemplateItemEntity,
+        },
     },
     error::AppError,
     model::{
@@ -128,10 +137,144 @@ pub async fn update(
     Ok(Json(ApiResponse::success(updated.into())))
 }
 
+/// 备份指定账簿下的月度财务明细项。
+///
+/// 对应 Java: `SysBackupMonthItemRecordMapper.backupByBookId(String bookId)`。
+async fn backup_month_item_records<C>(db: &C, book_id: &str) -> Result<(), AppError>
+where
+    C: ConnectionTrait,
+{
+    let records = MonthItemEntity::find()
+        .filter(MonthItemCol::BookId.eq(book_id))
+        .filter(MonthItemCol::IsDeleted.eq(0))
+        .all(db)
+        .await?;
+    if records.is_empty() {
+        return Ok(());
+    }
+
+    let backups = records.into_iter().map(|record| BackupMonthItemActive {
+        id: Set(record.id),
+        year: Set(record.year),
+        month: Set(record.month),
+        book_id: Set(record.book_id),
+        template_item_id: Set(record.template_item_id),
+        item_value: Set(record.item_value),
+        create_by: Set(record.create_by),
+        create_time: Set(record.create_time),
+        update_by: Set(record.update_by),
+        update_time: Set(record.update_time),
+        is_deleted: Set(record.is_deleted),
+    });
+    BackupMonthItemEntity::insert_many(backups).exec(db).await?;
+
+    Ok(())
+}
+
+/// 备份指定账簿下的月度财务汇总。
+///
+/// 对应 Java: `SysBackupMonthRecordMapper.backupByBookId(String bookId)`。
+async fn backup_month_records<C>(db: &C, book_id: &str) -> Result<(), AppError>
+where
+    C: ConnectionTrait,
+{
+    let records = MonthRecordEntity::find()
+        .filter(MonthRecordCol::BookId.eq(book_id))
+        .filter(MonthRecordCol::IsDeleted.eq(0))
+        .all(db)
+        .await?;
+    if records.is_empty() {
+        return Ok(());
+    }
+
+    let backups = records.into_iter().map(|record| BackupMonthRecordActive {
+        id: Set(record.id),
+        user_id: Set(record.user_id),
+        book_id: Set(record.book_id),
+        year: Set(record.year),
+        month: Set(record.month),
+        total_asset: Set(record.total_asset),
+        total_liability: Set(record.total_liability),
+        net_asset: Set(record.net_asset),
+        month_on_month: Set(record.month_on_month),
+        year_on_year: Set(record.year_on_year),
+        note: Set(record.note),
+        create_by: Set(record.create_by),
+        create_time: Set(record.create_time),
+        update_by: Set(record.update_by),
+        update_time: Set(record.update_time),
+        is_deleted: Set(record.is_deleted),
+    });
+    BackupMonthRecordEntity::insert_many(backups)
+        .exec(db)
+        .await?;
+
+    Ok(())
+}
+
+/// 备份指定账簿下的记账模板项。
+///
+/// 对应 Java: `SysBackupTemplateItemMapper.backupByBookId(String bookId)`。
+async fn backup_template_items<C>(db: &C, book_id: &str) -> Result<(), AppError>
+where
+    C: ConnectionTrait,
+{
+    let items = TemplateItemEntity::find()
+        .filter(TemplateItemCol::BookId.eq(book_id))
+        .filter(TemplateItemCol::IsDeleted.eq(0))
+        .all(db)
+        .await?;
+    if items.is_empty() {
+        return Ok(());
+    }
+
+    let backups = items.into_iter().map(|item| BackupTemplateItemActive {
+        id: Set(item.id),
+        book_id: Set(item.book_id),
+        item_name: Set(item.item_name),
+        item_type: Set(item.item_type),
+        icon: Set(item.icon),
+        sort: Set(item.sort),
+        create_by: Set(item.create_by),
+        create_time: Set(item.create_time),
+        update_by: Set(item.update_by),
+        update_time: Set(item.update_time),
+        is_deleted: Set(item.is_deleted),
+    });
+    BackupTemplateItemEntity::insert_many(backups)
+        .exec(db)
+        .await?;
+
+    Ok(())
+}
+
+/// 备份指定账簿主数据。
+///
+/// 对应 Java: `SysBackupBookMapper.backupByBookId(String bookId)`。
+async fn backup_book<C>(db: &C, book: &fin_book::Model) -> Result<(), AppError>
+where
+    C: ConnectionTrait,
+{
+    BackupBookActive {
+        id: Set(book.id.clone()),
+        user_id: Set(book.user_id.clone()),
+        book_name: Set(book.book_name.clone()),
+        create_by: Set(book.create_by.clone()),
+        create_time: Set(book.create_time),
+        update_by: Set(book.update_by.clone()),
+        update_time: Set(book.update_time),
+        is_deleted: Set(book.is_deleted),
+    }
+    .insert(db)
+    .await?;
+
+    Ok(())
+}
+
 /// 删除账簿：`POST /book/delete`。
 ///
 /// 对应 Java: `FinBookController.delete` 与 `FinBookServiceImpl.deleteFinBook`。
-/// 删除时会级联清理月度明细、月度汇总、模板项，并先备份账簿到 `SYS_BACKUP_BOOK`。
+/// 删除时会按 Java Service 顺序备份并清理月度明细、月度汇总、模板项和账簿主数据。
 pub async fn delete(
     AuthUser(user_id): AuthUser,
     State(state): State<AppState>,
@@ -145,32 +288,25 @@ pub async fn delete(
     let txn = state.db.begin().await?;
     let book = check_book_ownership(&txn, book_id, &user_id).await?;
 
+    backup_month_item_records(&txn, &book.id).await?;
     MonthItemEntity::delete_many()
         .filter(MonthItemCol::BookId.eq(book.id.clone()))
         .exec(&txn)
         .await?;
+
+    backup_month_records(&txn, &book.id).await?;
     MonthRecordEntity::delete_many()
         .filter(MonthRecordCol::BookId.eq(book.id.clone()))
         .exec(&txn)
         .await?;
+
+    backup_template_items(&txn, &book.id).await?;
     TemplateItemEntity::delete_many()
         .filter(TemplateItemCol::BookId.eq(book.id.clone()))
         .exec(&txn)
         .await?;
 
-    BackupBookActive {
-        id: Set(book.id.clone()),
-        user_id: Set(book.user_id.clone()),
-        book_name: Set(book.book_name.clone()),
-        create_by: Set(book.create_by.clone()),
-        create_time: Set(book.create_time),
-        update_by: Set(book.update_by.clone()),
-        update_time: Set(book.update_time),
-        is_deleted: Set(book.is_deleted),
-    }
-    .insert(&txn)
-    .await?;
-
+    backup_book(&txn, &book).await?;
     BookEntity::delete_by_id(book.id).exec(&txn).await?;
     txn.commit().await?;
 
