@@ -243,8 +243,11 @@ function onEnterSystem() {
     <div class="init-container">
       <!-- 品牌标识 -->
       <div class="brand">
-        <img :src="appIcon" alt="月衡 Logo" class="brand-logo" />
-        <h1 class="brand-name">月衡</h1>
+        <div class="brand-title">
+          <img :src="appIcon" alt="月衡 Logo" class="brand-logo" />
+          <h1 class="brand-name">月衡</h1>
+        </div>
+        <p class="brand-en">Mrecord</p>
         <p class="brand-slogan">系统初始化向导</p>
       </div>
 
@@ -471,24 +474,42 @@ function onEnterSystem() {
   text-align: center;
   margin-bottom: 28px;
 }
+.brand-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 2px;
+}
 .brand-logo {
-  width: 78px;
-  height: 78px;
-  border-radius: 22px;
-  margin-bottom: 12px;
-  box-shadow: 0 12px 28px rgba(249, 114, 22, 0.2);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(249, 114, 22, 0.18);
+  flex-shrink: 0;
 }
 .brand-name {
-  font-size: 32px;
+  font-size: 42px;
   font-weight: 800;
-  letter-spacing: 4px;
+  letter-spacing: 6px;
   color: #FF6500;
-  margin-bottom: 6px;
+  text-shadow: 0 2px 20px rgba(255, 101, 0, 0.18);
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+.brand-en {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: #FF8C42;
+  text-transform: uppercase;
+  margin-bottom: 12px;
 }
 .brand-slogan {
-  font-size: 14px;
-  color: #999;
-  letter-spacing: 2px;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: #bbb;
+  font-weight: 400;
 }
 
 /* 步骤指示器 */
