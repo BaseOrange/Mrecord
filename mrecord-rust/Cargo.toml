@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [".", "migration"]
+members = ["."]
 
 [package]
 name = "mrecord-rust"
@@ -18,8 +18,6 @@ anyhow = "1"
 sea-orm = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "with-chrono", "with-rust_decimal"] }
 chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde-with-str"] }
-sea-orm-migration = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-rustls"] }
-migration = { path = "migration" }
 # 用户模块所需依赖
 # bcrypt: 密码哈希（对应 Java BCrypt）
 bcrypt = "0.15"

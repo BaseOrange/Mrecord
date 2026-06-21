@@ -11,40 +11,40 @@ use sea_orm::entity::prelude::*;
 use serde::Serialize;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize)]
-#[sea_orm(table_name = "sys_backup_month_item_record")]
+#[sea_orm(table_name = "SYS_BACKUP_MONTH_ITEM_RECORD")]
 pub struct Model {
     /// 主键
-    #[sea_orm(primary_key, auto_increment = false, column_name = "mr_id")]
+    #[sea_orm(primary_key, auto_increment = false, column_name = "MR_ID")]
     pub id: String,
     /// 统计年份
-    #[sea_orm(column_name = "mr_year")]
+    #[sea_orm(column_name = "MR_YEAR")]
     pub year: i32,
     /// 统计月份
-    #[sea_orm(column_name = "mr_month")]
+    #[sea_orm(column_name = "MR_MONTH")]
     pub month: i32,
     /// 关联账簿ID，FIN_BOOK.MR_ID
-    #[sea_orm(column_name = "mr_book_id")]
+    #[sea_orm(column_name = "MR_BOOK_ID")]
     pub book_id: String,
     /// 关联模板项ID，FIN_TEMPLATE_ITEM.MR_ID
-    #[sea_orm(column_name = "mr_template_item_id")]
+    #[sea_orm(column_name = "MR_TEMPLATE_ITEM_ID")]
     pub template_item_id: String,
     /// 当月该记账项实际金额
-    #[sea_orm(column_name = "mr_item_value")]
+    #[sea_orm(column_name = "MR_ITEM_VALUE")]
     pub item_value: Decimal,
     /// 创建人
-    #[sea_orm(column_name = "mr_create_by")]
+    #[sea_orm(column_name = "MR_CREATE_BY")]
     pub create_by: Option<String>,
     /// 创建时间
-    #[sea_orm(column_name = "mr_create_time")]
+    #[sea_orm(column_name = "MR_CREATE_TIME")]
     pub create_time: NaiveDateTime,
     /// 更新人
-    #[sea_orm(column_name = "mr_update_by")]
+    #[sea_orm(column_name = "MR_UPDATE_BY")]
     pub update_by: Option<String>,
     /// 更新时间
-    #[sea_orm(column_name = "mr_update_time")]
+    #[sea_orm(column_name = "MR_UPDATE_TIME")]
     pub update_time: Option<NaiveDateTime>,
     /// 逻辑删除标识（0-正常，1-已删除）
-    #[sea_orm(column_name = "mr_is_deleted")]
+    #[sea_orm(column_name = "MR_IS_DELETED")]
     pub is_deleted: i32,
 }
 

@@ -10,7 +10,7 @@
 //! - `com.dcz.mrecord.dto.DataStatisticsDTO`
 
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use super::page_info::PageInfo;
 
@@ -55,8 +55,27 @@ pub struct MonthItemEntry {
     /// 关联模板项 ID，FIN_TEMPLATE_ITEM.MR_ID
     pub template_item_id: String,
     /// 当月该记账项实际金额
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(deserialize_with = "deserialize_decimal_from_number_or_string")]
     pub item_value: Decimal,
+}
+
+/// 兼容前端 number 与旧接口字符串金额，等价 Java `BigDecimal` 对 JSON 数值的宽松解析。
+fn deserialize_decimal_from_number_or_string<'de, D>(deserializer: D) -> Result<Decimal, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    match value {
+        serde_json::Value::Number(n) => {
+            Decimal::from_str_exact(&n.to_string()).map_err(serde::de::Error::custom)
+        }
+        serde_json::Value::String(s) => {
+            Decimal::from_str_exact(&s).map_err(serde::de::Error::custom)
+        }
+        other => Err(serde::de::Error::custom(format!(
+            "金额必须是数字或字符串: {other}"
+        ))),
+    }
 }
 
 /// 创建 / 复制账本模板项请求

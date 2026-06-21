@@ -10,46 +10,46 @@ use sea_orm::entity::prelude::*;
 use serde::Serialize;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize)]
-#[sea_orm(table_name = "sys_export_task")]
+#[sea_orm(table_name = "SYS_EXPORT_TASK")]
 pub struct Model {
     /// 主键
-    #[sea_orm(primary_key, auto_increment = false, column_name = "mr_id")]
+    #[sea_orm(primary_key, auto_increment = false, column_name = "MR_ID")]
     pub id: String,
     /// 操作用户ID，关联 SYS_USER.MR_ID
-    #[sea_orm(column_name = "mr_user_id")]
+    #[sea_orm(column_name = "MR_USER_ID")]
     pub user_id: String,
     /// 导出账簿ID，关联 FIN_BOOK.MR_ID
-    #[sea_orm(column_name = "mr_book_id")]
+    #[sea_orm(column_name = "MR_BOOK_ID")]
     pub book_id: String,
     /// 导出开始年月，格式 yyyyMM
-    #[sea_orm(column_name = "mr_start_year_month")]
+    #[sea_orm(column_name = "MR_START_YEAR_MONTH")]
     pub start_year_month: String,
     /// 导出结束年月，格式 yyyyMM
-    #[sea_orm(column_name = "mr_end_year_month")]
+    #[sea_orm(column_name = "MR_END_YEAR_MONTH")]
     pub end_year_month: String,
     /// 任务状态（WAIT-待执行，RUN-执行中，SUCCESS-成功，FAIL-失败）
-    #[sea_orm(column_name = "mr_status")]
+    #[sea_orm(column_name = "MR_STATUS")]
     pub status: String,
     /// 生成的 Excel 文件名
-    #[sea_orm(column_name = "mr_file_name")]
+    #[sea_orm(column_name = "MR_FILE_NAME")]
     pub file_name: Option<String>,
     /// 任务失败原因，失败时填充
-    #[sea_orm(column_name = "mr_fail_reason")]
+    #[sea_orm(column_name = "MR_FAIL_REASON")]
     pub fail_reason: Option<String>,
     /// 创建人
-    #[sea_orm(column_name = "mr_create_by")]
+    #[sea_orm(column_name = "MR_CREATE_BY")]
     pub create_by: Option<String>,
     /// 创建时间
-    #[sea_orm(column_name = "mr_create_time")]
+    #[sea_orm(column_name = "MR_CREATE_TIME")]
     pub create_time: NaiveDateTime,
     /// 更新人
-    #[sea_orm(column_name = "mr_update_by")]
+    #[sea_orm(column_name = "MR_UPDATE_BY")]
     pub update_by: Option<String>,
     /// 更新时间
-    #[sea_orm(column_name = "mr_update_time")]
+    #[sea_orm(column_name = "MR_UPDATE_TIME")]
     pub update_time: Option<NaiveDateTime>,
     /// 逻辑删除标识（0-正常，1-已删除）
-    #[sea_orm(column_name = "mr_is_deleted")]
+    #[sea_orm(column_name = "MR_IS_DELETED")]
     pub is_deleted: i32,
 }
 

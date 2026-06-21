@@ -392,7 +392,7 @@ async fn upsert_config(db: &DatabaseConnection, key: &str, value: &str) -> Resul
                 value: Set(value.to_string()),
                 remark: Set(None),
                 create_by: Set(None),
-                create_time: Set(chrono::Local::now().naive_local()),
+                create_time: Set(Some(chrono::Local::now().naive_local())),
                 update_by: Set(None),
                 update_time: Set(None),
                 is_deleted: Set(0),
