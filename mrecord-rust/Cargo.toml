@@ -42,3 +42,7 @@ rust_xlsxwriter = "0.88"
 # 静态资源模块所需依赖
 # tower-http: 托管前端构建产物（对应 Java static resources）
 tower-http = { version = "0.5", features = ["fs"] }
+
+[dev-dependencies]
+# calamine: 单元测试中读回 rust_xlsxwriter 生成的 Excel，校验多 Sheet 布局与单元格内容
+calamine = "0.26"

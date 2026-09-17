@@ -1,7 +1,9 @@
 //! 导出任务模块 HTTP 处理函数
 //!
-//! 对应 Java: `com.dcz.mrecord.controller.ExportTaskController`
-//! 对应业务实现: `com.dcz.mrecord.service.impl.ExportTaskServiceImpl`
+//! 对应 Java: `com.dcz.mrecord.controller.SysExportTaskController`
+//! 对应业务实现:
+//! - `com.dcz.mrecord.service.impl.SysExportTaskServiceImpl`（创建 / 分页查询）
+//! - `com.dcz.mrecord.service.impl.ExportTaskExecutorServiceImpl`（异步执行导出）
 
 use axum::{Json, extract::State};
 use std::collections::HashMap;
@@ -24,23 +26,27 @@ use crate::{
 
 /// 提交导出任务：`POST /exportTask/export`。
 ///
-/// 对应 Java: `ExportTaskController.export` 与 `ExportTaskServiceImpl.export`。
+/// 提交导出任务：`POST /exportTask/export`。
+///
+/// 对应 Java: `SysExportTaskController.export`，返回创建的任务实体（含 `taskId`）。
 pub async fn export(
     AuthUser(user_id): AuthUser,
     State(state): State<AppState>,
     Json(params): Json<ExportBookDto>,
-) -> Result<Json<ApiResponse<()>>, AppError> {
-    state
+) -> Result<Json<ApiResponse<ExportTaskResponse>>, AppError> {
+    let task = state
         .export_task_service
         .clone()
-        .create_export_tasks(state.db.clone(), user_id, params)
+        .create_export_task(state.db.clone(), user_id, params)
         .await?;
-    Ok(Json(ApiResponse::<()>::success_empty()))
+    Ok(Json(ApiResponse::success(ExportTaskResponse::from_task(
+        task, None,
+    ))))
 }
 
 /// 查询当前用户导出任务列表：`POST /exportTask/list`。
 ///
-/// 对应 Java: `ExportTaskController.list`。
+/// 对应 Java: `SysExportTaskController.list`（任务列表左联账簿名展示）。
 pub async fn list(
     AuthUser(user_id): AuthUser,
     State(state): State<AppState>,
@@ -55,7 +61,10 @@ pub async fn list(
     let paginator = q.paginate(&state.db, page_size);
     let total = paginator.num_items().await?;
     let records = paginator.fetch_page(page_num - 1).await?;
-    let book_ids: Vec<String> = records.iter().map(|task| task.book_id.clone()).collect();
+    let book_ids: Vec<String> = records
+        .iter()
+        .filter_map(|task| task.book_id.clone())
+        .collect();
     let books = BookEntity::find()
         .filter(BookCol::Id.is_in(book_ids))
         .all(&state.db)
@@ -68,7 +77,11 @@ pub async fn list(
         records
             .into_iter()
             .map(|task| {
-                let book_name = book_map.get(&task.book_id).cloned();
+                let book_name = task
+                    .book_id
+                    .as_ref()
+                    .and_then(|id| book_map.get(id))
+                    .cloned();
                 ExportTaskResponse::from_task(task, book_name)
             })
             .collect(),

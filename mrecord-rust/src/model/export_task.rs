@@ -27,14 +27,14 @@ pub struct QueryExportTaskDto {
 pub struct ExportTaskResponse {
     /// 任务 ID
     pub id: String,
-    /// 账簿 ID
-    pub book_id: String,
+    /// 账簿 ID；为空表示导出全部账簿
+    pub book_id: Option<String>,
     /// 账簿名称
     pub book_name: Option<String>,
-    /// 导出开始年月
-    pub start_year_month: String,
-    /// 导出结束年月
-    pub end_year_month: String,
+    /// 导出开始年月；为空表示不限起始
+    pub start_year_month: Option<String>,
+    /// 导出结束年月；为空表示不限结束
+    pub end_year_month: Option<String>,
     /// 任务状态
     pub status: String,
     /// 生成文件名

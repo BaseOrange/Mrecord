@@ -18,15 +18,15 @@ pub struct Model {
     /// 操作用户ID，关联 SYS_USER.MR_ID
     #[sea_orm(column_name = "MR_USER_ID")]
     pub user_id: String,
-    /// 导出账簿ID，关联 FIN_BOOK.MR_ID
-    #[sea_orm(column_name = "MR_BOOK_ID")]
-    pub book_id: String,
-    /// 导出开始年月，格式 yyyyMM
-    #[sea_orm(column_name = "MR_START_YEAR_MONTH")]
-    pub start_year_month: String,
-    /// 导出结束年月，格式 yyyyMM
-    #[sea_orm(column_name = "MR_END_YEAR_MONTH")]
-    pub end_year_month: String,
+    /// 导出账簿ID，关联 FIN_BOOK.MR_ID；为空表示导出用户全部账簿
+    #[sea_orm(column_name = "MR_BOOK_ID", nullable)]
+    pub book_id: Option<String>,
+    /// 导出开始年月，格式 yyyyMM；为空表示不限起始
+    #[sea_orm(column_name = "MR_START_YEAR_MONTH", nullable)]
+    pub start_year_month: Option<String>,
+    /// 导出结束年月，格式 yyyyMM；为空表示不限结束
+    #[sea_orm(column_name = "MR_END_YEAR_MONTH", nullable)]
+    pub end_year_month: Option<String>,
     /// 任务状态（WAIT-待执行，RUN-执行中，SUCCESS-成功，FAIL-失败）
     #[sea_orm(column_name = "MR_STATUS")]
     pub status: String,
