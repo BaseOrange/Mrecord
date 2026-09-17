@@ -17,8 +17,8 @@
 use std::sync::Arc;
 
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
+    PaginatorTrait, QueryFilter, Set, TransactionTrait,
 };
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -155,30 +155,36 @@ impl SysConfigService {
             dto.password
         };
 
-        upsert_config(db, KEY_MAIL_HOST_NAME, &dto.host_name).await?;
+        // 对应 Java @Transactional(rollbackFor = Exception.class)：7 条配置项
+        // 要么全部写入成功，要么整体回滚，避免出现半更新的配置。
+        let txn = db.begin().await?;
+        upsert_config(&txn, KEY_MAIL_HOST_NAME, &dto.host_name).await?;
         upsert_config(
-            db,
+            &txn,
             KEY_MAIL_SSL_SMTP_PORT,
             &dto.ssl_smtp_port.map(|v| v.to_string()).unwrap_or_default(),
         )
         .await?;
         upsert_config(
-            db,
+            &txn,
             KEY_MAIL_SMTP_PORT,
             &dto.smtp_port.map(|v| v.to_string()).unwrap_or_default(),
         )
         .await?;
         upsert_config(
-            db,
+            &txn,
             KEY_MAIL_SSL,
             if dto.ssl.unwrap_or(false) { "1" } else { "0" },
         )
         .await?;
-        upsert_config(db, KEY_MAIL_USER_NAME, &dto.user_name).await?;
-        upsert_config(db, KEY_MAIL_PASSWORD, &password).await?;
-        upsert_config(db, KEY_MAIL_FROM, &dto.from).await?;
+        upsert_config(&txn, KEY_MAIL_USER_NAME, &dto.user_name).await?;
+        upsert_config(&txn, KEY_MAIL_PASSWORD, &password).await?;
+        upsert_config(&txn, KEY_MAIL_FROM, &dto.from).await?;
+        // 提交前任何一步失败（`?` 抛错）都会令事务在 drop 时回滚
+        txn.commit().await?;
 
-        // 失效缓存
+        // 失效缓存：放在事务提交成功之后。回滚时 DB 未变，缓存依然有效；
+        // 只有真正落库的成功路径才会清缓存，避免缓存与 DB 不一致。
         self.cache.write().await.email_config = None;
         Ok(())
     }
@@ -244,10 +250,13 @@ impl SysConfigService {
         db: &DatabaseConnection,
         dto: UpdateSiteConfigDto,
     ) -> Result<(), AppError> {
-        upsert_config(db, KEY_WEB_SITE, &dto.web_site).await?;
-        upsert_config(db, KEY_ADMIN_MAIL, &dto.admin_mail).await?;
+        // 对应 Java @Transactional(rollbackFor = Exception.class)：3 条配置项
+        // 要么全部写入成功，要么整体回滚，避免出现半更新的配置。
+        let txn = db.begin().await?;
+        upsert_config(&txn, KEY_WEB_SITE, &dto.web_site).await?;
+        upsert_config(&txn, KEY_ADMIN_MAIL, &dto.admin_mail).await?;
         upsert_config(
-            db,
+            &txn,
             KEY_REGISTER_ENABLED,
             if dto.register_enabled.unwrap_or(false) {
                 "1"
@@ -256,7 +265,9 @@ impl SysConfigService {
             },
         )
         .await?;
+        txn.commit().await?;
 
+        // 事务提交成功后再失效缓存，失败回滚时缓存保持有效
         let mut state = self.cache.write().await;
         state.web_site = None;
         state.admin_mail = None;
@@ -379,11 +390,13 @@ async fn load_email_config(db: &DatabaseConnection) -> Result<Option<EmailConfig
 ///
 /// Java 原版 `updateConfigByKey` 只在已存在时更新；这里扩展为不存在时自动插入，
 /// 让前端首次写配置即可生效，避免要求用户手工 INSERT 一行占位。
-pub(crate) async fn upsert_config(
-    db: &DatabaseConnection,
-    key: &str,
-    value: &str,
-) -> Result<(), AppError> {
+///
+/// 参数为 `ConnectionTrait` 泛型，既可以接收 `&DatabaseConnection` 直接执行，
+/// 也可以接收 `&DatabaseTransaction`（`db.begin()` 的返回值）放进事务里执行。
+pub(crate) async fn upsert_config<C>(db: &C, key: &str, value: &str) -> Result<(), AppError>
+where
+    C: ConnectionTrait,
+{
     let existing = ConfigEntity::find()
         .filter(ConfigCol::Key.eq(key))
         .filter(ConfigCol::IsDeleted.eq(0))
@@ -412,4 +425,229 @@ pub(crate) async fn upsert_config(
         }
     }
     Ok(())
+}
+
+// ==================== 单元测试 ====================
+
+#[cfg(test)]
+mod tests {
+    use sea_orm::{ConnectionTrait, Database};
+
+    use super::*;
+
+    /// 建一张内存 SQLite 库（共享缓存，保证连接池内所有连接看到同一份数据）
+    async fn setup_db() -> DatabaseConnection {
+        let db = Database::connect("sqlite::memory:?cache=shared")
+            .await
+            .expect("连接内存库失败");
+        db.execute_unprepared(
+            "CREATE TABLE IF NOT EXISTS SYS_CONFIG (
+                MR_ID           TEXT PRIMARY KEY,
+                MR_CONFIG_KEY   TEXT,
+                MR_CONFIG_VALUE TEXT,
+                MR_REMARK       TEXT,
+                MR_CREATE_BY    TEXT,
+                MR_CREATE_TIME  TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY    TEXT,
+                MR_UPDATE_TIME  TEXT,
+                MR_IS_DELETED   INTEGER DEFAULT 0
+            )",
+        )
+        .await
+        .expect("建表失败");
+        db
+    }
+
+    /// 读取某个 key 当前的 value（测试断言用）
+    async fn read_value(db: &DatabaseConnection, key: &str) -> Option<String> {
+        load_single(db, key).await.expect("读取配置失败")
+    }
+
+    /// 验收：update_site_config 中途 upsert 失败时，DB 无半更新残留。
+    ///
+    /// 手法：在 `adminMail`（第 2 条）上挂触发器模拟 DB 写失败。若未包事务，
+    /// 第 1 条 `webSite` 会落库；包了事务则整体回滚，两条都不应残留新值。
+    #[tokio::test]
+    async fn update_site_config_rolls_back_on_failure() {
+        let db = setup_db().await;
+        let svc = SysConfigService::new();
+
+        // 预置旧行，让 upsert 走 UPDATE 路径
+        upsert_config(&db, KEY_WEB_SITE, "https://old.example.com")
+            .await
+            .unwrap();
+        upsert_config(&db, KEY_ADMIN_MAIL, "old@example.com")
+            .await
+            .unwrap();
+
+        // 模拟第 2 条 upsert 失败：对 adminMail 的 UPDATE / INSERT 直接 ABORT
+        db.execute_unprepared(
+            "CREATE TRIGGER sim_fail_admin_mail_update BEFORE UPDATE ON SYS_CONFIG
+             FOR EACH ROW
+             BEGIN
+                 SELECT RAISE(ABORT, 'simulated failure')
+                 WHERE NEW.MR_CONFIG_KEY = 'adminMail';
+             END",
+        )
+        .await
+        .unwrap();
+        db.execute_unprepared(
+            "CREATE TRIGGER sim_fail_admin_mail_insert BEFORE INSERT ON SYS_CONFIG
+             FOR EACH ROW
+             BEGIN
+                 SELECT RAISE(ABORT, 'simulated failure')
+                 WHERE NEW.MR_CONFIG_KEY = 'adminMail';
+             END",
+        )
+        .await
+        .unwrap();
+
+        let result = svc
+            .update_site_config(
+                &db,
+                UpdateSiteConfigDto {
+                    web_site: "https://new.example.com".to_string(),
+                    admin_mail: "new@example.com".to_string(),
+                    register_enabled: Some(true),
+                },
+            )
+            .await;
+
+        // 接口应当返回错误
+        assert!(result.is_err(), "中途失败时应返回错误");
+
+        // 关键断言：DB 里不能有半更新的残留，两个 key 都还是旧值
+        assert_eq!(
+            read_value(&db, KEY_WEB_SITE).await.as_deref(),
+            Some("https://old.example.com"),
+            "webSite 不应被半更新"
+        );
+        assert_eq!(
+            read_value(&db, KEY_ADMIN_MAIL).await.as_deref(),
+            Some("old@example.com"),
+            "adminMail 不应被半更新"
+        );
+        assert_eq!(
+            read_value(&db, KEY_REGISTER_ENABLED).await,
+            None,
+            "registerEnabled 不应被写入"
+        );
+    }
+
+    /// 验收：update_email_config 中途 upsert 失败时，DB 无半更新残留。
+    ///
+    /// 在 `mail.password`（第 6 条）上挂触发器，前 5 条若未包事务会落库。
+    #[tokio::test]
+    async fn update_email_config_rolls_back_on_failure() {
+        let db = setup_db().await;
+        let svc = SysConfigService::new();
+
+        let result = svc
+            .update_email_config(
+                &db,
+                UpdateEmailConfigDto {
+                    host_name: "smtp.new.com".to_string(),
+                    ssl_smtp_port: Some(465),
+                    smtp_port: Some(25),
+                    ssl: Some(true),
+                    user_name: "new@new.com".to_string(),
+                    password: "secret".to_string(),
+                    from: "new@new.com".to_string(),
+                },
+            )
+            .await;
+        assert!(result.is_ok());
+
+        // 确认首次写入成功（触发器还没挂）
+        assert_eq!(
+            read_value(&db, KEY_MAIL_HOST_NAME).await.as_deref(),
+            Some("smtp.new.com")
+        );
+
+        // 挂触发器模拟第 6 条 mail.password 失败
+        db.execute_unprepared(
+            "CREATE TRIGGER sim_fail_mail_pwd_update BEFORE UPDATE ON SYS_CONFIG
+             FOR EACH ROW
+             BEGIN
+                 SELECT RAISE(ABORT, 'simulated failure')
+                 WHERE NEW.MR_CONFIG_KEY = 'mail.password';
+             END",
+        )
+        .await
+        .unwrap();
+
+        let result = svc
+            .update_email_config(
+                &db,
+                UpdateEmailConfigDto {
+                    host_name: "smtp.other.com".to_string(),
+                    ssl_smtp_port: Some(587),
+                    smtp_port: Some(2525),
+                    ssl: Some(false),
+                    user_name: "other@other.com".to_string(),
+                    password: "changed".to_string(),
+                    from: "other@other.com".to_string(),
+                },
+            )
+            .await;
+
+        assert!(result.is_err(), "中途失败时应返回错误");
+
+        // 前 5 条都不应残留新值（仍是第一次写入的值）
+        assert_eq!(
+            read_value(&db, KEY_MAIL_HOST_NAME).await.as_deref(),
+            Some("smtp.new.com"),
+            "mail.hostName 不应被半更新"
+        );
+        assert_eq!(
+            read_value(&db, KEY_MAIL_USER_NAME).await.as_deref(),
+            Some("new@new.com"),
+            "mail.userName 不应被半更新"
+        );
+        assert_eq!(
+            read_value(&db, KEY_MAIL_FROM).await.as_deref(),
+            Some("new@new.com"),
+            "mail.from 不应被半更新"
+        );
+        assert_eq!(
+            read_value(&db, KEY_MAIL_PASSWORD).await.as_deref(),
+            Some("secret"),
+            "mail.password 保持原值"
+        );
+    }
+
+    /// 正向用例：全部成功时数据落库且缓存被清空
+    #[tokio::test]
+    async fn update_site_config_commits_and_invalidates_cache() {
+        let db = setup_db().await;
+        let svc = SysConfigService::new();
+
+        svc.update_site_config(
+            &db,
+            UpdateSiteConfigDto {
+                web_site: "https://ok.example.com".to_string(),
+                admin_mail: "ok@example.com".to_string(),
+                register_enabled: Some(true),
+            },
+        )
+        .await
+        .unwrap();
+
+        // 落库
+        assert_eq!(
+            read_value(&db, KEY_WEB_SITE).await.as_deref(),
+            Some("https://ok.example.com")
+        );
+        assert_eq!(
+            read_value(&db, KEY_ADMIN_MAIL).await.as_deref(),
+            Some("ok@example.com")
+        );
+        assert_eq!(
+            read_value(&db, KEY_REGISTER_ENABLED).await.as_deref(),
+            Some("1")
+        );
+
+        // 缓存被清空，重新读会从 DB 加载
+        assert!(svc.get_web_site(&db).await.unwrap().is_some());
+    }
 }
