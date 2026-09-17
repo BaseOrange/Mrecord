@@ -24,7 +24,9 @@ use crate::service::{
 
 /// 全局应用状态，由 Axum 的 `with_state` 注入到所有 handler。
 ///
-/// 暂时把 token 密钥硬编码在此处；后续将由 `config.rs` 统一加载（环境变量 / `SYS_CONFIG` 表）。
+/// 安全配置项（三个密钥 + JWT 过期时长）在启动时由
+/// [`config::load_security_config`] 从 `SYS_CONFIG` 表加载；密钥缺失时会自动
+/// 生成并回写数据库，因此重启后保持稳定，已签发的 token 能跨重启被解析。
 #[derive(Clone)]
 pub struct AppState {
     /// 数据库连接
@@ -35,6 +37,8 @@ pub struct AppState {
     pub activate_token_secret: String,
     /// 重置密码令牌密钥（对应 Java `MrConf.resetPwdTokenSecret`）
     pub reset_pwd_token_secret: String,
+    /// 登录 JWT 过期时长（秒），由 `mr.jwtExpire`（毫秒）换算而来
+    pub jwt_expire_secs: i64,
     /// 系统配置项服务（持有进程级缓存）
     ///
     /// 对应 Java `@Resource SysConfigService`。使用 `Arc` 在多个 handler 间共享同一份缓存。
@@ -67,6 +71,12 @@ async fn main() {
         .init();
 
     let db = db::connect().await;
+
+    // 安全配置（JWT / 令牌密钥、JWT 过期时长）从 SYS_CONFIG 加载，缺失则生成并回写
+    let security = config::load_security_config(&db)
+        .await
+        .expect("Failed to load security config from SYS_CONFIG");
+
     let config_service = SysConfigService::new();
     let email_service = EmailService::new(config_service.clone());
     let export_task_service = ExportTaskService::new(email_service.clone());
@@ -74,12 +84,13 @@ async fn main() {
     let monthly_reminder_task = MonthlyReminderTask::new(email_service.clone());
     monthly_reminder_task.clone().start(db.clone());
 
-    // TODO: 这些密钥应从配置文件 / 环境变量加载，避免硬编码
+    let jwt_expire_secs = security.jwt_expire_secs();
     let state = AppState {
         db,
-        jwt_secret: "mrecord-dev-jwt-secret-please-change-me".to_string(),
-        activate_token_secret: "mrecord-dev-activate-secret-please-change".to_string(),
-        reset_pwd_token_secret: "mrecord-dev-reset-pwd-secret-please-change".to_string(),
+        jwt_secret: security.jwt_secret,
+        activate_token_secret: security.activate_token_secret,
+        reset_pwd_token_secret: security.reset_pwd_token_secret,
+        jwt_expire_secs,
         config_service,
         email_service,
         export_task_service,

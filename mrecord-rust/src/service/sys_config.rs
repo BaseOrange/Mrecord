@@ -297,10 +297,17 @@ impl SysConfigService {
     }
 }
 
-// ==================== 内部辅助函数 ====================
+// ==================== 辅助函数 ====================
+//
+// `load_single` / `upsert_config` 对应 Java `SysConfigServiceImpl` 中的
+// `loadConfigValue` / `updateConfigByKey`，除服务自身使用外，也供启动时的
+// `config::load_security_config` 复用，避免重复实现读写逻辑。
 
 /// 按 key 加载单条配置的 value
-async fn load_single(db: &DatabaseConnection, key: &str) -> Result<Option<String>, AppError> {
+pub(crate) async fn load_single(
+    db: &DatabaseConnection,
+    key: &str,
+) -> Result<Option<String>, AppError> {
     let row = ConfigEntity::find()
         .filter(ConfigCol::Key.eq(key))
         .filter(ConfigCol::IsDeleted.eq(0))
@@ -372,7 +379,11 @@ async fn load_email_config(db: &DatabaseConnection) -> Result<Option<EmailConfig
 ///
 /// Java 原版 `updateConfigByKey` 只在已存在时更新；这里扩展为不存在时自动插入，
 /// 让前端首次写配置即可生效，避免要求用户手工 INSERT 一行占位。
-async fn upsert_config(db: &DatabaseConnection, key: &str, value: &str) -> Result<(), AppError> {
+pub(crate) async fn upsert_config(
+    db: &DatabaseConnection,
+    key: &str,
+    value: &str,
+) -> Result<(), AppError> {
     let existing = ConfigEntity::find()
         .filter(ConfigCol::Key.eq(key))
         .filter(ConfigCol::IsDeleted.eq(0))

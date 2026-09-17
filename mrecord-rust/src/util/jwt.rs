@@ -2,13 +2,11 @@
 //!
 //! 对应 Java: `com.dcz.mrecord.util.JwtUtil`
 //!
-//! 仅存放用户主键（`sub` 字段），过期时间默认 7 天。
+//! 仅存放用户主键（`sub` 字段）。过期时长由调用方传入（来源于 `SYS_CONFIG`
+//! 的 `mr.jwtExpire` 配置项，毫秒换算为秒），不在工具类内写死。
 
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
-
-/// 默认登录令牌过期时间：7 天（单位：秒）
-const LOGIN_TOKEN_EXPIRE_SECS: i64 = 7 * 24 * 60 * 60;
 
 /// JWT 载荷
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,9 +20,18 @@ pub struct Claims {
 /// 生成登录令牌
 ///
 /// 对应 Java: `JwtUtil.createToken`
-pub fn create_token(user_id: &str, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
-    // 当前时间 + 默认过期时长
-    let exp = chrono::Utc::now().timestamp() + LOGIN_TOKEN_EXPIRE_SECS;
+///
+/// # 参数
+/// - `user_id`：用户主键，写入 `sub`
+/// - `secret`：签名密钥（来自 `AppState.jwt_secret`，即 `mr.jwtSecret`）
+/// - `expire_secs`：过期时长（秒），由调用方从 `mr.jwtExpire`（毫秒）换算而来
+pub fn create_token(
+    user_id: &str,
+    secret: &str,
+    expire_secs: i64,
+) -> Result<String, jsonwebtoken::errors::Error> {
+    // 当前时间 + 调用方指定的过期时长
+    let exp = chrono::Utc::now().timestamp() + expire_secs;
     let claims = Claims {
         sub: user_id.to_string(),
         exp,

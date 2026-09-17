@@ -379,7 +379,7 @@ pub async fn login(
         return Err(AppError::ResCode(ResCode::UserStatusError));
     }
 
-    let token = jwt::create_token(&user.id, &state.jwt_secret)
+    let token = jwt::create_token(&user.id, &state.jwt_secret, state.jwt_expire_secs)
         .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
     Ok(Json(ApiResponse::success(token)))
 }

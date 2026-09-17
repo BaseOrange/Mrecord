@@ -7,6 +7,11 @@
 //! Rust 版改用带 `purpose` 声明的 JWT（HS256），含义对等：
 //! - 内置过期时间，无需自行比较时间戳
 //! - 通过 `purpose` 字段防止令牌串用（重置密码 token 不能拿来激活）
+//!
+//! 签名密钥不在此模块内硬编码，由调用方从 `AppState` 传入（即
+//! `mr.activateTokenSecret` / `mr.resetPwdTokenSecret`，启动时由
+//! `config::load_security_config` 从 `SYS_CONFIG` 加载）；激活 24h、重置 15min
+//! 的 TTL 保持不变。
 
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
