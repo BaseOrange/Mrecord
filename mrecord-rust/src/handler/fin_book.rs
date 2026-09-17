@@ -103,6 +103,7 @@ pub async fn create(
         user_id: Set(user_id.clone()),
         book_name: Set(params.book_name),
         create_by: Set(Some(user_id)),
+        create_time: Set(Utc::now().naive_utc()),
         ..Default::default()
     };
     let book = active.insert(&state.db).await?;

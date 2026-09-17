@@ -83,6 +83,7 @@ impl ExportTaskService {
                 end_year_month: Set(end_year_month.clone()),
                 status: Set(ExportTaskStatus::Wait.as_str().to_string()),
                 create_by: Set(Some(user_id.clone())),
+                create_time: Set(Utc::now().naive_utc()),
                 ..Default::default()
             }
             .insert(&db)

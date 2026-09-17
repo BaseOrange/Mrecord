@@ -247,6 +247,7 @@ where
             year_on_year: Set(calculated.year_on_year),
             note: Set(note),
             create_by: Set(Some(user_id.to_string())),
+            create_time: Set(chrono::Utc::now().naive_utc()),
             ..Default::default()
         };
         active.insert(db).await?
@@ -405,6 +406,7 @@ pub async fn insert_month_item(
             template_item_id: Set(item.template_item_id),
             item_value: Set(round_money(item.item_value)),
             create_by: Set(Some(user_id.clone())),
+            create_time: Set(chrono::Utc::now().naive_utc()),
             ..Default::default()
         };
         let model = active.insert(&txn).await?;
@@ -524,6 +526,7 @@ pub async fn update_month_item(
                     template_item_id: Set(item.template_item_id),
                     item_value: Set(round_money(item.item_value)),
                     create_by: Set(Some(user_id.clone())),
+                    create_time: Set(chrono::Utc::now().naive_utc()),
                     ..Default::default()
                 };
                 let model = active.insert(&txn).await?;

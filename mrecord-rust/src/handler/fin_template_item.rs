@@ -111,6 +111,7 @@ pub async fn create(
             icon: Set(item.icon),
             sort: Set(item.sort),
             create_by: Set(Some(user_id.clone())),
+            create_time: Set(chrono::Utc::now().naive_utc()),
             ..Default::default()
         };
 
@@ -194,6 +195,7 @@ pub async fn update(
                     icon: Set(item.icon),
                     sort: Set(item.sort),
                     create_by: Set(Some(user_id.clone())),
+                    create_time: Set(chrono::Utc::now().naive_utc()),
                     ..Default::default()
                 };
 
@@ -249,6 +251,7 @@ pub async fn copy(
             icon: Set(item.icon),
             sort: Set(item.sort),
             create_by: Set(Some(user_id.clone())),
+            create_time: Set(chrono::Utc::now().naive_utc()),
             ..Default::default()
         };
 
