@@ -16,7 +16,7 @@ use uuid::Uuid;
 use crate::{
     AppState,
     common::{
-        money::{round_money, zero_money},
+        money::{calculate_growth_rate, round_money, zero_money},
         res_code::ResCode,
         result::ApiResponse,
         user_context::AuthUser,
@@ -128,15 +128,6 @@ fn next_month(year: i32, month: i32) -> (i32, i32) {
     }
 }
 
-/// 计算同比/环比增长率。
-/// 返回百分比值（如 10.50 表示 10.50%），对应 Java BigDecimal 的两位 HALF_UP 规则。
-fn calculate_growth_rate(current: Decimal, base: Decimal) -> Decimal {
-    if base.is_zero() {
-        return zero_money();
-    }
-    round_money((current - base) / base.abs() * Decimal::from(100))
-}
-
 /// 月度汇总计算结果。
 struct CalculatedMonthRecord {
     total_asset: Decimal,
@@ -164,25 +155,22 @@ where
         .map(|item| (item.id.clone(), item.item_type))
         .collect();
 
-    // 计算总资产和总负债
+    // 计算总资产和总负债（不逐项舍入，对齐 Java：明细存原值）
     let mut total_asset = Decimal::ZERO;
     let mut total_liability = Decimal::ZERO;
 
     for item in item_list {
-        let item_value = round_money(item.item_value);
         if let Some(&item_type) = type_map.get(&item.template_item_id) {
             match item_type {
-                1 => total_asset += item_value,      // 资产
-                -1 => total_liability += item_value, // 负债
-                0 => {}                              // 仅记录，不计入
+                1 => total_asset += item.item_value,      // 资产
+                -1 => total_liability += item.item_value, // 负债
+                0 => {}                                   // 仅记录，不计入
                 _ => {}
             }
         }
     }
 
-    // 保留两位小数
-    total_asset = round_money(total_asset);
-    total_liability = round_money(total_liability);
+    // 总资产/总负债不单独舍入（对齐 Java）；仅 netAsset 保留 2 位
     let net_asset = round_money(total_asset - total_liability);
 
     // 计算环比（与上月比较）
@@ -404,7 +392,7 @@ pub async fn insert_month_item(
             month: Set(month),
             book_id: Set(book_id.to_string()),
             template_item_id: Set(item.template_item_id),
-            item_value: Set(round_money(item.item_value)),
+            item_value: Set(item.item_value),
             create_by: Set(Some(user_id.clone())),
             create_time: Set(chrono::Utc::now().naive_utc()),
             ..Default::default()
@@ -524,7 +512,7 @@ pub async fn update_month_item(
                     month: Set(month),
                     book_id: Set(book_id.to_string()),
                     template_item_id: Set(item.template_item_id),
-                    item_value: Set(round_money(item.item_value)),
+                    item_value: Set(item.item_value),
                     create_by: Set(Some(user_id.clone())),
                     create_time: Set(chrono::Utc::now().naive_utc()),
                     ..Default::default()

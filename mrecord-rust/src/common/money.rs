@@ -11,6 +11,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// 金额和增长率统一保留的小数位数。
 pub const MONEY_SCALE: u32 = 2;
 
+/// 增长率中间除法保留的小数位数（对齐 Java `divide(scale=4)`）。
+pub const GROWTH_RATE_INTERMEDIATE_SCALE: u32 = 4;
+
 /// 将金额按 Java BigDecimal HALF_UP 规则保留两位小数。
 pub fn round_money(value: Decimal) -> Decimal {
     value.round_dp_with_strategy(MONEY_SCALE, RoundingStrategy::MidpointAwayFromZero)
@@ -19,6 +22,31 @@ pub fn round_money(value: Decimal) -> Decimal {
 /// 构造已按金额规则舍入的零值。
 pub fn zero_money() -> Decimal {
     round_money(Decimal::ZERO)
+}
+
+/// 计算环比/同比增长率，舍入链路对齐 Java:
+///
+/// `(cur - base).divide(|base|, 4, HALF_UP).multiply(100).setScale(2, HALF_UP)`
+///
+/// 对应 Java: `FinMonthRecordServiceImpl.getMonthOnMonthVal` / `getYearOnYearVal`
+///
+/// - 分母为 0 时返回 0.00（不计算增长率）
+/// - 中间除法显式保留 4 位小数 + `MidpointAwayFromZero`（对齐 Java `divide(scale=4, HALF_UP)`）
+/// - 最终结果保留 2 位小数 + `MidpointAwayFromZero`（对齐 Java `setScale(2, HALF_UP)`）
+///
+/// 返回百分比值（如 10.50 表示 10.50%）
+pub fn calculate_growth_rate(current: Decimal, base: Decimal) -> Decimal {
+    if base.is_zero() {
+        return zero_money();
+    }
+    let diff = current - base;
+    let ratio = diff / base.abs();
+    let ratio_rounded = ratio.round_dp_with_strategy(
+        GROWTH_RATE_INTERMEDIATE_SCALE,
+        RoundingStrategy::MidpointAwayFromZero,
+    );
+    let percentage = ratio_rounded * Decimal::from(100);
+    percentage.round_dp_with_strategy(MONEY_SCALE, RoundingStrategy::MidpointAwayFromZero)
 }
 
 /// 将金额序列化为 JSON 数字（等价 Java Jackson 对 `BigDecimal` 的默认输出）
@@ -137,5 +165,226 @@ mod tests {
 
         // 既非数字也非字符串应报错
         assert!(serde_json::from_str::<MoneyRequest>(r#"{"value":null}"#).is_err());
+    }
+
+    // ==================== calculate_growth_rate 测试 ====================
+    //
+    // 对应 Java: FinMonthRecordServiceImpl.getMonthOnMonthVal / getYearOnYearVal
+    // 舍入链路: (cur - base).divide(|base|, 4, HALF_UP).multiply(100).setScale(2, HALF_UP)
+    //
+    // 测试覆盖：
+    // - 分母为 0
+    // - 零增长（current == base）
+    // - 正增长 / 负增长
+    // - 负净资产（正负基数、正负当期）
+    // - 半数边界（12.5%、12.555% 等）
+    // - 微小增长（中间除法舍入影响）
+
+    /// 构造 Decimal 的辅助函数（整数 / 10^scale）
+    fn d(val: i64, scale: u32) -> Decimal {
+        Decimal::new(val, scale)
+    }
+
+    #[test]
+    fn growth_rate_zero_base_returns_zero() {
+        // 分母为 0 时返回 0.00，不计算增长率
+        assert_eq!(
+            calculate_growth_rate(d(100, 0), Decimal::ZERO),
+            Decimal::new(0, 2)
+        );
+        assert_eq!(
+            calculate_growth_rate(Decimal::ZERO, Decimal::ZERO),
+            Decimal::new(0, 2)
+        );
+        assert_eq!(
+            calculate_growth_rate(d(-50, 0), Decimal::ZERO),
+            Decimal::new(0, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_no_change_returns_zero() {
+        // current == base 时增长率为 0.00
+        assert_eq!(
+            calculate_growth_rate(d(100, 0), d(100, 0)),
+            Decimal::new(0, 2)
+        );
+        assert_eq!(
+            calculate_growth_rate(d(-100, 0), d(-100, 0)),
+            Decimal::new(0, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_positive_growth() {
+        // 正增长：110 vs 100 → (10 / 100) = 0.1 → 0.1 * 100 = 10.00
+        assert_eq!(
+            calculate_growth_rate(d(110, 0), d(100, 0)),
+            Decimal::new(1000, 2)
+        );
+        // 50% 增长
+        assert_eq!(
+            calculate_growth_rate(d(150, 0), d(100, 0)),
+            Decimal::new(5000, 2)
+        );
+        // 100% 增长
+        assert_eq!(
+            calculate_growth_rate(d(200, 0), d(100, 0)),
+            Decimal::new(10000, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_negative_growth() {
+        // 负增长：90 vs 100 → (-10 / 100) = -0.1 → -0.1 * 100 = -10.00
+        assert_eq!(
+            calculate_growth_rate(d(90, 0), d(100, 0)),
+            Decimal::new(-1000, 2)
+        );
+        // -50% 增长
+        assert_eq!(
+            calculate_growth_rate(d(50, 0), d(100, 0)),
+            Decimal::new(-5000, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_negative_base_uses_abs() {
+        // Java 使用 base.abs() 做分母，避免负数导致增长方向反转
+        // 50 vs -100 → (50 - (-100)) / |-100| = 150 / 100 = 1.5 → 150.00
+        assert_eq!(
+            calculate_growth_rate(d(50, 0), d(-100, 0)),
+            Decimal::new(15000, 2)
+        );
+        // 负负：-50 vs -100 → (-50 - (-100)) / |-100| = 50 / 100 = 0.5 → 50.00
+        assert_eq!(
+            calculate_growth_rate(d(-50, 0), d(-100, 0)),
+            Decimal::new(5000, 2)
+        );
+        // 负正：-50 vs 100 → (-50 - 100) / |100| = -150 / 100 = -1.5 → -150.00
+        assert_eq!(
+            calculate_growth_rate(d(-50, 0), d(100, 0)),
+            Decimal::new(-15000, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_half_up_boundary_12_5() {
+        // 12.5% 边界：112.5 vs 100
+        // diff = 12.5, ratio = 0.125, ratio_rounded = 0.125, percentage = 12.5, result = 12.50
+        assert_eq!(
+            calculate_growth_rate(d(1125, 1), d(100, 0)),
+            Decimal::new(1250, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_half_up_boundary_12_555() {
+        // 12.555% 边界：112.555 vs 100
+        // diff = 12.555, ratio = 0.12555, ratio_rounded = 0.1256 (5th digit 5, HALF_UP)
+        // percentage = 12.56, result = 12.56
+        assert_eq!(
+            calculate_growth_rate(d(112555, 3), d(100, 0)),
+            Decimal::new(1256, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_half_up_boundary_12_554() {
+        // 12.554% 边界：112.554 vs 100
+        // diff = 12.554, ratio = 0.12554, ratio_rounded = 0.1255 (5th digit 4, rounds down)
+        // percentage = 12.55, result = 12.55
+        assert_eq!(
+            calculate_growth_rate(d(112554, 3), d(100, 0)),
+            Decimal::new(1255, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_half_up_boundary_12_5555() {
+        // 12.5555% 边界：112.5555 vs 100
+        // diff = 12.5555, ratio = 0.125555, ratio_rounded = 0.1256 (5th digit 5, HALF_UP)
+        // percentage = 12.56, result = 12.56
+        assert_eq!(
+            calculate_growth_rate(d(1125555, 4), d(100, 0)),
+            Decimal::new(1256, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_tiny_increase_above_threshold() {
+        // 0.005% 增长：100.005 vs 100
+        // diff = 0.005, ratio = 0.00005, ratio_rounded = 0.0001 (5th digit 5, HALF_UP)
+        // percentage = 0.01, result = 0.01
+        assert_eq!(
+            calculate_growth_rate(d(100005, 3), d(100, 0)),
+            Decimal::new(1, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_tiny_increase_below_threshold() {
+        // 0.004% 增长：100.004 vs 100
+        // diff = 0.004, ratio = 0.00004, ratio_rounded = 0.0000 (5th digit 4, rounds down)
+        // percentage = 0.00, result = 0.00
+        assert_eq!(
+            calculate_growth_rate(d(100004, 3), d(100, 0)),
+            Decimal::new(0, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_intermediate_rounding_precision() {
+        // 验证中间除法 scale=4 舍入的正确性
+        // current = 100.1256, base = 100
+        // diff = 0.1256, ratio = 0.001256, 5th digit is 5 → HALF_UP → 0.0013
+        // percentage = 0.13, result = 0.13
+        assert_eq!(
+            calculate_growth_rate(d(1001256, 4), d(100, 0)),
+            Decimal::new(13, 2)
+        );
+        // current = 100.1249, base = 100
+        // diff = 0.1249, ratio = 0.001249, 5th digit is 4 → rounds down → 0.0012
+        // percentage = 0.12, result = 0.12
+        assert_eq!(
+            calculate_growth_rate(d(1001249, 4), d(100, 0)),
+            Decimal::new(12, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_negative_half_boundary() {
+        // 负数增长率的半数边界
+        // current = 87.445, base = 100
+        // diff = -12.555, ratio = -0.12555, ratio_rounded = -0.1256 (HALF_UP, away from zero)
+        // percentage = -12.56, result = -12.56
+        assert_eq!(
+            calculate_growth_rate(d(87445, 3), d(100, 0)),
+            Decimal::new(-1256, 2)
+        );
+        // current = 87.446, base = 100
+        // diff = -12.546, ratio = -0.12546, ratio_rounded = -0.1255 (5th digit 6 → round up away from zero)
+        // Wait: -0.12546 → 5th digit is 4? No, 0.12546 has digits 1,2,5,4,6. 5th digit is 6, rounds up.
+        // But for negative numbers, HALF_UP means away from zero, so -0.12546 → -0.1255
+        // percentage = -12.55, result = -12.55
+        assert_eq!(
+            calculate_growth_rate(d(87446, 3), d(100, 0)),
+            Decimal::new(-1255, 2)
+        );
+    }
+
+    #[test]
+    fn growth_rate_decimal_input_values() {
+        // 输入带小数的净资产值
+        // current = 105.67, base = 100.00 → diff = 5.67, ratio = 0.0567, rounded = 0.0567, *100 = 5.67
+        assert_eq!(
+            calculate_growth_rate(d(10567, 2), d(10000, 2)),
+            Decimal::new(567, 2)
+        );
+        // current = 95.33, base = 100.00 → diff = -4.67, ratio = -0.0467, rounded = -0.0467, *100 = -4.67
+        assert_eq!(
+            calculate_growth_rate(d(9533, 2), d(10000, 2)),
+            Decimal::new(-467, 2)
+        );
     }
 }
