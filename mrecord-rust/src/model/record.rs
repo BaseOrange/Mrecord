@@ -1,10 +1,14 @@
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::common::money::{
+    deserialize_decimal_from_number_or_string, serialize_decimal_as_number,
+};
+
 #[derive(Deserialize)]
 pub struct CreateRecord {
     pub title: String,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(deserialize_with = "deserialize_decimal_from_number_or_string")]
     pub amount: Decimal,
 }
 
@@ -12,7 +16,7 @@ pub struct CreateRecord {
 pub struct RecordResponse {
     pub id: i32,
     pub title: String,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub amount: Decimal,
     pub created_at: String,
 }

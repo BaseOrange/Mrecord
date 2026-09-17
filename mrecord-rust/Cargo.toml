@@ -17,7 +17,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 sea-orm = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "with-chrono", "with-rust_decimal"] }
 chrono = { version = "0.4", features = ["serde"] }
-rust_decimal = { version = "1", features = ["serde-with-str"] }
+# `serde-float`：让 `Decimal` 的**默认**序列化输出 JSON 数字，对齐 Java Jackson 与前端 `number` 类型。
+# 即使漏写 `#[serde(serialize_with = ...)]`，默认也是数字而不是字符串（见 `common::money` 单元测试）。
+# 刻意不启用 `serde-with-str`：`rust_decimal::serde::str` 模块随之不可用，
+# 原先导致前端金额变字符串的写法从此无法再编译通过。
+rust_decimal = { version = "1", features = ["serde-float"] }
 # 用户模块所需依赖
 # bcrypt: 密码哈希（对应 Java BCrypt）
 bcrypt = "0.15"

@@ -8,11 +8,18 @@
 //! - `com.dcz.mrecord.dto.QueryFinBookDTO`
 //! - `com.dcz.mrecord.dto.ExportBookDTO`
 //! - `com.dcz.mrecord.dto.DataStatisticsDTO`
+//!
+//! 金额序列化约定：响应中的 `Decimal` 字段统一输出 **JSON 数字**（见
+//! [`crate::common::money::serialize_decimal_as_number`]），对齐 Java Jackson
+//! 对 `BigDecimal` 的默认行为与前端 `number` 类型；请求金额兼容数字与字符串。
 
 use rust_decimal::Decimal;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use super::page_info::PageInfo;
+use crate::common::money::{
+    deserialize_decimal_from_number_or_string, serialize_decimal_as_number,
+};
 
 // ==================== 请求 DTO ====================
 
@@ -57,25 +64,6 @@ pub struct MonthItemEntry {
     /// 当月该记账项实际金额
     #[serde(deserialize_with = "deserialize_decimal_from_number_or_string")]
     pub item_value: Decimal,
-}
-
-/// 兼容前端 number 与旧接口字符串金额，等价 Java `BigDecimal` 对 JSON 数值的宽松解析。
-fn deserialize_decimal_from_number_or_string<'de, D>(deserializer: D) -> Result<Decimal, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = serde_json::Value::deserialize(deserializer)?;
-    match value {
-        serde_json::Value::Number(n) => {
-            Decimal::from_str_exact(&n.to_string()).map_err(serde::de::Error::custom)
-        }
-        serde_json::Value::String(s) => {
-            Decimal::from_str_exact(&s).map_err(serde::de::Error::custom)
-        }
-        other => Err(serde::de::Error::custom(format!(
-            "金额必须是数字或字符串: {other}"
-        ))),
-    }
 }
 
 /// 创建 / 复制账本模板项请求
@@ -179,15 +167,15 @@ pub struct FinBookRecordResponse {
     pub id: String,
     pub year: i32,
     pub month: i32,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub total_asset: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub total_liability: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub net_asset: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub month_on_month: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub year_on_year: Decimal,
     pub note: Option<String>,
     pub create_time: String,
@@ -253,15 +241,15 @@ pub struct MonthRecordResponse {
     pub book_id: String,
     pub year: i32,
     pub month: i32,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub total_asset: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub total_liability: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub net_asset: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub month_on_month: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub year_on_year: Decimal,
     pub note: Option<String>,
     pub create_time: String,
@@ -298,7 +286,7 @@ pub struct MonthItemRecordResponse {
     pub year: i32,
     pub month: i32,
     pub template_item_id: String,
-    #[serde(with = "rust_decimal::serde::str")]
+    #[serde(serialize_with = "serialize_decimal_as_number")]
     pub item_value: Decimal,
 }
 
