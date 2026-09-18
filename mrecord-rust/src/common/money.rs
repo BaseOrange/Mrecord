@@ -49,6 +49,49 @@ pub fn calculate_growth_rate(current: Decimal, base: Decimal) -> Decimal {
     percentage.round_dp_with_strategy(MONEY_SCALE, RoundingStrategy::MidpointAwayFromZero)
 }
 
+/// 将金额格式化为带千分位分隔符的展示字符串（两位小数，HALF_UP）。
+///
+/// 仅供邮件模板等「给人看」的场景使用（对应 Java 邮件侧 `BigDecimal.setScale(2, HALF_UP)`
+/// 后的展示格式）；接口响应仍应使用 [`serialize_decimal_as_number`] 输出 JSON 数字。
+///
+/// - 正数：`1,234,567.89`
+/// - 负数：`-1,234.50`
+/// - 零：`0.00`（`-0.00x` 舍入后也输出 `0.00`，不出现负号）
+pub fn format_money(value: Decimal) -> String {
+    use rust_decimal::prelude::ToPrimitive;
+
+    let rounded = round_money(value);
+    let cents = (rounded.abs() * Decimal::from(100))
+        .round_dp(0)
+        .to_i64()
+        .unwrap_or(0);
+    let sign = if rounded.is_sign_negative() && cents != 0 {
+        "-"
+    } else {
+        ""
+    };
+    format!(
+        "{}{}.{:02}",
+        sign,
+        group_thousands(cents / 100),
+        cents % 100
+    )
+}
+
+/// 为整数部分每三位插入千分位分隔符。
+fn group_thousands(value: i64) -> String {
+    let digits = value.abs().to_string();
+    let bytes = digits.as_bytes();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, byte) in bytes.iter().enumerate() {
+        if i > 0 && (bytes.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(*byte as char);
+    }
+    out
+}
+
 /// 将金额序列化为 JSON 数字（等价 Java Jackson 对 `BigDecimal` 的默认输出）
 ///
 /// 供响应 DTO 的 `#[serde(serialize_with = "...")]` 使用。优先取 f64 输出数字；
@@ -226,6 +269,41 @@ mod tests {
 
         // 非数字 / 非字符串 / 非 null 仍报错
         assert!(serde_json::from_str::<OptionalMoneyRequest>(r#"{"value":true}"#).is_err());
+    }
+
+    // ==================== format_money 测试 ====================
+    //
+    // 仅供邮件等展示场景：两位小数 + 千分位分隔符，对齐 Java BigDecimal 的展示格式。
+
+    #[test]
+    fn format_money_groups_thousands_and_keeps_two_decimals() {
+        // 常规正数：整数部分每三位一个逗号，小数强制两位
+        assert_eq!(format_money(Decimal::from(1234567)), "1,234,567.00");
+        assert_eq!(format_money(d(123456789, 2)), "1,234,567.89");
+        // 多级千分位
+        assert_eq!(format_money(Decimal::from(1234567890)), "1,234,567,890.00");
+        // 整数也补齐两位小数
+        assert_eq!(format_money(Decimal::from(100)), "100.00");
+        // 小于 1 的金额不需要千分位
+        assert_eq!(format_money(d(5, 2)), "0.05");
+    }
+
+    #[test]
+    fn format_money_handles_zero_and_negatives() {
+        assert_eq!(format_money(Decimal::ZERO), "0.00");
+        // 负数带符号
+        assert_eq!(format_money(d(-123450, 2)), "-1,234.50");
+        // 舍入后为零的负数不应出现 "-0.00"
+        assert_eq!(format_money(d(-4, 3)), "0.00");
+        assert_eq!(format_money(d(-1, 2)), "-0.01");
+    }
+
+    #[test]
+    fn format_money_rounds_half_up() {
+        // 第三位小数 5 → 进位（MidpointAwayFromZero）
+        assert_eq!(format_money(d(123455, 3)), "123.46");
+        // 第三位小数 4 → 舍去
+        assert_eq!(format_money(d(123454, 3)), "123.45");
     }
 
     // ==================== calculate_growth_rate 测试 ====================

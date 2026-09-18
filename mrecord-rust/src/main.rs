@@ -19,7 +19,7 @@ use std::net::SocketAddr;
 use crate::service::{
     cancel_cleanup_task::CancelCleanupTask, email::EmailService, export_task::ExportTaskService,
     monthly_reminder_task::MonthlyReminderTask, sys_config::SysConfigService,
-    sys_user_operate_log::SysUserOperateLogService,
+    sys_user_operate_log::SysUserOperateLogService, yearly_summary_task::YearlySummaryTask,
 };
 
 /// 全局应用状态，由 Axum 的 `with_state` 注入到所有 handler。
@@ -59,6 +59,11 @@ pub struct AppState {
     ///
     /// 对应 Java `@Resource MonthlyReminderTask`，由启动流程注册 Tokio 后台循环执行。
     pub monthly_reminder_task: Arc<MonthlyReminderTask>,
+    /// 年度总结邮件定时任务
+    ///
+    /// Java 端 `EmailService.sendNewYearReminderEmail` 原本无调用入口，由 Rust 端补齐
+    /// 业务定义后两侧同步：每年 1 月 1 日 08:08 发送上一年度的财务总结邮件。
+    pub yearly_summary_task: Arc<YearlySummaryTask>,
     /// 用户注销清理定时任务
     ///
     /// Java 端该方法仅预留注释（`SysUserServiceImpl.canceledMyUser` 中「后续会有单独的定时任务」），
@@ -89,6 +94,9 @@ async fn main() {
     let monthly_reminder_task = MonthlyReminderTask::new(email_service.clone());
     monthly_reminder_task.clone().start(db.clone());
 
+    let yearly_summary_task = YearlySummaryTask::new(email_service.clone());
+    yearly_summary_task.clone().start(db.clone());
+
     let cancel_cleanup_task = CancelCleanupTask::new();
     cancel_cleanup_task.clone().start(db.clone());
 
@@ -104,6 +112,7 @@ async fn main() {
         export_task_service,
         operate_log_service,
         monthly_reminder_task,
+        yearly_summary_task,
         cancel_cleanup_task,
     };
 

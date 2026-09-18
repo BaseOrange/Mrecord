@@ -44,8 +44,7 @@ const TEMPLATE_REGISTER: &str = include_str!("../../resources/mail/mr-register.h
 const TEMPLATE_PASSWORD: &str = include_str!("../../resources/mail/mr-password.html");
 /// 月度记账提醒模板（对应 Java `mail/mr-bookkeep.html`）
 const TEMPLATE_BOOKKEEP: &str = include_str!("../../resources/mail/mr-bookkeep.html");
-/// 新财年总结模板（对应 Java `mail/mr-year.html`）
-#[allow(dead_code)]
+/// 年度总结邮件模板（对应 Java `mail/mr-year.html`）
 const TEMPLATE_YEAR: &str = include_str!("../../resources/mail/mr-year.html");
 /// 账簿导出完成模板（对应 Java `mail/mr-export.html`）
 #[allow(dead_code)]
@@ -138,6 +137,30 @@ impl EmailService {
             "【MRecord｜月衡】新月度记账提醒",
             TEMPLATE_BOOKKEEP,
             "月度记账提醒邮件发送失败",
+            false,
+        )
+        .await
+    }
+
+    /// 发送年度总结邮件。
+    ///
+    /// 对应 Java: `EmailServiceImpl.sendYearSummaryEmail`（Java 端原方法名为
+    /// `sendNewYearReminderEmail`，语义为「新财年提醒」；产品决策不做新财年功能，
+    /// 改为每年 1 月 1 日 08:08 发送上一年度的财务总结，两侧方法名与模板一并调整）。
+    ///
+    /// 邮件主题中的年份取自 `params.summary_year`（上一年度）。
+    pub async fn send_year_summary_email(
+        &self,
+        db: &DatabaseConnection,
+        params: MailParams,
+    ) -> Result<(), AppError> {
+        let subject = format!("【MRecord｜月衡】{} 年度总结", params.summary_year);
+        self.send_with_db_config(
+            db,
+            &params,
+            &subject,
+            TEMPLATE_YEAR,
+            "年度总结邮件发送失败",
             false,
         )
         .await
@@ -382,4 +405,43 @@ fn build_transport(cfg: &EmailConfigBo) -> Result<AsyncSmtpTransport<Tokio1Execu
         .build();
 
     Ok(transport)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::mail_params::MailParams;
+
+    /// 年度总结模板的所有占位符都能被 `MailParams` 填充，渲染结果不留 `${MR-}`。
+    /// 该测试同时锁定：模板新增占位符时必须同步补到 `to_placeholders`，否则编译期
+    /// 嵌入的模板会带着未替换占位符发给用户。
+    #[test]
+    fn year_summary_template_placeholders_all_replaced() {
+        let mut params = MailParams::new();
+        params.user_name = "测试用户".to_string();
+        params.summary_year = "2025".to_string();
+        params.recorded_months = "12".to_string();
+        params.book_count = "3".to_string();
+        params.item_count = "128".to_string();
+        params.total_asset = "1,234,567.89".to_string();
+        params.total_liability = "120,000.00".to_string();
+        params.net_asset = "1,114,567.89".to_string();
+        params.net_asset_start = "900,000.00".to_string();
+        params.net_asset_change = "+214,567.89".to_string();
+        params.net_asset_change_rate = "+23.84%".to_string();
+
+        let placeholders =
+            params.to_placeholders(Some("https://example.com"), Some("admin@example.com"));
+        let html = render_template(TEMPLATE_YEAR, &placeholders);
+
+        assert!(
+            !html.contains("${MR-"),
+            "年度总结模板存在未替换的占位符: {html}"
+        );
+        // 关键内容确实进入渲染结果
+        assert!(html.contains("2025 年度财务总结"));
+        assert!(html.contains("测试用户"));
+        assert!(html.contains("+214,567.89"));
+        assert!(html.contains("https://example.com"));
+    }
 }

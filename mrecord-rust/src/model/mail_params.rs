@@ -33,6 +33,27 @@ pub struct MailParams {
     pub activate_url: String,
     /// 导出文件名 → 模板 `${MR-FileName}`
     pub file_name: String,
+    // ==================== 年度总结邮件专用（对应 Java `MailParamsBO` 同名字段）====================
+    /// 总结年份（上一年，如 "2025"）→ 模板 `${MR-SummaryYear}`
+    pub summary_year: String,
+    /// 记账月数 → 模板 `${MR-RecordedMonths}`
+    pub recorded_months: String,
+    /// 账簿数量 → 模板 `${MR-BookCount}`
+    pub book_count: String,
+    /// 年度明细记录条数 → 模板 `${MR-ItemCount}`
+    pub item_count: String,
+    /// 年末总资产 → 模板 `${MR-TotalAsset}`
+    pub total_asset: String,
+    /// 年末总负债 → 模板 `${MR-TotalLiability}`
+    pub total_liability: String,
+    /// 年末净资产 → 模板 `${MR-NetAsset}`
+    pub net_asset: String,
+    /// 年初净资产 → 模板 `${MR-NetAssetStart}`
+    pub net_asset_start: String,
+    /// 净资产变化金额（带符号）→ 模板 `${MR-NetAssetChange}`
+    pub net_asset_change: String,
+    /// 净资产变化率（带符号 %，年初为零无可比基准时为 "—"）→ 模板 `${MR-NetAssetChangeRate}`
+    pub net_asset_change_rate: String,
 }
 
 impl MailParams {
@@ -70,6 +91,29 @@ impl MailParams {
         m.insert("MR-ActivateUrl".to_string(), self.activate_url.clone());
         m.insert("MR-FileName".to_string(), self.file_name.clone());
         m.insert("MR-RegisterDate".to_string(), self.register_date.clone());
+        // 年度总结占位符
+        m.insert("MR-SummaryYear".to_string(), self.summary_year.clone());
+        m.insert(
+            "MR-RecordedMonths".to_string(),
+            self.recorded_months.clone(),
+        );
+        m.insert("MR-BookCount".to_string(), self.book_count.clone());
+        m.insert("MR-ItemCount".to_string(), self.item_count.clone());
+        m.insert("MR-TotalAsset".to_string(), self.total_asset.clone());
+        m.insert(
+            "MR-TotalLiability".to_string(),
+            self.total_liability.clone(),
+        );
+        m.insert("MR-NetAsset".to_string(), self.net_asset.clone());
+        m.insert("MR-NetAssetStart".to_string(), self.net_asset_start.clone());
+        m.insert(
+            "MR-NetAssetChange".to_string(),
+            self.net_asset_change.clone(),
+        );
+        m.insert(
+            "MR-NetAssetChangeRate".to_string(),
+            self.net_asset_change_rate.clone(),
+        );
         m
     }
 }

@@ -9,6 +9,7 @@
 //! - [`email::EmailService`] — 邮件发送服务（SMTP/SMTPS via lettre）
 //! - [`monthly_reminder_task::MonthlyReminderTask`] — 月度记账提醒定时任务
 //! - [`cancel_cleanup_task::CancelCleanupTask`] — 用户注销清理定时任务
+//! - [`yearly_summary_task::YearlySummaryTask`] — 年度总结邮件定时任务（每年 1 月 1 日 08:08）
 
 pub mod cancel_cleanup_task;
 pub mod email;
@@ -16,3 +17,4 @@ pub mod export_task;
 pub mod monthly_reminder_task;
 pub mod sys_config;
 pub mod sys_user_operate_log;
+pub mod yearly_summary_task;

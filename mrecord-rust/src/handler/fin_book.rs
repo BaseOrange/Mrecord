@@ -526,6 +526,7 @@ mod tests {
         cancel_cleanup_task::CancelCleanupTask, email::EmailService,
         export_task::ExportTaskService, monthly_reminder_task::MonthlyReminderTask,
         sys_config::SysConfigService, sys_user_operate_log::SysUserOperateLogService,
+        yearly_summary_task::YearlySummaryTask,
     };
     use chrono::{Months, Utc};
     use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
@@ -662,6 +663,7 @@ mod tests {
             export_task_service: ExportTaskService::new(email_service.clone()),
             operate_log_service: SysUserOperateLogService::new(),
             monthly_reminder_task: MonthlyReminderTask::new(email_service.clone()),
+            yearly_summary_task: YearlySummaryTask::new(email_service.clone()),
             cancel_cleanup_task: CancelCleanupTask::new(),
         }
     }
