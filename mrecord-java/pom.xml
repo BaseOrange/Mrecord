@@ -11,7 +11,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.6</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
 
@@ -40,18 +40,18 @@
         <dependency>
             <groupId>com.mybatis-flex</groupId>
             <artifactId>mybatis-flex-spring-boot4-starter</artifactId>
-            <version>1.11.7</version>
+            <version>1.11.8</version>
         </dependency>
         <dependency>
             <groupId>com.mybatis-flex</groupId>
             <artifactId>mybatis-flex-processor</artifactId>
-            <version>1.11.7</version>
+            <version>1.11.8</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.49.1.0</version>
+            <version>3.53.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -82,24 +82,24 @@
         <dependency>
             <groupId>org.apache.fesod</groupId>
             <artifactId>fesod-sheet</artifactId>
-            <version>2.0.1-incubating</version>
+            <version>2.0.2-incubating</version>
         </dependency>
 
         <!-- 工具类 -->
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>5.8.44</version>
+            <version>5.8.47</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.44</version>
+            <version>1.18.48</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-email</artifactId>
-            <version>1.5</version>
+            <version>1.6.0</version>
         </dependency>
     </dependencies>
 

@@ -792,6 +792,7 @@ pub async fn admin_delete_user(
 
 #[cfg(test)]
 mod tests {
+
     //! 登录拦截边界测试（对应 REFACTOR_TODO 3.11）。
     //!
     //! Rust 采用「按需鉴权」：handler 显式声明 `AuthUser` / `AdminUser` 提取器才要求登录，
@@ -800,6 +801,18 @@ mod tests {
     //! 下面通过直接调用 handler（不附带任何 token）验证这一点，防止日后误加提取器
     //! 把注册→激活链路堵死。
 
+    /// 原生 COUNT 查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`，原生 SQL 走 `find_by_statement`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct CountRow {
+        c: i64,
+    }
+
+    /// 用户状态查询行。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct StatusRow {
+        s: i32,
+    }
+
     use super::*;
     use crate::service::{
         cancel_cleanup_task::CancelCleanupTask, email::EmailService,
@@ -807,7 +820,10 @@ mod tests {
         sys_config::SysConfigService, sys_user_operate_log::SysUserOperateLogService,
         yearly_summary_task::YearlySummaryTask,
     };
-    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+    use sea_orm::{
+        ConnectionTrait, Database, DatabaseConnection, DbBackend, EntityTrait, FromQueryResult,
+        Statement,
+    };
 
     /// 建用户表 + 配置表（激活流程会读 SYS_CONFIG 的 webSite）。
     async fn setup_db() -> DatabaseConnection {
@@ -864,15 +880,15 @@ mod tests {
     }
 
     async fn user_status(db: &DatabaseConnection) -> i32 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                "SELECT MR_STATUS AS s FROM SYS_USER WHERE MR_ID = 'u1'",
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i32>("", "s").unwrap()
+        StatusRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            "SELECT MR_STATUS AS s FROM SYS_USER WHERE MR_ID = 'u1'",
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap()
+        .s
     }
 
     /// 激活接口在「无任何登录凭据」下可直接调用并激活成功。

@@ -121,9 +121,16 @@ async fn cleanup_user(db: &DatabaseConnection, user: &UserModel) -> Result<usize
 
 #[cfg(test)]
 mod tests {
+
+    /// 原生 COUNT 查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`，原生 SQL 走 `find_by_statement`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct CountRow {
+        c: i64,
+    }
+
     use super::*;
     use chrono::NaiveDateTime;
-    use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
+    use sea_orm::{ConnectionTrait, Database, DbBackend, EntityTrait, FromQueryResult, Statement};
 
     /// 建好任务涉及的全部表（主表 + 备份表），返回内存库连接。
     async fn setup_db() -> DatabaseConnection {
@@ -242,29 +249,29 @@ mod tests {
     }
 
     async fn count(db: &DatabaseConnection, table: &str) -> i64 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                format!("SELECT COUNT(*) AS c FROM {table}"),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+        let row = CountRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            format!("SELECT COUNT(*) AS c FROM {table}"),
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+        row.c
     }
 
     /// 统计业务表中「在册」（`is_deleted = 0`）的行数——账簿链路为逻辑删除，
     /// 删除后行仍在库中但置为 `is_deleted = 1`，对用户不可见。
     async fn count_active(db: &DatabaseConnection, table: &str) -> i64 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                format!("SELECT COUNT(*) AS c FROM {table} WHERE MR_IS_DELETED = 0"),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+        let row = CountRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            format!("SELECT COUNT(*) AS c FROM {table} WHERE MR_IS_DELETED = 0"),
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+        row.c
     }
 
     /// 验收：待注销且 `cancel_time` 超过冷静期（回拨 16 天）的用户，任务执行后用户被物理

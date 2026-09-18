@@ -370,7 +370,10 @@ mod tests {
         yearly_summary_task::YearlySummaryTask,
     };
     use axum::extract::State;
-    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+    use sea_orm::{
+        ConnectionTrait, Database, DatabaseConnection, DbBackend, EntityTrait, FromQueryResult,
+        Statement,
+    };
 
     fn entry(name: &str) -> TemplateItemEntry {
         TemplateItemEntry {
@@ -524,16 +527,23 @@ mod tests {
     }
 
     async fn count_active_templates(db: &DatabaseConnection, book_id: &str) -> i64 {
-        let row = db
-            .query_one(Statement::from_sql_and_values(
-                DbBackend::Sqlite,
-                "SELECT COUNT(*) AS c FROM FIN_TEMPLATE_ITEM WHERE MR_IS_DELETED = 0 AND MR_BOOK_ID = ?",
-                [book_id.into()],
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+        // Sea-ORM 2.0 起 `query_one` 只接受 `StatementBuilder`；原生 SQL 走 `find_by_statement`。
+        CountRow::find_by_statement(Statement::from_sql_and_values(
+            DbBackend::Sqlite,
+            "SELECT COUNT(*) AS c FROM FIN_TEMPLATE_ITEM WHERE MR_IS_DELETED = 0 AND MR_BOOK_ID = ?",
+            [book_id.into()],
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap()
+        .c
+    }
+
+    /// 原生 COUNT 查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct CountRow {
+        c: i64,
     }
 
     /// 【死路修复】无模板项的新账簿也能创建首个模板项（此前 create 要求账簿已有模板项 → 死路）。

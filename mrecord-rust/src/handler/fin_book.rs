@@ -514,11 +514,18 @@ pub async fn get_book_detailed_statistics(
 
 #[cfg(test)]
 mod tests {
+
     //! 账簿级联删除（逻辑删除）验收测试。
     //!
     //! 对应 REFACTOR_TODO 3.5：账簿删除时月度明细 / 汇总 / 模板项 / 账簿主数据
     //! 一律逻辑删除（`is_deleted = 1`，对齐 Java `BaseEntity.isLogicDelete`），
     //! 删除前先备份在册快照（备份范围 `is_deleted = 0`）。
+
+    /// 原生 COUNT 查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`，原生 SQL 走 `find_by_statement`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct CountRow {
+        c: i64,
+    }
 
     use super::*;
     use crate::model::id_dto::IdDto;
@@ -529,7 +536,10 @@ mod tests {
         yearly_summary_task::YearlySummaryTask,
     };
     use chrono::{Months, Utc};
-    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+    use sea_orm::{
+        ConnectionTrait, Database, DatabaseConnection, DbBackend, EntityTrait, FromQueryResult,
+        Statement,
+    };
 
     /// 建好业务表与备份表（对齐 `schema.sql`）。
     async fn setup_db() -> DatabaseConnection {
@@ -624,28 +634,28 @@ mod tests {
     }
 
     async fn count_total(db: &DatabaseConnection, table: &str) -> i64 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                format!("SELECT COUNT(*) AS c FROM {table}"),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+        let row = CountRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            format!("SELECT COUNT(*) AS c FROM {table}"),
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+        row.c
     }
 
     /// 统计业务表在册（`is_deleted = 0`）行数。
     async fn count_active(db: &DatabaseConnection, table: &str) -> i64 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                format!("SELECT COUNT(*) AS c FROM {table} WHERE MR_IS_DELETED = 0"),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+        let row = CountRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            format!("SELECT COUNT(*) AS c FROM {table} WHERE MR_IS_DELETED = 0"),
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+        row.c
     }
 
     /// 用内存库构造最小可用的 `AppState`（handler 只用到 db 与 AuthUser）。
