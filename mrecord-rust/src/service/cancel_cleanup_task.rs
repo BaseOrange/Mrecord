@@ -5,7 +5,7 @@
 //! Java `SysUserServiceImpl.canceledMyUser` 仅把用户置为「注销待生效」并记录 `cancelTime`，
 //! 方法注释中预留了「后续会有单独的定时任务，定时扫描待注销状态的用户」。本任务每日扫描
 //! 冷静期已过的待注销用户，复用账簿删除流程（[`crate::handler::fin_book::purge_book`] 的
-//! 备份 + 物理删除）清理其全部账簿 / 月度汇总 / 明细 / 模板项，最后物理删除用户本体。
+//! 备份 + 逻辑删除）清理其全部账簿 / 月度汇总 / 明细 / 模板项，最后物理删除用户本体。
 
 use std::sync::Arc;
 
@@ -33,7 +33,7 @@ const RUN_HOUR: u32 = 3;
 ///
 /// 负责：
 /// 1. 每日扫描 `status = CANCELED_WAIT` 且 `cancel_time` 早于冷静期截止时间的用户；
-/// 2. 对每位命中用户备份并物理删除其全部账簿数据，再物理删除用户本体。
+/// 2. 对每位命中用户备份并逻辑删除其全部账簿数据（`is_deleted = 1`），再物理删除用户本体。
 pub struct CancelCleanupTask;
 
 impl CancelCleanupTask {
@@ -253,8 +253,22 @@ mod tests {
         row.try_get::<i64>("", "c").unwrap()
     }
 
-    /// 验收：待注销且 `cancel_time` 超过冷静期（回拨 16 天）的用户，任务执行后用户与账簿数据
-    /// 被物理删除，备份表留下快照。
+    /// 统计业务表中「在册」（`is_deleted = 0`）的行数——账簿链路为逻辑删除，
+    /// 删除后行仍在库中但置为 `is_deleted = 1`，对用户不可见。
+    async fn count_active(db: &DatabaseConnection, table: &str) -> i64 {
+        let row = db
+            .query_one(Statement::from_string(
+                DbBackend::Sqlite,
+                format!("SELECT COUNT(*) AS c FROM {table} WHERE MR_IS_DELETED = 0"),
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        row.try_get::<i64>("", "c").unwrap()
+    }
+
+    /// 验收：待注销且 `cancel_time` 超过冷静期（回拨 16 天）的用户，任务执行后用户被物理
+    /// 删除、账簿链路被逻辑删除（`is_deleted = 1`，对用户不可见），备份表留下快照。
     #[tokio::test]
     async fn run_once_cleans_expired_canceled_user() {
         let db = setup_db().await;
@@ -271,12 +285,15 @@ mod tests {
         let cleaned = task.run_once(&db).await.expect("任务执行失败");
 
         assert_eq!(cleaned, 1);
-        // 用户与业务数据全部物理删除
+        // 用户本体物理删除
         assert_eq!(count(&db, "SYS_USER").await, 0);
-        assert_eq!(count(&db, "FIN_BOOK").await, 0);
-        assert_eq!(count(&db, "FIN_TEMPLATE_ITEM").await, 0);
-        assert_eq!(count(&db, "FIN_MONTH_RECORD").await, 0);
-        assert_eq!(count(&db, "FIN_MONTH_ITEM_RECORD").await, 0);
+        // 账簿链路逻辑删除：行保留但 is_deleted = 1（业务查询过滤 is_deleted = 0 后不可见）
+        assert_eq!(count_active(&db, "FIN_BOOK").await, 0);
+        assert_eq!(count_active(&db, "FIN_TEMPLATE_ITEM").await, 0);
+        assert_eq!(count_active(&db, "FIN_MONTH_RECORD").await, 0);
+        assert_eq!(count_active(&db, "FIN_MONTH_ITEM_RECORD").await, 0);
+        assert_eq!(count(&db, "FIN_BOOK").await, 2);
+        assert_eq!(count(&db, "FIN_MONTH_RECORD").await, 2);
         // 备份表保留快照（2 账簿 / 2 模板项 / 2 汇总 / 2 明细）
         assert_eq!(count(&db, "SYS_BACKUP_BOOK").await, 2);
         assert_eq!(count(&db, "SYS_BACKUP_TEMPLATE_ITEM").await, 2);

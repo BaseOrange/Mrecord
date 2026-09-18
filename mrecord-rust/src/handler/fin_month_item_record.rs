@@ -253,6 +253,24 @@ where
 }
 
 /// 插入或更新月度汇总记录。
+///
+/// 【对 Java 缺陷的修复】Java `FinMonthRecordServiceImpl.calculateFinMonthRecord` 对
+/// 本月汇总**恒 INSERT**（每次都生成新 UUID 落库），而 `insertMonthItemRecord` 每次提交
+/// 都会调用它一次。后果：
+/// - 重复提交（前端双击 / 网络重试 / 同月多次记账）会为同一个
+///   `(bookId, year, month)` 产生**多行汇总记录**；
+/// - 随后 `getMonthRecord` 用 `selectOneByQuery` 取值，MyBatis-Flex 在匹配多行时
+///   抛 `TooManyResultsException`（即使不抛，取值也不确定）；
+/// - `FIN_MONTH_RECORD` 上的索引 `IDX_FIN_MR_BOOK_YM` 仅为普通索引（两端 schema 均如此），
+///   数据库层面不强制唯一，无法兜底。
+///
+/// Rust 改为 upsert：先按 `(book_id, year, month, is_deleted=0)` 查现有记录，存在则
+/// 原地更新、不存在才插入，使同月重复提交**幂等**。这是「Rust 比 Java 更完整」的能力之一。
+///
+/// 并发说明：查-写发生在同一事务内，覆盖「顺序重复提交」这一主要场景；未在 DB 层加
+/// `(MR_BOOK_ID, MR_YEAR, MR_MONTH, MR_IS_DELETED)` 唯一索引——从 Java 迁移过来的历史
+/// 数据可能已含重复行，建唯一索引会导致启动时 `CREATE UNIQUE INDEX` 失败。若将来确认
+/// 数据已无重复且需要更强的并发保证，可再补唯一索引并保留本 upsert 作为应用层首选路径。
 async fn upsert_month_record<C>(
     db: &C,
     book_id: &str,
@@ -419,7 +437,7 @@ pub async fn insert_month_item(
         })
         .collect();
 
-    // 计算并插入月度汇总
+    // 计算并 upsert 月度汇总（存在则更新、不存在才插入，修复 Java 恒 INSERT 的重复行问题）
     let calculated =
         calculate_month_record_data(&txn, book_id, year, month, &entries, &template_items).await?;
     let curr_record = upsert_month_record(
@@ -670,7 +688,7 @@ mod tests {
     use crate::AppState;
     use crate::common::money::calculate_growth_rate;
     use crate::error::AppError;
-    use crate::model::finance::{MonthItemDto, MonthItemEntry};
+    use crate::model::finance::{MonthItemDto, MonthItemEntry, MonthItemRecordResponse};
     use crate::service::{
         cancel_cleanup_task::CancelCleanupTask, email::EmailService,
         export_task::ExportTaskService, monthly_reminder_task::MonthlyReminderTask,
@@ -678,7 +696,7 @@ mod tests {
     };
     use axum::extract::State;
     use rust_decimal::Decimal;
-    use sea_orm::{ConnectionTrait, Database, DatabaseConnection};
+    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
 
     /// 构造 `Decimal`（整数 / 10^scale）。
     fn dec(val: i64, scale: u32) -> Decimal {
@@ -1227,5 +1245,161 @@ mod tests {
 
         // 【有意收紧】Java 不带 userId 过滤可读他人账簿；Rust 返回账簿不存在
         assert!(matches!(err, AppError::ResCode(ResCode::FinBookNotFound)));
+    }
+
+    // ==================== upsert_month_record 测试 ====================
+    //
+    // 对应 REFACTOR_TODO 3.4：同月重复提交幂等——修复 Java
+    // `calculateFinMonthRecord` 恒 INSERT 导致的重复行问题。
+
+    /// 构造一个月度汇总计算结果（净资产 = net_asset，其余按哨兵值）。
+    fn calc_of(net_asset: Decimal) -> CalculatedMonthRecord {
+        CalculatedMonthRecord {
+            total_asset: net_asset,
+            total_liability: dec(11, 0),
+            net_asset,
+            month_on_month: dec(5, 0),
+            year_on_year: dec(12, 0),
+        }
+    }
+
+    /// 统计某账簿某年月的汇总记录行数。
+    async fn count_month_records(
+        db: &DatabaseConnection,
+        book_id: &str,
+        year: i32,
+        month: i32,
+    ) -> i64 {
+        let row = db
+            .query_one(Statement::from_string(
+                DbBackend::Sqlite,
+                format!(
+                    "SELECT COUNT(*) AS c FROM FIN_MONTH_RECORD
+                     WHERE MR_BOOK_ID = '{book_id}' AND MR_YEAR = {year} AND MR_MONTH = {month}
+                       AND MR_IS_DELETED = 0"
+                ),
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        row.try_get::<i64>("", "c").unwrap()
+    }
+
+    /// 同月第二次 upsert 应复用第一行而非新增，且值更新为最新。
+    #[tokio::test]
+    async fn upsert_is_idempotent_for_same_month() {
+        let db = setup_db().await;
+
+        let first = upsert_month_record(
+            &db,
+            "bk1",
+            2026,
+            3,
+            "u1",
+            Some("原始备注".into()),
+            &calc_of(dec(100, 0)),
+        )
+        .await
+        .unwrap();
+        assert_eq!(first.net_asset, dec(100, 0));
+        assert_eq!(count_month_records(&db, "bk1", 2026, 3).await, 1);
+
+        // 重复提交（同账簿同月），值变化 → 原地更新
+        let second = upsert_month_record(
+            &db,
+            "bk1",
+            2026,
+            3,
+            "u1",
+            Some("更新备注".into()),
+            &calc_of(dec(200, 0)),
+        )
+        .await
+        .unwrap();
+        assert_eq!(second.id, first.id, "同月汇总应复用同一行，而非插入新行");
+        assert_eq!(second.net_asset, dec(200, 0));
+        assert_eq!(second.note.as_deref(), Some("更新备注"));
+        assert_eq!(count_month_records(&db, "bk1", 2026, 3).await, 1);
+    }
+
+    /// 不同月份各自独立成行（验证 upsert 的复用键是 book+year+month，不是全局复用）。
+    #[tokio::test]
+    async fn upsert_creates_separate_rows_for_different_months() {
+        let db = setup_db().await;
+        upsert_month_record(&db, "bk1", 2026, 3, "u1", None, &calc_of(dec(100, 0)))
+            .await
+            .unwrap();
+        upsert_month_record(&db, "bk1", 2026, 4, "u1", None, &calc_of(dec(200, 0)))
+            .await
+            .unwrap();
+        assert_eq!(count_month_records(&db, "bk1", 2026, 3).await, 1);
+        assert_eq!(count_month_records(&db, "bk1", 2026, 4).await, 1);
+    }
+
+    // ==================== 响应体审计字段测试 ====================
+    //
+    // 对应 REFACTOR_TODO 3.6：对齐 Java 直接返回实体的审计字段
+    // （createBy/createTime/updateBy/updateTime）。
+
+    fn naive(dt: &str) -> chrono::NaiveDateTime {
+        chrono::NaiveDateTime::parse_from_str(dt, "%Y-%m-%d %H:%M:%S").unwrap()
+    }
+
+    /// 明细响应携带全部四个审计字段，序列化为驼峰键、金额为 JSON 数字。
+    #[test]
+    fn month_item_record_response_exposes_audit_fields() {
+        let model = crate::entity::fin_month_item_record::Model {
+            id: "mir1".to_string(),
+            year: 2026,
+            month: 3,
+            book_id: "bk1".to_string(),
+            template_item_id: "tpl-a".to_string(),
+            item_value: dec(12345, 2),
+            create_by: Some("u1".to_string()),
+            create_time: naive("2026-03-01 10:00:00"),
+            update_by: Some("u2".to_string()),
+            update_time: Some(naive("2026-03-02 11:00:00")),
+            is_deleted: 0,
+        };
+        let resp: MonthItemRecordResponse = model.into();
+        assert_eq!(resp.create_by.as_deref(), Some("u1"));
+        assert_eq!(resp.create_time.as_deref(), Some("2026-03-01 10:00:00"));
+        assert_eq!(resp.update_by.as_deref(), Some("u2"));
+        assert_eq!(resp.update_time.as_deref(), Some("2026-03-02 11:00:00"));
+
+        // 序列化：驼峰键 + 金额为 JSON 数字（对齐 2.1 的金额约定）
+        let json = serde_json::to_value(&resp).unwrap();
+        assert_eq!(json["createBy"], "u1");
+        assert_eq!(json["createTime"], "2026-03-01 10:00:00");
+        assert_eq!(json["updateBy"], "u2");
+        assert_eq!(json["updateTime"], "2026-03-02 11:00:00");
+        assert_eq!(json["itemValue"], serde_json::json!(123.45));
+    }
+
+    /// 从未更新的明细：createBy 可空、updateBy/updateTime 序列化为 null。
+    #[test]
+    fn month_item_record_response_audit_fields_nullable_when_unset() {
+        let model = crate::entity::fin_month_item_record::Model {
+            id: "mir2".to_string(),
+            year: 2026,
+            month: 3,
+            book_id: "bk1".to_string(),
+            template_item_id: "tpl-a".to_string(),
+            item_value: dec(0, 0),
+            create_by: None,
+            create_time: naive("2026-03-01 10:00:00"),
+            update_by: None,
+            update_time: None,
+            is_deleted: 0,
+        };
+        let resp: MonthItemRecordResponse = model.into();
+        assert!(resp.create_by.is_none());
+        assert!(resp.update_by.is_none());
+        assert!(resp.update_time.is_none());
+
+        let json = serde_json::to_value(&resp).unwrap();
+        assert_eq!(json["createBy"], serde_json::Value::Null);
+        assert_eq!(json["updateBy"], serde_json::Value::Null);
+        assert_eq!(json["updateTime"], serde_json::Value::Null);
     }
 }

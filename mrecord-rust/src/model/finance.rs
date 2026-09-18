@@ -274,7 +274,13 @@ pub struct MonthRecordResponse {
     #[serde(serialize_with = "serialize_decimal_as_number")]
     pub year_on_year: Decimal,
     pub note: Option<String>,
+    /// 创建人
+    pub create_by: Option<String>,
+    /// 创建时间
     pub create_time: String,
+    /// 更新人
+    pub update_by: Option<String>,
+    /// 更新时间
     pub update_time: Option<String>,
 }
 
@@ -291,7 +297,9 @@ impl From<crate::entity::fin_month_record::Model> for MonthRecordResponse {
             month_on_month: m.month_on_month,
             year_on_year: m.year_on_year,
             note: m.note,
+            create_by: m.create_by,
             create_time: m.create_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+            update_by: m.update_by,
             update_time: m
                 .update_time
                 .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
@@ -310,6 +318,14 @@ pub struct MonthItemRecordResponse {
     pub template_item_id: String,
     #[serde(serialize_with = "serialize_decimal_as_number")]
     pub item_value: Decimal,
+    /// 创建人
+    pub create_by: Option<String>,
+    /// 创建时间
+    pub create_time: Option<String>,
+    /// 更新人
+    pub update_by: Option<String>,
+    /// 更新时间
+    pub update_time: Option<String>,
 }
 
 impl From<crate::entity::fin_month_item_record::Model> for MonthItemRecordResponse {
@@ -321,6 +337,12 @@ impl From<crate::entity::fin_month_item_record::Model> for MonthItemRecordRespon
             month: m.month,
             template_item_id: m.template_item_id,
             item_value: m.item_value,
+            create_by: m.create_by,
+            create_time: Some(m.create_time.format("%Y-%m-%d %H:%M:%S").to_string()),
+            update_by: m.update_by,
+            update_time: m
+                .update_time
+                .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
         }
     }
 }
