@@ -214,8 +214,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         }
 
         updateConfigByKey("mail.hostName", dto.getHostName());
-        updateConfigByKey("mail.sslSmtpPort", String.valueOf(dto.getSslSmtpPort()));
-        updateConfigByKey("mail.smtpPort", String.valueOf(dto.getSmtpPort()));
+        // 端口为 null 时写空串而非字面量 "null"：String.valueOf(null Integer) 会返回 "null"，
+        // 后续 loadEmailConfig 的 Integer.parseInt("null") 会抛 NumberFormatException，
+        // 导致邮件配置静默失效；空串会被 isAnyBlank 当作「未配置」优雅处理（与 Rust 端一致）
+        updateConfigByKey("mail.sslSmtpPort", dto.getSslSmtpPort() == null ? "" : String.valueOf(dto.getSslSmtpPort()));
+        updateConfigByKey("mail.smtpPort", dto.getSmtpPort() == null ? "" : String.valueOf(dto.getSmtpPort()));
         updateConfigByKey("mail.ssl", dto.getSsl() != null && dto.getSsl() ? "1" : "0");
         updateConfigByKey("mail.userName", dto.getUserName());
         updateConfigByKey("mail.password", password);
