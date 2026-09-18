@@ -216,7 +216,12 @@ public class FinMonthRecordServiceImpl extends ServiceImpl<FinMonthRecordMapper,
     public List<FinMonthRecord> getBookOneYearRecord(String id, DataStatisticsDTO dataStatisticsDTO) {
         QueryWrapper qwObj = QueryWrapper.create();
         qwObj.eq(FinMonthRecord::getBookId, id);
-        //qwObj.where("MR_YEAR * 100 + MR_MONTH between ? and ?", dataStatisticsDTO.getStartYearMonth(), dataStatisticsDTO.getEndYearMonth());
+        // 近一年过滤：startYearMonth / endYearMonth 为 yyyyMM 字符串，须转为整数再比较——
+        // 直接传字符串时，SQLite 对「int 表达式 BETWEEN 'text' AND 'text'」不施加列亲和性，
+        // 数值恒小于文本，会错误返回空列表（此处曾因此被整体注释掉，导致返回全部历史数据）
+        int startYearMonth = Integer.parseInt(dataStatisticsDTO.getStartYearMonth());
+        int endYearMonth = Integer.parseInt(dataStatisticsDTO.getEndYearMonth());
+        qwObj.where("MR_YEAR * 100 + MR_MONTH BETWEEN ? AND ?", startYearMonth, endYearMonth);
         qwObj.orderBy(FinMonthRecord::getBookId, true);
         qwObj.orderBy(FinMonthRecord::getYear, true);
         qwObj.orderBy(FinMonthRecord::getMonth, true);
