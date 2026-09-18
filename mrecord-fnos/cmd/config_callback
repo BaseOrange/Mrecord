@@ -1,0 +1,4 @@
+#!/bin/bash
+# 配置变更后：无额外操作。
+set -euo pipefail
+exit 0

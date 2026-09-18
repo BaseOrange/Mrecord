@@ -1,0 +1,6 @@
+#!/bin/bash
+# 卸载前：默认保留用户数据（data.db 与导出文件在 $TRIM_PKGVAR）。
+# 若将来提供「卸载并清除数据」选项，可在 wizard/uninstall 收集用户选择，
+# 在此按选择执行 rm -rf "$TRIM_PKGVAR"。
+set -euo pipefail
+exit 0

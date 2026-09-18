@@ -1,0 +1,4 @@
+#!/bin/bash
+# 卸载清理后：无额外操作。$TRIM_PKGVAR 由 fnOS 按卸载策略处理。
+set -euo pipefail
+exit 0

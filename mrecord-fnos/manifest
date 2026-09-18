@@ -1,0 +1,15 @@
+appname=mrecord-fnos
+version=0.1.0
+display_name=Mrecord 月衡
+desc=每月快照账簿、资产负债全景浏览与同比环比智能分析平台。以每月余额快照取代逐笔流水，每月一次盘点各账户资产负债，自动汇总总资产 / 总负债 / 净资产；支持多账簿、多用户数据隔离、管理员后台、自定义模板项拖拽排序、Chart.js 资产趋势图、异步 Excel 导出（邮件送达）、月度记账提醒与年度财务总结。飞牛版为 Rust 单二进制 + 编译期内嵌前端 + SQLite，零运行时依赖，经统一网关访问，不占用宿主机端口，可与 Docker 版并存且数据互相独立。
+source=thirdparty
+platform=all
+maintainer=BaseOrange
+maintainer_url=https://log.660066.xyz
+distributor=BaseOrange
+distributor_url=https://github.com/BaseOrange/Mrecord
+os_min_version=1.2.0
+desktop_uidir=ui
+desktop_applaunchname=mrecord-fnos.main
+ctl_stop=true
+changelog=首个飞牛 fnOS 版本：Native 模板打包，统一网关访问，与 Docker 版互不影响。

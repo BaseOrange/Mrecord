@@ -1,0 +1,6 @@
+#!/bin/bash
+# 升级后：无额外处理。
+# 前端在编译期内嵌进二进制，升级包即升级前端；schema 变更由应用启动时
+# 的 CREATE TABLE IF NOT EXISTS 与内置 patch 自动处理。
+set -euo pipefail
+exit 0

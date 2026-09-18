@@ -1,0 +1,126 @@
+#!/bin/bash
+# ============================================================================
+# Mrecord 运行控制脚本
+#
+# 飞牛 fnOS 通过本脚本启动 / 停止 / 查询应用状态。
+# 参考文档: https://developer.fnnas.com/docs/core-concepts/framework/
+#
+# 关键设计：
+#   - 二进制与 socket 位于 $TRIM_APPDEST（target 目录，应用包文件，随升级被替换）
+#   - data.db 与 exports/ 落在 $TRIM_PKGVAR（持久化数据目录，跨升级保留）
+#     —— 应用按工作目录相对路径写 data.db 与 exports/，故启动前 cd 过去
+#   - 统一网关：应用监听 $TRIM_APPDEST/app.sock，fnOS 把 /app/mrecord-fnos
+#     的请求转发到该 socket，完全不占用宿主机端口
+# ============================================================================
+
+set -euo pipefail
+
+APP_NAME="mrecord-fnos"
+GATEWAY_PREFIX="/app/${APP_NAME}"
+
+# 目录与文件（TRIM_* 未设置时给出本地调试用的默认值）
+BIN_DIR="${TRIM_APPDEST:-./app}"
+DATA_DIR="${TRIM_PKGVAR:-./data}"
+LOG_ERR="${TRIM_TEMP_LOGFILE:-/tmp/${APP_NAME}-err.log}"
+PID_FILE="${DATA_DIR}/${APP_NAME}.pid"
+LOG_FILE="${DATA_DIR}/${APP_NAME}.log"
+SOCKET_PATH="${BIN_DIR}/app.sock"
+
+# ---------------------------------------------------------------------------
+# 按系统架构选择二进制。包内同时携带 x86_64 与 aarch64 两个 musl 静态产物，
+# 运行时按 TRIM_SYS_ARCH 挑选；取值风格做兼容匹配，匹配失败直接报错。
+# ---------------------------------------------------------------------------
+select_binary() {
+  local arch="${TRIM_SYS_ARCH:-}"
+  case "$arch" in
+    x86_64 | amd64 | x64)
+      echo "${BIN_DIR}/mrecord-rust-x86_64"
+      ;;
+    aarch64 | arm64)
+      echo "${BIN_DIR}/mrecord-rust-aarch64"
+      ;;
+    "")
+      echo "TRIM_SYS_ARCH 未设置，无法选择二进制" >"$LOG_ERR"
+      return 1
+      ;;
+    *)
+      echo "不支持的系统架构: ${arch}" >"$LOG_ERR"
+      return 1
+      ;;
+  esac
+}
+
+is_running() {
+  [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null
+}
+
+case "${1:-}" in
+  start)
+    if is_running; then
+      exit 0
+    fi
+
+    BIN="$(select_binary)" || exit 1
+
+    if [ ! -x "$BIN" ]; then
+      echo "二进制不存在或不可执行: $BIN" >"$LOG_ERR"
+      exit 1
+    fi
+
+    mkdir -p "$DATA_DIR"
+
+    # 数据落 $TRIM_PKGVAR：data.db 与 exports/ 都相对工作目录
+    cd "$DATA_DIR"
+
+    # 网关模式：仅监听 Unix socket，不对外暴露 TCP 端口
+    #   MRECORD_GATEWAY_SOCKET —— 应用监听的 socket 路径
+    #   MRECORD_GATEWAY_PREFIX —— 路由前缀，与 ui/config 的 gatewayPrefix 一致
+    # 未实现 socket 监听的旧二进制会忽略这两个变量，退回 TCP（127.0.0.1:2333），
+    # 供调试使用；正式发布前必须完成该改造。
+    export MRECORD_GATEWAY_SOCKET="$SOCKET_PATH"
+    export MRECORD_GATEWAY_PREFIX="$GATEWAY_PREFIX"
+    export MRECORD_HOST="${MRECORD_HOST:-127.0.0.1}"
+    export MRECORD_PORT="${MRECORD_PORT:-2333}"
+    export RUST_LOG="${RUST_LOG:-mrecord_rust=info,tower_http=info}"
+    export TZ="${TZ:-Asia/Shanghai}"
+
+    rm -f "$SOCKET_PATH"
+    nohup "$BIN" >>"$LOG_FILE" 2>&1 &
+    echo $! >"$PID_FILE"
+
+    # 等待进程存活（不等待 socket 就绪，避免阻塞过久）
+    for _ in $(seq 1 10); do
+      is_running && break
+      sleep 0.5
+    done
+    ;;
+
+  stop)
+    if is_running; then
+      PID="$(cat "$PID_FILE")"
+      kill "$PID" 2>/dev/null || true
+      # 优雅等待最多 10 秒，超时强杀
+      for _ in $(seq 1 10); do
+        kill -0 "$PID" 2>/dev/null || break
+        sleep 1
+      done
+      kill -9 "$PID" 2>/dev/null || true
+      rm -f "$PID_FILE"
+    fi
+    rm -f "$SOCKET_PATH"
+    ;;
+
+  status)
+    if is_running; then
+      exit 0
+    fi
+    exit 3
+    ;;
+
+  *)
+    echo "未知命令: ${1:-}（支持 start / stop / status）" >"$LOG_ERR"
+    exit 1
+    ;;
+esac
+
+exit 0

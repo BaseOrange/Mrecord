@@ -1,0 +1,5 @@
+#!/bin/bash
+# 升级前：fnOS 会先停止应用再升级。data.db 位于 $TRIM_PKGVAR，与包文件隔离，
+# 升级替换二进制不会影响数据，无需迁移。
+set -euo pipefail
+exit 0

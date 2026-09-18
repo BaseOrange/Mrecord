@@ -1,0 +1,5 @@
+#!/bin/bash
+# 配置变更前：当前应用无需用户配置项（wizard/install 仅含说明），
+# 保留脚本以满足生命周期完整性。
+set -euo pipefail
+exit 0

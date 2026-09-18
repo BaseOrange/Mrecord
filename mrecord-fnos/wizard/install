@@ -1,0 +1,11 @@
+[
+  {
+    "stepTitle": "访问方式",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "Mrecord 通过飞牛统一网关访问，安装完成后从桌面图标或应用中心打开，路径为 /app/mrecord-fnos。不占用宿主机端口，可与已部署的 Docker 版本同时运行，两者数据相互独立。"
+      }
+    ]
+  }
+]

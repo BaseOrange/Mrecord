@@ -1,0 +1,6 @@
+#!/bin/bash
+# 安装后：无额外初始化。
+# 应用在首次启动时自动执行 schema.sql 建表，并自动生成 JWT / 令牌密钥回写
+# SYS_CONFIG，因此不需要在安装阶段做任何数据库初始化。
+set -euo pipefail
+exit 0
