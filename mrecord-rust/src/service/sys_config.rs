@@ -330,6 +330,16 @@ pub(crate) async fn load_single(
 /// 按 key 加载邮件配置（多个 mail.* 行组合成 `EmailConfigBo`）
 ///
 /// 任一必填项缺失时返回 `None`（Java 行为一致）。
+///
+/// 【3.8/3.9 核实结论——此处与 Java 语义等价，勿改】Java 端查询用的是
+/// `QueryWrapper.likeLeft(SysConfig::getKey, "mail")`。MyBatis-Flex 的命名与直觉相反：
+/// `likeLeft(value)` 生成的是 `LIKE 'value%'`（前缀匹配），而 `likeRight(value)`
+/// 才是 `LIKE '%value'`（后缀匹配）——核实自 mybatis-flex-core 1.11.6 源码
+/// `QueryColumn.likeLeft_`（`value + "%"`）。因此 Java 实际 SQL 是
+/// `MR_KEY LIKE 'mail%'`，**能正确命中全部 `mail.*` 行**，并非 bug。
+/// Rust 这里用 `starts_with("mail.")`（等价 `LIKE 'mail.%'`）：对现有配置键集合
+/// （只有 `mail.xxx`，无 `mailFoo` 这类无点前缀键）两者结果完全一致；
+/// Rust 的写法更精确（强制含点分隔符）。特此注释，避免后人按命名直觉误改。
 async fn load_email_config(db: &DatabaseConnection) -> Result<Option<EmailConfigBo>, AppError> {
     let rows: Vec<sys_config::Model> = ConfigEntity::find()
         .filter(ConfigCol::Key.starts_with("mail."))
@@ -649,5 +659,96 @@ mod tests {
 
         // 缓存被清空，重新读会从 DB 加载
         assert!(svc.get_web_site(&db).await.unwrap().is_some());
+    }
+
+    // ==================== 3.9 邮件配置键范围核实 ====================
+
+    /// 写入一行配置（不依赖 upsert 之外的服务方法）。
+    async fn seed_config(db: &DatabaseConnection, key: &str, value: &str) {
+        upsert_config(db, key, value).await.unwrap();
+    }
+
+    /// `load_email_config` 只取 `mail.*` 行：同表存在 `adminMail`（后缀含 mail）、
+    /// `mr.jwtSecret` 等干扰键时也不应混入，且必填项齐全时能正确组装。
+    ///
+    /// 对照 Java `likeLeft(key, "mail")` → `MR_KEY LIKE 'mail%'`：
+    /// 语义等价（两者都只命中 `mail.*`），此测试锁定该范围不被误改。
+    #[tokio::test]
+    async fn load_email_config_picks_only_mail_prefixed_keys() {
+        let db = setup_db().await;
+
+        // 干扰键：后缀匹配模式（错误的 LIKE '%mail'）会把 adminMail 混进来
+        seed_config(&db, KEY_ADMIN_MAIL, "admin@example.com").await;
+        seed_config(&db, "mr.jwtSecret", "secret").await;
+        // 全套 mail.* 配置
+        seed_config(&db, KEY_MAIL_HOST_NAME, "smtp.example.com").await;
+        seed_config(&db, KEY_MAIL_SSL_SMTP_PORT, "465").await;
+        seed_config(&db, KEY_MAIL_SMTP_PORT, "25").await;
+        seed_config(&db, KEY_MAIL_SSL, "1").await;
+        seed_config(&db, KEY_MAIL_USER_NAME, "user@example.com").await;
+        seed_config(&db, KEY_MAIL_PASSWORD, "pwd").await;
+        seed_config(&db, KEY_MAIL_FROM, "from@example.com").await;
+
+        let cfg = load_email_config(&db).await.expect("加载邮件配置失败");
+        let cfg = cfg.expect("必填项齐全时应返回 Some");
+        assert_eq!(cfg.host_name, "smtp.example.com");
+        assert_eq!(cfg.ssl_smtp_port, Some(465));
+        assert_eq!(cfg.smtp_port, Some(25));
+        assert_eq!(cfg.ssl, Some(true));
+        assert_eq!(cfg.username, "user@example.com");
+        assert_eq!(cfg.password, "pwd");
+        assert_eq!(cfg.from, "from@example.com");
+    }
+
+    /// `adminMail` 的值不应被当成邮件参数：即使 mail.* 缺失，也不能用 adminMail 顶替。
+    #[tokio::test]
+    async fn load_email_config_returns_none_when_mail_keys_missing() {
+        let db = setup_db().await;
+        // 只有干扰键，没有任何 mail.* 行
+        seed_config(&db, KEY_ADMIN_MAIL, "admin@example.com").await;
+
+        assert!(
+            load_email_config(&db)
+                .await
+                .expect("查询不应失败")
+                .is_none(),
+            "无 mail.* 配置时应返回 None，且不能把 adminMail 当邮件参数"
+        );
+    }
+
+    /// 端口为 None 时写空串而非 Java 的字面量 "null"（3.9：保持 Rust 更合理的实现）。
+    #[tokio::test]
+    async fn update_email_config_writes_empty_string_for_null_ports() {
+        let db = setup_db().await;
+        let svc = SysConfigService::new();
+
+        svc.update_email_config(
+            &db,
+            UpdateEmailConfigDto {
+                host_name: "smtp.example.com".to_string(),
+                ssl_smtp_port: None,
+                smtp_port: None,
+                ssl: Some(false),
+                user_name: "user@example.com".to_string(),
+                password: "pwd".to_string(),
+                from: "from@example.com".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+
+        // 空串而非 "null"——后续 load_email_config 会把空串当作「未配置」优雅返回 None
+        assert_eq!(
+            read_value(&db, KEY_MAIL_SSL_SMTP_PORT).await.as_deref(),
+            Some("")
+        );
+        assert_eq!(
+            read_value(&db, KEY_MAIL_SMTP_PORT).await.as_deref(),
+            Some("")
+        );
+        assert!(
+            load_email_config(&db).await.unwrap().is_none(),
+            "端口缺失（空串）时加载应返回 None 而非解析报错"
+        );
     }
 }
