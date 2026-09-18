@@ -244,99 +244,54 @@ where
     Ok(record)
 }
 
-/// 重新计算后续月份的环比和明年同月的同比。
+/// 修改历史月份明细后，联动重算「下月汇总的环比」与「明年同月汇总的同比」。
+///
+/// 对应 Java: `FinMonthRecordServiceImpl.recalculateFinMonthRecord` 中更新下月 / 明年同月
+/// 汇总记录的段落（`nextMonthRecord.setMonthOnMonth(...)` / `nextYearRecord.setYearOnYear(...)`）。
+///
+/// 与 Java 严格对齐的三点语义：
+/// - **下月汇总只更新 `month_on_month` 单字段**：以本月（刚重算）净资产为基数、以下月汇总
+///   已存在的净资产为当期值计算环比，不覆盖 totalAsset / totalLiability / netAsset /
+///   yearOnYear / note 等其它字段；
+/// - **明年同月汇总只更新 `year_on_year` 单字段**：基数同样是本月净资产，当期值为明年同月
+///   汇总已存在的净资产；
+/// - **只要汇总记录存在就更新，不要求其明细仍然存在**：明细被删除时 Java 仍以已存在的净资产
+///   为基准更新 MoM/YoY，故此处不再查询下月/明年同月的明细（原先的 `!next_items.is_empty()`
+///   跳过逻辑已移除）。
 async fn recalculate_related_months<C>(
     db: &C,
     book_id: &str,
     year: i32,
     month: i32,
     user_id: &str,
-    template_items: &[fin_template_item::Model],
+    curr_record: &fin_month_record::Model,
 ) -> Result<(), AppError>
 where
     C: ConnectionTrait,
 {
-    // 更新下个月的环比
+    // 更新下个月的环比（仅 month_on_month 单字段）
     let (next_year, next_month_val) = next_month(year, month);
     if let Some(next_record) = get_month_record(db, book_id, next_year, next_month_val).await? {
-        // 获取下个月的明细项
-        let next_items = MonthItemEntity::find()
-            .filter(MonthItemCol::BookId.eq(book_id))
-            .filter(MonthItemCol::Year.eq(next_year))
-            .filter(MonthItemCol::Month.eq(next_month_val))
-            .filter(MonthItemCol::IsDeleted.eq(0))
-            .all(db)
-            .await?;
-
-        if !next_items.is_empty() {
-            let entries: Vec<_> = next_items
-                .into_iter()
-                .map(|item| MonthItemEntry {
-                    id: Some(item.id),
-                    template_item_id: item.template_item_id,
-                    item_value: item.item_value,
-                })
-                .collect();
-
-            let calculated = calculate_month_record_data(
-                db,
-                book_id,
-                next_year,
-                next_month_val,
-                &entries,
-                template_items,
-            )
-            .await?;
-
-            // 更新下个月记录（保持原有的 note）
-            let mut active: MonthRecordActive = next_record.clone().into();
-            active.total_asset = Set(calculated.total_asset);
-            active.total_liability = Set(calculated.total_liability);
-            active.net_asset = Set(calculated.net_asset);
-            active.month_on_month = Set(calculated.month_on_month);
-            active.year_on_year = Set(calculated.year_on_year);
-            active.update_by = Set(Some(user_id.to_string()));
-            active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
-            active.update(db).await?;
-        }
+        // Java: getMonthOnMonthVal(currMonthRecord, nextMonthRecord)
+        // = (nextMonthRecord.netAsset - currMonthRecord.netAsset) / |currMonthRecord.netAsset|
+        let month_on_month = calculate_growth_rate(next_record.net_asset, curr_record.net_asset);
+        let mut active: MonthRecordActive = next_record.into();
+        active.month_on_month = Set(month_on_month);
+        active.update_by = Set(Some(user_id.to_string()));
+        active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
+        active.update(db).await?;
     }
 
-    // 更新明年同月的同比
+    // 更新明年同月的同比（仅 year_on_year 单字段）
     if let Some(next_year_record) = get_month_record(db, book_id, year + 1, month).await? {
-        // 获取明年同月的明细项
-        let next_year_items = MonthItemEntity::find()
-            .filter(MonthItemCol::BookId.eq(book_id))
-            .filter(MonthItemCol::Year.eq(year + 1))
-            .filter(MonthItemCol::Month.eq(month))
-            .filter(MonthItemCol::IsDeleted.eq(0))
-            .all(db)
-            .await?;
-
-        if !next_year_items.is_empty() {
-            let entries: Vec<_> = next_year_items
-                .into_iter()
-                .map(|item| MonthItemEntry {
-                    id: Some(item.id),
-                    template_item_id: item.template_item_id,
-                    item_value: item.item_value,
-                })
-                .collect();
-
-            let calculated =
-                calculate_month_record_data(db, book_id, year + 1, month, &entries, template_items)
-                    .await?;
-
-            // 更新明年同月记录
-            let mut active: MonthRecordActive = next_year_record.clone().into();
-            active.total_asset = Set(calculated.total_asset);
-            active.total_liability = Set(calculated.total_liability);
-            active.net_asset = Set(calculated.net_asset);
-            active.month_on_month = Set(calculated.month_on_month);
-            active.year_on_year = Set(calculated.year_on_year);
-            active.update_by = Set(Some(user_id.to_string()));
-            active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
-            active.update(db).await?;
-        }
+        // Java: getYearOnYearVal(currMonthRecord, nextYearRecord)
+        // = (nextYearRecord.netAsset - currMonthRecord.netAsset) / |currMonthRecord.netAsset|
+        let year_on_year = calculate_growth_rate(next_year_record.net_asset, curr_record.net_asset);
+        let mut active: MonthRecordActive = next_year_record.into();
+        active.year_on_year = Set(year_on_year);
+        active.update_by = Set(Some(user_id.to_string()));
+        active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
+        active.update(db).await?;
     }
 
     Ok(())
@@ -414,7 +369,7 @@ pub async fn insert_month_item(
     // 计算并插入月度汇总
     let calculated =
         calculate_month_record_data(&txn, book_id, year, month, &entries, &template_items).await?;
-    let _ = upsert_month_record(
+    let curr_record = upsert_month_record(
         &txn,
         book_id,
         year,
@@ -425,8 +380,8 @@ pub async fn insert_month_item(
     )
     .await?;
 
-    // 重新计算相关月份
-    recalculate_related_months(&txn, book_id, year, month, &user_id, &template_items).await?;
+    // 重新计算相关月份（下月环比 / 明年同月同比）
+    recalculate_related_months(&txn, book_id, year, month, &user_id, &curr_record).await?;
     txn.commit().await?;
 
     Ok(Json(ApiResponse::success(result)))
@@ -536,7 +491,7 @@ pub async fn update_month_item(
     // 计算并更新月度汇总
     let calculated =
         calculate_month_record_data(&txn, book_id, year, month, &entries, &template_items).await?;
-    let _ = upsert_month_record(
+    let curr_record = upsert_month_record(
         &txn,
         book_id,
         year,
@@ -547,8 +502,8 @@ pub async fn update_month_item(
     )
     .await?;
 
-    // 重新计算相关月份
-    recalculate_related_months(&txn, book_id, year, month, &user_id, &template_items).await?;
+    // 重新计算相关月份（下月环比 / 明年同月同比）
+    recalculate_related_months(&txn, book_id, year, month, &user_id, &curr_record).await?;
     txn.commit().await?;
 
     Ok(Json(ApiResponse::success(result)))
@@ -642,4 +597,250 @@ pub async fn query_all(
     }
 
     Ok(Json(ApiResponse::success(grouped)))
+}
+
+#[cfg(test)]
+mod tests {
+    //! `recalculate_related_months` 的验收测试。
+    //!
+    //! 对应 REFACTOR_TODO 3.1「月度汇总重算范围」：修改历史月份明细后，下月/明年同月的
+    //! MoM/YoY 流转须与 Java `FinMonthRecordServiceImpl.recalculateFinMonthRecord` 一致。
+
+    use super::*;
+    use crate::common::money::calculate_growth_rate;
+    use rust_decimal::Decimal;
+    use sea_orm::{ConnectionTrait, Database, DatabaseConnection};
+
+    /// 构造 `Decimal`（整数 / 10^scale）。
+    fn dec(val: i64, scale: u32) -> Decimal {
+        Decimal::new(val, scale)
+    }
+
+    /// 建好 `FIN_MONTH_RECORD` 表的内存库连接。
+    ///
+    /// 刻意**不建** `FIN_MONTH_ITEM_RECORD` 表：重算逻辑对齐 Java 后只读汇总记录、
+    /// 不再查询下游明细，因此下游明细「不存在 / 已删除」时仍须更新 MoM/YoY。
+    async fn setup_db() -> DatabaseConnection {
+        let db = Database::connect("sqlite::memory:")
+            .await
+            .expect("连接内存库失败");
+        db.execute_unprepared(
+            "CREATE TABLE IF NOT EXISTS FIN_MONTH_RECORD (
+                MR_ID TEXT PRIMARY KEY, MR_USER_ID TEXT, MR_BOOK_ID TEXT,
+                MR_YEAR INTEGER, MR_MONTH INTEGER,
+                MR_TOTAL_ASSET REAL, MR_TOTAL_LIABILITY REAL, MR_NET_ASSET REAL,
+                MR_MONTH_ON_MONTH REAL, MR_YEAR_ON_YEAR REAL, MR_NOTE TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+        )
+        .await
+        .expect("建表失败");
+        db
+    }
+
+    /// 写入一条月度汇总记录。totalAsset / totalLiability / note 使用固定的哨兵值，
+    /// 用于验证重算不会覆盖这些字段。
+    async fn insert_record(
+        db: &DatabaseConnection,
+        id: &str,
+        year: i32,
+        month: i32,
+        net_asset: &str,
+        month_on_month: &str,
+        year_on_year: &str,
+    ) {
+        db.execute_unprepared(&format!(
+            "INSERT INTO FIN_MONTH_RECORD
+                (MR_ID, MR_USER_ID, MR_BOOK_ID, MR_YEAR, MR_MONTH,
+                 MR_TOTAL_ASSET, MR_TOTAL_LIABILITY, MR_NET_ASSET,
+                 MR_MONTH_ON_MONTH, MR_YEAR_ON_YEAR, MR_NOTE)
+             VALUES ('{id}', 'u1', 'bk1', {year}, {month},
+                 999, 11, {net_asset}, {month_on_month}, {year_on_year}, '原始备注')"
+        ))
+        .await
+        .unwrap();
+    }
+
+    /// 构造本月（刚重算完成）的汇总记录，供 `recalculate_related_months` 使用。
+    fn curr_model(
+        year: i32,
+        month: i32,
+        net_asset: Decimal,
+    ) -> crate::entity::fin_month_record::Model {
+        crate::entity::fin_month_record::Model {
+            id: "curr".to_string(),
+            user_id: "u1".to_string(),
+            book_id: "bk1".to_string(),
+            year,
+            month,
+            total_asset: dec(999, 0),
+            total_liability: dec(11, 0),
+            net_asset,
+            month_on_month: dec(5, 0),
+            year_on_year: dec(12, 0),
+            note: Some("本月".to_string()),
+            create_by: None,
+            create_time: chrono::Utc::now().naive_utc(),
+            update_by: None,
+            update_time: None,
+            is_deleted: 0,
+        }
+    }
+
+    /// 下月汇总只更新 `month_on_month`，其它字段（含 note）保持不变。
+    #[tokio::test]
+    async fn next_month_updates_only_month_on_month() {
+        let db = setup_db().await;
+        insert_record(&db, "curr", 2026, 3, "100", "5", "12").await;
+        insert_record(&db, "next", 2026, 4, "120", "9", "7").await;
+
+        let curr = curr_model(2026, 3, dec(100, 0));
+        recalculate_related_months(&db, "bk1", 2026, 3, "u1", &curr)
+            .await
+            .expect("重算失败");
+
+        let next = get_month_record(&db, "bk1", 2026, 4)
+            .await
+            .unwrap()
+            .expect("下月记录必须存在");
+
+        // Java: getMonthOnMonthVal(curr, next) = (120 - 100) / |100| * 100 = 20.00
+        assert_eq!(next.month_on_month, dec(2000, 2));
+        assert_eq!(
+            next.month_on_month,
+            calculate_growth_rate(dec(120, 0), dec(100, 0))
+        );
+        // 其余 4 个财务字段 + note 不被覆盖（Java 只 setMonthOnMonth 单字段）
+        assert_eq!(next.total_asset, dec(999, 0));
+        assert_eq!(next.total_liability, dec(11, 0));
+        assert_eq!(next.net_asset, dec(120, 0));
+        assert_eq!(next.year_on_year, dec(7, 0));
+        assert_eq!(next.note.as_deref(), Some("原始备注"));
+    }
+
+    /// 明年同月汇总只更新 `year_on_year`，其它字段保持不变。
+    #[tokio::test]
+    async fn next_year_updates_only_year_on_year() {
+        let db = setup_db().await;
+        insert_record(&db, "curr", 2026, 3, "100", "5", "12").await;
+        insert_record(&db, "next_year", 2027, 3, "150", "9", "7").await;
+
+        let curr = curr_model(2026, 3, dec(100, 0));
+        recalculate_related_months(&db, "bk1", 2026, 3, "u1", &curr)
+            .await
+            .expect("重算失败");
+
+        let next_year = get_month_record(&db, "bk1", 2027, 3)
+            .await
+            .unwrap()
+            .expect("明年同月记录必须存在");
+
+        // Java: getYearOnYearVal(curr, nextYear) = (150 - 100) / |100| * 100 = 50.00
+        assert_eq!(next_year.year_on_year, dec(5000, 2));
+        assert_eq!(
+            next_year.year_on_year,
+            calculate_growth_rate(dec(150, 0), dec(100, 0))
+        );
+        assert_eq!(next_year.total_asset, dec(999, 0));
+        assert_eq!(next_year.total_liability, dec(11, 0));
+        assert_eq!(next_year.net_asset, dec(150, 0));
+        assert_eq!(next_year.month_on_month, dec(9, 0));
+        assert_eq!(next_year.note.as_deref(), Some("原始备注"));
+    }
+
+    /// 下月/明年同月汇总存在但明细已删除（此处连明细表都没有）时仍更新 MoM/YoY——
+    /// 对齐 Java「以已存在的净资产为基准」，去掉原先 `!next_items.is_empty()` 的跳过逻辑。
+    #[tokio::test]
+    async fn still_updates_when_downstream_items_deleted() {
+        let db = setup_db().await;
+        insert_record(&db, "curr", 2026, 3, "100", "5", "12").await;
+        insert_record(&db, "next", 2026, 4, "80", "9", "7").await;
+        insert_record(&db, "next_year", 2027, 3, "60", "9", "7").await;
+
+        let curr = curr_model(2026, 3, dec(100, 0));
+        recalculate_related_months(&db, "bk1", 2026, 3, "u1", &curr)
+            .await
+            .expect("重算失败");
+
+        // 80 vs 100 → -20.00
+        let next = get_month_record(&db, "bk1", 2026, 4)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(next.month_on_month, dec(-2000, 2));
+
+        // 60 vs 100 → -40.00
+        let next_year = get_month_record(&db, "bk1", 2027, 3)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(next_year.year_on_year, dec(-4000, 2));
+    }
+
+    /// 本月净资产为 0 时，下月/明年同月的增长率按 Java 约定置 0.00（分母为 0 不计算）。
+    #[tokio::test]
+    async fn zero_current_net_asset_zeroes_downstream_growth() {
+        let db = setup_db().await;
+        insert_record(&db, "curr", 2026, 3, "0", "5", "12").await;
+        insert_record(&db, "next", 2026, 4, "120", "9", "7").await;
+        insert_record(&db, "next_year", 2027, 3, "150", "9", "7").await;
+
+        let curr = curr_model(2026, 3, Decimal::ZERO);
+        recalculate_related_months(&db, "bk1", 2026, 3, "u1", &curr)
+            .await
+            .expect("重算失败");
+
+        let next = get_month_record(&db, "bk1", 2026, 4)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(next.month_on_month, Decimal::ZERO);
+
+        let next_year = get_month_record(&db, "bk1", 2027, 3)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(next_year.year_on_year, Decimal::ZERO);
+    }
+
+    /// 12 月重算时：下月跨年落到次年 1 月，明年同月落到次年 12 月，两者各自只更新单字段。
+    #[tokio::test]
+    async fn december_rolls_over_to_next_year() {
+        let db = setup_db().await;
+        insert_record(&db, "curr", 2026, 12, "100", "5", "12").await;
+        insert_record(&db, "jan", 2027, 1, "130", "9", "7").await;
+        insert_record(&db, "next_dec", 2027, 12, "200", "9", "7").await;
+
+        let curr = curr_model(2026, 12, dec(100, 0));
+        recalculate_related_months(&db, "bk1", 2026, 12, "u1", &curr)
+            .await
+            .expect("重算失败");
+
+        // 下月 = 2027-01（跨年）：MoM = (130 - 100) / 100 = 30.00
+        let jan = get_month_record(&db, "bk1", 2027, 1)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(jan.month_on_month, dec(3000, 2));
+        assert_eq!(jan.year_on_year, dec(7, 0));
+
+        // 明年同月 = 2027-12：YoY = (200 - 100) / 100 = 100.00
+        let next_dec = get_month_record(&db, "bk1", 2027, 12)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(next_dec.year_on_year, dec(10000, 2));
+        assert_eq!(next_dec.month_on_month, dec(9, 0));
+    }
+
+    /// 下月与明年同月汇总都不存在时是空操作，不报错。
+    #[tokio::test]
+    async fn missing_downstream_records_is_noop() {
+        let db = setup_db().await;
+        let curr = curr_model(2026, 3, dec(100, 0));
+        recalculate_related_months(&db, "bk1", 2026, 3, "u1", &curr)
+            .await
+            .expect("无下游记录时应为空操作");
+    }
 }
