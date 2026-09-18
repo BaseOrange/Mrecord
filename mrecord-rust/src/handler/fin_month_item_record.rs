@@ -675,6 +675,7 @@ pub async fn query_all(
 
 #[cfg(test)]
 mod tests {
+
     //! 月度明细校验、查询与重算的验收测试。
     //!
     //! - 校验部分对应 REFACTOR_TODO 3.2 与 Java
@@ -683,6 +684,12 @@ mod tests {
     //!   `queryAll` 无模板项时返回空分组（对齐 Java 空结果语义）；
     //! - 重算部分对应 REFACTOR_TODO 3.1：修改历史月份明细后，下月/明年同月的
     //!   MoM/YoY 流转须与 Java `FinMonthRecordServiceImpl.recalculateFinMonthRecord` 一致。
+
+    /// 原生 COUNT 查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`，原生 SQL 走 `find_by_statement`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct CountRow {
+        c: i64,
+    }
 
     use super::*;
     use crate::AppState;
@@ -697,7 +704,10 @@ mod tests {
     };
     use axum::extract::State;
     use rust_decimal::Decimal;
-    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+    use sea_orm::{
+        ConnectionTrait, Database, DatabaseConnection, DbBackend, EntityTrait, FromQueryResult,
+        Statement,
+    };
 
     /// 构造 `Decimal`（整数 / 10^scale）。
     fn dec(val: i64, scale: u32) -> Decimal {
@@ -1272,19 +1282,19 @@ mod tests {
         year: i32,
         month: i32,
     ) -> i64 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                format!(
-                    "SELECT COUNT(*) AS c FROM FIN_MONTH_RECORD
+        let row = CountRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            format!(
+                "SELECT COUNT(*) AS c FROM FIN_MONTH_RECORD
                      WHERE MR_BOOK_ID = '{book_id}' AND MR_YEAR = {year} AND MR_MONTH = {month}
                        AND MR_IS_DELETED = 0"
-                ),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+            ),
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+        row.c
     }
 
     /// 同月第二次 upsert 应复用第一行而非新增，且值更新为最新。

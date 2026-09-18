@@ -2,7 +2,9 @@
 //!
 //! 对应 Java: Spring Boot 启动时执行 `src/main/resources/schema.sql` 初始化 SQLite 数据库。
 
-use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+use sea_orm::{
+    ConnectionTrait, Database, DatabaseConnection, DbBackend, FromQueryResult, Statement,
+};
 
 const SCHEMA_SQL: &str = include_str!("../schema.sql");
 const MONEY_SCHEMA_PATCH_SQL: &str = r#"
@@ -174,23 +176,27 @@ async fn patch_money_column_types(conn: &DatabaseConnection) {
         .expect("Failed to patch money column types");
 }
 
+/// PRAGMA table_info 查询结果行（Sea-ORM 2.0 的 `query_all` 只接受 `StatementBuilder`，
+/// 原生 SQL 查询需经 `FromQueryResult` 结构体承载）。
+#[derive(Clone, Debug, PartialEq, FromQueryResult)]
+struct PragmaColumnRow {
+    name: String,
+    #[sea_orm(column_name = "type")]
+    column_type: String,
+}
+
 /// 检查 FIN_MONTH_ITEM_RECORD.MR_ITEM_VALUE 是否仍为旧版 TEXT 类型。
 async fn is_money_schema_patch_required(conn: &DatabaseConnection) -> bool {
-    let rows = conn
-        .query_all(Statement::from_string(
-            DbBackend::Sqlite,
-            "PRAGMA table_info(FIN_MONTH_ITEM_RECORD)",
-        ))
-        .await
-        .expect("Failed to inspect FIN_MONTH_ITEM_RECORD schema");
+    let rows = PragmaColumnRow::find_by_statement(Statement::from_string(
+        DbBackend::Sqlite,
+        "PRAGMA table_info(FIN_MONTH_ITEM_RECORD)",
+    ))
+    .all(conn)
+    .await
+    .expect("Failed to inspect FIN_MONTH_ITEM_RECORD schema");
 
     rows.into_iter().any(|row| {
-        let name: String = row
-            .try_get("", "name")
-            .expect("Failed to read FIN_MONTH_ITEM_RECORD column name");
-        let column_type: String = row
-            .try_get("", "type")
-            .expect("Failed to read FIN_MONTH_ITEM_RECORD column type");
-        name.eq_ignore_ascii_case("MR_ITEM_VALUE") && column_type.eq_ignore_ascii_case("TEXT")
+        row.name.eq_ignore_ascii_case("MR_ITEM_VALUE")
+            && row.column_type.eq_ignore_ascii_case("TEXT")
     })
 }

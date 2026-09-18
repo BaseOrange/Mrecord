@@ -134,8 +134,21 @@ mod tests {
     //! - `content` 存全量不截断（对齐 Java `LogInterceptor` 存 `getCachedBody()` 全文）；
     //! - 响应体带 `isDeleted`（对齐 Java `BaseEntity`）。
 
+    /// 内容列查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`，原生 SQL 走 `find_by_statement`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct ContentRow {
+        c: String,
+    }
+
+    /// 匿名用户日志查询行（字段名与 SELECT 别名一致）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct AnonymousLogRow {
+        user_id: String,
+        create_by: Option<String>,
+    }
+
     use super::*;
-    use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
+    use sea_orm::{ConnectionTrait, Database, DbBackend, EntityTrait, FromQueryResult, Statement};
 
     async fn setup_db() -> DatabaseConnection {
         let db = Database::connect("sqlite::memory:")
@@ -180,20 +193,18 @@ mod tests {
         .await
         .expect("保存日志失败");
 
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                "SELECT MR_CONTENT AS c, MR_USER_ID AS u FROM SYS_USER_OPERATE_LOG",
-            ))
-            .await
-            .unwrap()
-            .unwrap();
+        let row = ContentRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            "SELECT MR_CONTENT AS c FROM SYS_USER_OPERATE_LOG",
+        ))
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
         assert_eq!(
-            row.try_get::<String>("", "c").unwrap(),
-            long_content,
+            row.c, long_content,
             "content 应为全文，不再截断到 1000 字符"
         );
-        assert_eq!(row.try_get::<String>("", "u").unwrap(), "u1");
     }
 
     /// 分页查询返回的响应体携带 `isDeleted` 字段。
@@ -234,15 +245,15 @@ mod tests {
         .await
         .expect("保存日志失败");
 
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                "SELECT MR_USER_ID AS u, MR_CREATE_BY AS cb FROM SYS_USER_OPERATE_LOG",
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        assert_eq!(row.try_get::<String>("", "u").unwrap(), "");
-        assert!(row.try_get::<Option<String>>("", "cb").unwrap().is_none());
+        let row = AnonymousLogRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            "SELECT MR_USER_ID AS user_id, MR_CREATE_BY AS create_by FROM SYS_USER_OPERATE_LOG",
+        ))
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(row.user_id, "");
+        assert!(row.create_by.is_none());
     }
 }

@@ -272,9 +272,16 @@ fn build_yearly_mail_params(user: &UserModel, summary: YearSummary) -> MailParam
 
 #[cfg(test)]
 mod tests {
+
+    /// 原生 COUNT 查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`，原生 SQL 走 `find_by_statement`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct CountRow {
+        c: i64,
+    }
+
     use super::*;
     use chrono::NaiveDateTime;
-    use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
+    use sea_orm::{ConnectionTrait, Database, DbBackend, EntityTrait, FromQueryResult, Statement};
 
     /// 建好任务涉及的全部表（用户 / 账簿 / 汇总 / 明细 / 配置），返回内存库连接。
     async fn setup_db() -> DatabaseConnection {
@@ -362,15 +369,15 @@ mod tests {
     }
 
     async fn count_users(db: &DatabaseConnection) -> i64 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                "SELECT COUNT(*) AS c FROM SYS_USER".to_string(),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+        let row = CountRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            "SELECT COUNT(*) AS c FROM SYS_USER".to_string(),
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+        row.c
     }
 
     // ==================== build_year_summary 聚合逻辑 ====================

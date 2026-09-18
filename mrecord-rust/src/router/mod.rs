@@ -31,10 +31,7 @@ pub fn build(state: AppState) -> Router {
             post(handler::user::canceled_my_user),
         )
         // 撤销注销（免登录：注销冷静期内用户无法登录，入口在登录页）
-        .route(
-            "/user/revokeCancel",
-            post(handler::user::revoke_cancel),
-        )
+        .route("/user/revokeCancel", post(handler::user::revoke_cancel))
         // 管理员接口（内部通过 AdminUser 提取器进行权限校验）
         .route("/user/list", post(handler::user::admin_query_list))
         .route(
@@ -156,6 +153,7 @@ pub fn build(state: AppState) -> Router {
 
 #[cfg(test)]
 mod tests {
+
     //! 操作日志中间件挂载在真实路由树上的回归测试。
     //!
     //! 对应 REFACTOR_TODO 3.10：验证「查询操作日志」本身不会被写入操作日志，
@@ -166,6 +164,12 @@ mod tests {
     //! 只有驱动完整路由树才能证明端到端确实跳过（曾用探针确认中间件看到的是
     //! `/operateLog/list` 而非 `/api/v2/operateLog/list`）。
 
+    /// 原生 COUNT 查询行（Sea-ORM 2.0 的 `query_one` 只接受 `StatementBuilder`，原生 SQL 走 `find_by_statement`）。
+    #[derive(Clone, Debug, PartialEq, FromQueryResult)]
+    struct CountRow {
+        c: i64,
+    }
+
     use super::*;
     use crate::service::{
         cancel_cleanup_task::CancelCleanupTask, email::EmailService,
@@ -175,7 +179,10 @@ mod tests {
     };
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
-    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+    use sea_orm::{
+        ConnectionTrait, Database, DatabaseConnection, DbBackend, EntityTrait, FromQueryResult,
+        Statement,
+    };
     use tower::util::ServiceExt;
 
     /// 建日志表与用户表（`/user/login` 与中间件落库需要）。
@@ -223,15 +230,15 @@ mod tests {
     }
 
     async fn count_logs(db: &DatabaseConnection) -> i64 {
-        let row = db
-            .query_one(Statement::from_string(
-                DbBackend::Sqlite,
-                "SELECT COUNT(*) AS c FROM SYS_USER_OPERATE_LOG",
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        row.try_get::<i64>("", "c").unwrap()
+        let row = CountRow::find_by_statement(Statement::from_string(
+            DbBackend::Sqlite,
+            "SELECT COUNT(*) AS c FROM SYS_USER_OPERATE_LOG",
+        ))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+        row.c
     }
 
     /// 查询操作日志列表本身**不落日志**——这是防止「查看日志 → 产生日志」死循环的关键。
