@@ -1,0 +1,9 @@
+# 构建上下文排除项：加速构建、避免把本地环境打进镜像
+target/
+.idea/
+**/*.db
+**/*.db-*
+exports/
+.DS_Store
+REFACTOR_TODO.md
+rustfmt.toml

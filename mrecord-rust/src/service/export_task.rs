@@ -12,8 +12,8 @@
 //! - **Excel 布局**：表头为「统计月份 / 总资产 / 总负债 / 净资产 / 环比 / 同比
 //!   / 各资产明细项… / 各负债明细项…」，每月一行，明细按 `templateItemId`
 //!   映射到对应列，缺失填 0；环比 / 同比输出 `"x%"` 字符串。
-//! - **文件**：`账簿导出_yyyyMMddHHmmss.xlsx`，写入系统临时目录下的
-//!   `mrecord/export` 子目录。
+//! - **文件**：`账簿导出_yyyyMMddHHmmss.xlsx`，写入工作目录下的
+//!   `exports/` 子目录（容器化时随 `/app` 数据卷持久化，见项目 Dockerfile）。
 //! - **状态流转**：WAIT → RUN →（SUCCESS 邮件通知 | FAIL 记录原因并删除文件）。
 
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
@@ -190,7 +190,8 @@ impl ExportTaskService {
         }
 
         let file_name = format!("账簿导出_{}.xlsx", Local::now().format("%Y%m%d%H%M%S"));
-        let export_dir = std::env::temp_dir().join("mrecord").join("export");
+        // 相对工作目录（容器内即 `/app`），随数据卷持久化；目录由 write_excel 自动创建
+        let export_dir = PathBuf::from("exports");
         let file_path = export_dir.join(&file_name);
 
         let path_for_blocking = file_path.clone();
