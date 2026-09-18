@@ -6,8 +6,8 @@
 #
 # 阶段划分：
 #   deps    —— 只拷 Cargo.toml/Cargo.lock + 空壳 src，缓存依赖编译产物
-#   builder —— 拷真实源码，只编译业务代码（依赖命中 deps 缓存）
-#   runtime —— alpine 瘦身运行镜像，仅含二进制 + 前端静态资源
+#   builder —— 拷真实源码 + 前端产物，只编译业务代码（依赖命中 deps 缓存）
+#   runtime —— alpine 瘦身运行镜像，仅含一个自包含二进制（前端已内嵌）
 #
 # 运行时数据落工作目录 /app：data.db（SQLite，首次启动自动建表）与
 # exports/（导出 Excel），两者随 /app 数据卷持久化。
@@ -41,10 +41,13 @@ COPY --from=deps /app/target ./target
 COPY --from=deps /usr/local/cargo /usr/local/cargo
 
 COPY Cargo.toml Cargo.lock ./
-# include_str! 在编译期读取，schema.sql 与邮件模板必须随源码一起拷入
+# include_str! / include_dir! 在编译期读取，schema.sql、邮件模板与前端产物
+# 必须随源码一起拷入 builder 阶段；运行阶段不再需要任何静态资源文件
 COPY schema.sql ./
 COPY src/ ./src/
 COPY resources/ ./resources/
+# 前端构建产物：内嵌进二进制，运行镜像里不再保留 static/ 目录
+COPY static/ ./static/
 
 RUN cargo build --release --bin mrecord-rust
 
@@ -59,12 +62,12 @@ RUN apk add --no-cache ca-certificates tzdata && \
 
 WORKDIR /app
 
-# 二进制（musl 静态链接）+ 前端构建产物（ServeDir 运行时按相对路径 static/ 读取）
+# 二进制（musl 静态链接），前端产物已在编译期内嵌，运行镜像无需任何静态资源文件
 COPY --from=builder /app/target/release/mrecord-rust ./
-COPY static/ ./static/
 
 # 预建导出目录并移交属主；首次挂载命名数据卷时 Docker 会把 /app 内容
-# （含二进制、static/、exports/）复制进卷，故需提前赋权
+# （二进制、exports/）复制进卷，故需提前赋权。由于前端已内嵌进二进制，
+# 卷内容再也无法用旧前端「遮蔽」镜像里的新前端（升级镜像即升级前端）
 RUN mkdir -p exports && chown -R app:app /app
 
 USER app

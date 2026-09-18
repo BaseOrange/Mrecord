@@ -7,7 +7,6 @@ use axum::{
     Router, middleware,
     routing::{get, post},
 };
-use tower_http::services::{ServeDir, ServeFile};
 
 use crate::{AppState, handler};
 
@@ -155,7 +154,10 @@ pub fn build(state: AppState) -> Router {
 
     Router::new()
         .nest("/api/v2", api_routes)
-        .fallback_service(ServeDir::new("static").fallback(ServeFile::new("static/index.html")))
+        // 静态资源走编译期内嵌（详见 `static_files` 模块）：不再依赖运行时 cwd
+        // 与磁盘上的 `static/` 目录，容器外启动、命名数据卷升级等场景下前端
+        // 不会再整体 404。`MRECORD_STATIC_DIR` 可切回磁盘模式以热替换前端。
+        .fallback_service(crate::static_files::static_service())
         .with_state(state)
 }
 

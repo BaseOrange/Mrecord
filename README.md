@@ -150,15 +150,22 @@ mvn clean install
 
 #### 后端（Rust 版，**重构中，暂不可用**！）
 
+> 前端产物在**编译期**内嵌进 Rust 二进制（`include_dir!`），因此构建后端前必须先构建前端：
+
 ```bash
-cd Mrecord/mrecord-rust
+# 1. 构建前端（vite 的 outDir 已指向 ../mrecord-rust/static/）
+cd Mrecord/mrecord-vue
+yarn install && yarn build
 
-# 开发模式运行
-cargo run
-
-# 生产构建
-cargo build --release
+# 2. 构建 / 运行后端（static/ 已内嵌，运行时不再依赖该目录与 cwd）
+cd ../mrecord-rust
+cargo run               # 开发模式，http://127.0.0.1:3000
+cargo build --release   # 生产构建
 ```
+
+若跳过第 1 步，`build.rs` 会生成「前端未构建」占位页并打印 `cargo:warning`（不影响
+`cargo check` / `cargo test`）。设置环境变量 `MRECORD_STATIC_DIR=/path/to/static`
+可切回运行时读盘，在不重编译后端的前提下替换前端。
 
 #### Docker 部署（Java 版）
 

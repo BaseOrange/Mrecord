@@ -9,6 +9,7 @@ mod middleware;
 mod model;
 mod router;
 mod service;
+mod static_files;
 mod util;
 
 use std::sync::Arc;
