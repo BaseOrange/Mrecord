@@ -251,7 +251,14 @@ pub async fn register(
 
 /// 激活账户：`POST /user/activate`
 ///
-/// 对应 Java: `SysUserService.activateAccount`
+/// 对应 Java: `SysUserService.activateAccount`。
+///
+/// 【有意免登录】本接口不使用 `AuthUser` 提取器，对应 Java `WebConfig` 中
+/// `/user/activate` 的 `excludePathPatterns`。原因是激活流程发生在登录之前：
+/// 新用户注册后处于「未激活」状态，`/user/login` 会以 `UserStatusError` 直接拒绝；
+/// 前端激活页 `ActivateAccount.vue`（路由 `/activate-account`，属 PUBLIC_PAGES）
+/// 只能在未登录态下凭邮件里的激活令牌调用本接口。若要求登录，激活链接会直接 401，
+/// 用户既无法激活也无法登录，形成注册死路。
 pub async fn activate(
     State(state): State<AppState>,
     Json(params): Json<UserDto>,
@@ -290,7 +297,10 @@ pub async fn activate(
 
 /// 重新发送激活邮件：`POST /user/resendActivateEmail`
 ///
-/// 对应 Java: `SysUserService.resendActivateEmail`
+/// 对应 Java: `SysUserService.resendActivateEmail`。
+///
+/// 【有意免登录】与 [`activate`] 同理：激活页在未登录态下调用，凭邮箱重发激活邮件。
+/// 入参只用 `email`，不依赖当前登录用户（Java 侧 `resendActivateEmail` 也不读 UserContext）。
 pub async fn resend_activate_email(
     State(state): State<AppState>,
     Json(params): Json<UserDto>,
@@ -734,4 +744,169 @@ pub async fn admin_delete_user(
         .exec(&state.db)
         .await?;
     Ok(Json(ApiResponse::<()>::success_empty()))
+}
+
+#[cfg(test)]
+mod tests {
+    //! 登录拦截边界测试（对应 REFACTOR_TODO 3.11）。
+    //!
+    //! Rust 采用「按需鉴权」：handler 显式声明 `AuthUser` / `AdminUser` 提取器才要求登录，
+    //! 没有声明的就是公开接口。激活流程的两个接口刻意不要求登录——新用户注册后处于
+    //! 「未激活」态，登录会被 `UserStatusError` 拒绝，激活页只能在未登录态完成激活。
+    //! 下面通过直接调用 handler（不附带任何 token）验证这一点，防止日后误加提取器
+    //! 把注册→激活链路堵死。
+
+    use super::*;
+    use crate::service::{
+        cancel_cleanup_task::CancelCleanupTask, email::EmailService,
+        export_task::ExportTaskService, monthly_reminder_task::MonthlyReminderTask,
+        sys_config::SysConfigService, sys_user_operate_log::SysUserOperateLogService,
+    };
+    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+
+    /// 建用户表 + 配置表（激活流程会读 SYS_CONFIG 的 webSite）。
+    async fn setup_db() -> DatabaseConnection {
+        let db = Database::connect("sqlite::memory:")
+            .await
+            .expect("连接内存库失败");
+        for ddl in [
+            "CREATE TABLE IF NOT EXISTS SYS_USER (
+                MR_ID TEXT PRIMARY KEY, MR_EMAIL TEXT, MR_PASSWORD TEXT, MR_NICKNAME TEXT,
+                MR_ADMIN INTEGER DEFAULT 0, MR_STATUS INTEGER DEFAULT 1, MR_AVATAR TEXT,
+                MR_REMIND_ENABLED INTEGER, MR_REMIND_DAY INTEGER, MR_CANCEL_TIME TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+            "CREATE TABLE IF NOT EXISTS SYS_CONFIG (
+                MR_ID TEXT PRIMARY KEY, MR_CONFIG_KEY TEXT, MR_CONFIG_VALUE TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+        ] {
+            db.execute_unprepared(ddl).await.expect("建表失败");
+        }
+        db
+    }
+
+    fn test_state(db: DatabaseConnection) -> AppState {
+        let config_service = SysConfigService::new();
+        let email_service = EmailService::new(config_service.clone());
+        AppState {
+            db,
+            jwt_secret: "test-secret".to_string(),
+            activate_token_secret: "test-secret".to_string(),
+            reset_pwd_token_secret: "test-secret".to_string(),
+            jwt_expire_secs: 604800,
+            config_service,
+            email_service: email_service.clone(),
+            export_task_service: ExportTaskService::new(email_service.clone()),
+            operate_log_service: SysUserOperateLogService::new(),
+            monthly_reminder_task: MonthlyReminderTask::new(email_service.clone()),
+            cancel_cleanup_task: CancelCleanupTask::new(),
+        }
+    }
+
+    /// 插入一个「未激活」用户（UserStatus::Unactivated = 4）。
+    async fn insert_unactivated_user(db: &DatabaseConnection) {
+        db.execute_unprepared(
+            "INSERT INTO SYS_USER (MR_ID, MR_EMAIL, MR_PASSWORD, MR_NICKNAME, MR_ADMIN,
+                 MR_STATUS, MR_REMIND_ENABLED, MR_REMIND_DAY, MR_IS_DELETED)
+             VALUES ('u1', 'newbie@example.com', 'hashed-pwd', '新手', 0, 4, 0, NULL, 0)",
+        )
+        .await
+        .unwrap();
+    }
+
+    async fn user_status(db: &DatabaseConnection) -> i32 {
+        let row = db
+            .query_one(Statement::from_string(
+                DbBackend::Sqlite,
+                "SELECT MR_STATUS AS s FROM SYS_USER WHERE MR_ID = 'u1'",
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        row.try_get::<i32>("", "s").unwrap()
+    }
+
+    /// 激活接口在「无任何登录凭据」下可直接调用并激活成功。
+    #[tokio::test]
+    async fn activate_works_without_login() {
+        let db = setup_db().await;
+        insert_unactivated_user(&db).await;
+        let state = test_state(db.clone());
+
+        let token = token::create("u1", TokenPurpose::Activate, &state.activate_token_secret)
+            .expect("生成激活令牌失败");
+
+        let res = activate(
+            State(state),
+            Json(UserDto {
+                id: None,
+                email: None,
+                password: None,
+                nickname: None,
+                remind_enabled: None,
+                remind_day: None,
+                re_password_token: None,
+                activate_token: Some(token),
+            }),
+        )
+        .await
+        .expect("激活不应失败");
+
+        assert_eq!(res.0.code, ResCode::Success.code(), "响应应为成功码");
+        assert_eq!(
+            user_status(&db).await,
+            UserStatus::Normal as i32,
+            "未登录调用后用户应被激活"
+        );
+    }
+
+    /// 重发激活邮件接口在「无任何登录凭据」下可调用（不因缺 token 报登录过期）。
+    /// 邮件发送依赖外部 SMTP，这里只验证能走到「用户不存在 / 已激活」等业务校验，
+    /// 而不是卡在登录环节。
+    #[tokio::test]
+    async fn resend_activate_email_reaches_business_logic_without_login() {
+        let db = setup_db().await;
+        let state = test_state(db.clone());
+
+        // 库里没有该用户：应返回业务错误「用户不存在」，而非登录过期
+        let err = resend_activate_email(
+            State(state),
+            Json(UserDto {
+                id: None,
+                email: Some("nobody@example.com".into()),
+                password: None,
+                nickname: None,
+                remind_enabled: None,
+                remind_day: None,
+                re_password_token: None,
+                activate_token: None,
+            }),
+        )
+        .await
+        .expect_err("无此用户应返回业务错误");
+
+        match err {
+            AppError::Business { message, .. } => {
+                assert!(
+                    message.contains("不存在"),
+                    "应命中「用户不存在」业务校验: {message}"
+                );
+            }
+            other => panic!("应为业务错误，实际: {other:?}"),
+        }
+    }
+
+    /// 编译期保证：`activate` / `resend_activate_email` 的入参里不含 `AuthUser`/`AdminUser`，
+    /// 一旦日后误加提取器把这两个接口改成需要登录，本测试会编译失败。
+    #[test]
+    fn activate_handlers_do_not_require_auth_extractors() {
+        // 仅引用函数，确保它们存在且签名不含鉴权提取器（否则函数指针类型不匹配）
+        let activate_fn: fn(State<AppState>, Json<UserDto>) -> _ = activate;
+        let resend_fn: fn(State<AppState>, Json<UserDto>) -> _ = resend_activate_email;
+        // 取函数地址，避免「未使用」告警
+        let _ = (activate_fn, resend_fn);
+    }
 }
