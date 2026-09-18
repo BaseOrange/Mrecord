@@ -120,13 +120,14 @@ async fn main() {
     let app = router::build(state);
 
     // 监听地址可由环境变量覆盖（`MRECORD_HOST` / `MRECORD_PORT`），默认仍为
-    // 127.0.0.1:3000，保持本地 `cargo run` 行为不变；容器化部署时 Dockerfile
-    // 设置 `MRECORD_HOST=0.0.0.0`，否则绑定 loopback 地址宿主机无法访问。
+    // 127.0.0.1:2333（与 Java 版对齐，前端 dev 代理也指向该端口），保持本地
+    // `cargo run` 行为不变；容器化部署时 Dockerfile 设置 `MRECORD_HOST=0.0.0.0`，
+    // 否则绑定 loopback 地址宿主机无法访问。
     let host = std::env::var("MRECORD_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = std::env::var("MRECORD_PORT")
         .ok()
         .and_then(|p| p.parse::<u16>().ok())
-        .unwrap_or(3000);
+        .unwrap_or(2333);
     let addr: SocketAddr = format!("{host}:{port}")
         .parse()
         .expect("MRECORD_HOST / MRECORD_PORT 无法解析为 SocketAddr");

@@ -120,7 +120,7 @@ Mrecord 后端有 **Java 版**与 **Rust 版**两套实现，共用同一个前�
 |--------------|------------------------------------------------|-------------------------------------------------|
 | **状态**     | 功能已与 Java 版完全对齐（38 个接口 0 缺失），活跃开发 | v1.0.0 已发布版本，稳定可用                          |
 | **技术栈**   | axum 0.8 + sea-orm + tokio                     | Spring Boot 4 + MyBatis-Flex                    |
-| **默认端口** | `3000`（`MRECORD_PORT` 可改）                     | `2333`                                          |
+| **默认端口** | `2333`（`MRECORD_PORT` 可改）                     | `2333`                                          |
 | **数据目录** | `./data.db` + `./exports/`                     | `./data/mrecord.db`                             |
 | **前端嵌入** | **编译期**内嵌进二进制（`include_dir!`），单文件部署 | 作为 classpath 静态资源打包进 jar                     |
 | **运行依赖** | 无（musl 静态链接单二进制，开箱即用）                    | 需 JDK 17                                        |
@@ -152,9 +152,9 @@ yarn install && yarn build
 cd ../mrecord-rust
 docker build -t mrecord-rust .
 
-# 3. 运行容器：映射 3000 端口，命名数据卷持久化 data.db 与 exports/
+# 3. 运行容器：映射 2333 端口，命名数据卷持久化 data.db 与 exports/
 docker volume create mrecord-data-rs
-docker run -d -p 3000:3000 -v mrecord-data-rs:/app --name mrecord-rust mrecord-rust
+docker run -d -p 2333:2333 -v mrecord-data-rs:/app --name mrecord-rust mrecord-rust
 ```
 
 > ⚠️ **必须先执行第 1 步**：`static/` 由前端构建生成且被 `.gitignore` 忽略，克隆后不存在；Dockerfile 会把它 `COPY` 进构建上下文并内嵌进二进制，目录缺失时构建会失败。
@@ -166,7 +166,7 @@ docker run -d -p 3000:3000 -v mrecord-data-rs:/app --name mrecord-rust mrecord-r
 | 环境变量                | 说明                                          | 默认值          |
 |-------------------|---------------------------------------------|--------------|
 | `MRECORD_HOST`    | 监听地址（容器内必须为 `0.0.0.0`，镜像已默认设置）                | `127.0.0.1`  |
-| `MRECORD_PORT`    | 监听端口                                        | `3000`       |
+| `MRECORD_PORT`    | 监听端口（与 Java 版统一为 `2333`）                | `2333`       |
 | `MRECORD_STATIC_DIR` | 设为磁盘路径可切回运行时读盘，在不重编译后端的前提下热替换前端               | 未设置（用内嵌资源）   |
 | `RUST_LOG`        | 日志级别，如 `mrecord_rust=info`                    | 镜像内置默认值       |
 
@@ -237,7 +237,7 @@ yarn install && yarn build
 
 # 2. 构建 / 运行后端（static/ 已内嵌，运行时不再依赖该目录与 cwd）
 cd ../mrecord-rust
-cargo run               # 开发模式，http://127.0.0.1:3000
+cargo run               # 开发模式，http://127.0.0.1:2333
 cargo build --release   # 生产构建
 ```
 

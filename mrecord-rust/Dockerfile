@@ -75,12 +75,12 @@ USER app
 # /app 为数据卷：持久化 data.db + exports/
 VOLUME ["/app"]
 
-# 容器内必须监听 0.0.0.0，否则宿主机映射 3000 端口无法访问
+# 容器内必须监听 0.0.0.0，否则宿主机映射 2333 端口无法访问
 ENV MRECORD_HOST=0.0.0.0 \
-    MRECORD_PORT=3000 \
+    MRECORD_PORT=2333 \
     RUST_LOG="mrecord_rust=info,tower_http=info" \
     TZ=Asia/Shanghai
 
-EXPOSE 3000
+EXPOSE 2333
 
 ENTRYPOINT ["/app/mrecord-rust"]

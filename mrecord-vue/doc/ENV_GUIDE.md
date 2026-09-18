@@ -47,7 +47,7 @@ VITE_API_URL=https://example.com/api/v2
 
 编辑 `.env.development`：
 ```env
-VITE_PROXY_TARGET=http://your-dev-server.com:3000
+VITE_PROXY_TARGET=http://your-dev-server.com:2333
 ```
 
 然后重启开发服务器：
