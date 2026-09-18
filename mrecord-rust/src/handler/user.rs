@@ -573,7 +573,8 @@ pub async fn update_my_info(
 /// 注销当前登录用户（进入冷静期）：`POST /user/canceledMyUser`
 ///
 /// 对应 Java: `SysUserService.canceledMyUser`。
-/// 实际删除由后续定时任务（待实现）扫描 `cancel_time` 后处理。
+/// 实际删除由定时任务 [`crate::service::cancel_cleanup_task::CancelCleanupTask`]
+/// 每日扫描超过冷静期的 `cancel_time` 后处理。
 pub async fn canceled_my_user(
     AuthUser(user_id): AuthUser,
     State(state): State<AppState>,

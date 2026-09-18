@@ -141,7 +141,7 @@ pub async fn update(
 /// 备份指定账簿下的月度财务明细项。
 ///
 /// 对应 Java: `SysBackupMonthItemRecordMapper.backupByBookId(String bookId)`。
-async fn backup_month_item_records<C>(db: &C, book_id: &str) -> Result<(), AppError>
+pub(crate) async fn backup_month_item_records<C>(db: &C, book_id: &str) -> Result<(), AppError>
 where
     C: ConnectionTrait,
 {
@@ -175,7 +175,7 @@ where
 /// 备份指定账簿下的月度财务汇总。
 ///
 /// 对应 Java: `SysBackupMonthRecordMapper.backupByBookId(String bookId)`。
-async fn backup_month_records<C>(db: &C, book_id: &str) -> Result<(), AppError>
+pub(crate) async fn backup_month_records<C>(db: &C, book_id: &str) -> Result<(), AppError>
 where
     C: ConnectionTrait,
 {
@@ -216,7 +216,7 @@ where
 /// 备份指定账簿下的记账模板项。
 ///
 /// 对应 Java: `SysBackupTemplateItemMapper.backupByBookId(String bookId)`。
-async fn backup_template_items<C>(db: &C, book_id: &str) -> Result<(), AppError>
+pub(crate) async fn backup_template_items<C>(db: &C, book_id: &str) -> Result<(), AppError>
 where
     C: ConnectionTrait,
 {
@@ -252,7 +252,7 @@ where
 /// 备份指定账簿主数据。
 ///
 /// 对应 Java: `SysBackupBookMapper.backupByBookId(String bookId)`。
-async fn backup_book<C>(db: &C, book: &fin_book::Model) -> Result<(), AppError>
+pub(crate) async fn backup_book<C>(db: &C, book: &fin_book::Model) -> Result<(), AppError>
 where
     C: ConnectionTrait,
 {
@@ -272,6 +272,60 @@ where
     Ok(())
 }
 
+/// 备份并物理删除单个账簿及其全部关联数据。
+///
+/// 抽取自 `FinBookController.delete`（`FinBookServiceImpl.deleteFinBook`）的备份+删除流程，
+/// 按 Java Service 顺序备份并清理月度明细、月度汇总、模板项和账簿主数据。
+/// 调用方负责事务边界（`begin`/`commit`）与账簿归属校验。
+pub(crate) async fn purge_book<C>(db: &C, book: &fin_book::Model) -> Result<(), AppError>
+where
+    C: ConnectionTrait,
+{
+    backup_month_item_records(db, &book.id).await?;
+    MonthItemEntity::delete_many()
+        .filter(MonthItemCol::BookId.eq(book.id.clone()))
+        .exec(db)
+        .await?;
+
+    backup_month_records(db, &book.id).await?;
+    MonthRecordEntity::delete_many()
+        .filter(MonthRecordCol::BookId.eq(book.id.clone()))
+        .exec(db)
+        .await?;
+
+    backup_template_items(db, &book.id).await?;
+    TemplateItemEntity::delete_many()
+        .filter(TemplateItemCol::BookId.eq(book.id.clone()))
+        .exec(db)
+        .await?;
+
+    backup_book(db, book).await?;
+    BookEntity::delete_by_id(book.id.clone()).exec(db).await?;
+
+    Ok(())
+}
+
+/// 备份并物理删除指定用户名下的全部账簿及其关联数据。
+///
+/// 供用户注销清理定时任务（[`crate::service::cancel_cleanup_task`]）复用账簿删除流程。
+/// 返回清理的账簿数量。调用方负责事务边界。
+pub(crate) async fn delete_user_books<C>(db: &C, user_id: &str) -> Result<usize, AppError>
+where
+    C: ConnectionTrait,
+{
+    let books = BookEntity::find()
+        .filter(BookCol::UserId.eq(user_id))
+        .filter(BookCol::IsDeleted.eq(0))
+        .all(db)
+        .await?;
+
+    for book in &books {
+        purge_book(db, book).await?;
+    }
+
+    Ok(books.len())
+}
+
 /// 删除账簿：`POST /book/delete`。
 ///
 /// 对应 Java: `FinBookController.delete` 与 `FinBookServiceImpl.deleteFinBook`。
@@ -288,27 +342,7 @@ pub async fn delete(
 
     let txn = state.db.begin().await?;
     let book = check_book_ownership(&txn, book_id, &user_id).await?;
-
-    backup_month_item_records(&txn, &book.id).await?;
-    MonthItemEntity::delete_many()
-        .filter(MonthItemCol::BookId.eq(book.id.clone()))
-        .exec(&txn)
-        .await?;
-
-    backup_month_records(&txn, &book.id).await?;
-    MonthRecordEntity::delete_many()
-        .filter(MonthRecordCol::BookId.eq(book.id.clone()))
-        .exec(&txn)
-        .await?;
-
-    backup_template_items(&txn, &book.id).await?;
-    TemplateItemEntity::delete_many()
-        .filter(TemplateItemCol::BookId.eq(book.id.clone()))
-        .exec(&txn)
-        .await?;
-
-    backup_book(&txn, &book).await?;
-    BookEntity::delete_by_id(book.id).exec(&txn).await?;
+    purge_book(&txn, &book).await?;
     txn.commit().await?;
 
     Ok(Json(ApiResponse::<()>::success_empty()))

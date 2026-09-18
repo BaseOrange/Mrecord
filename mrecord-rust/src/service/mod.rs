@@ -8,7 +8,9 @@
 //! - [`sys_config::SysConfigService`] — 系统配置项服务（邮件 SMTP、站点地址、注册开关等）
 //! - [`email::EmailService`] — 邮件发送服务（SMTP/SMTPS via lettre）
 //! - [`monthly_reminder_task::MonthlyReminderTask`] — 月度记账提醒定时任务
+//! - [`cancel_cleanup_task::CancelCleanupTask`] — 用户注销清理定时任务
 
+pub mod cancel_cleanup_task;
 pub mod email;
 pub mod export_task;
 pub mod monthly_reminder_task;

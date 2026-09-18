@@ -5,9 +5,9 @@
 //! Java 端使用 `@Scheduled(cron = "0 8 8 * * ?")` 每天 08:08 执行。Rust 端通过 Tokio 后台任务
 //! 计算下一次 08:08 的等待时长，并在触发时查询需要提醒的用户后发送邮件。
 
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
-use chrono::{Datelike, Local, NaiveDate, NaiveTime, TimeZone};
+use chrono::{Datelike, Local, NaiveDate};
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
@@ -16,6 +16,7 @@ use crate::{
     error::AppError,
     model::mail_params::MailParams,
     service::email::EmailService,
+    util::schedule::duration_until_daily,
 };
 
 /// 月度记账提醒任务服务。
@@ -37,7 +38,7 @@ impl MonthlyReminderTask {
     pub fn start(self: Arc<Self>, db: DatabaseConnection) {
         tokio::spawn(async move {
             loop {
-                let wait = duration_until_next_run();
+                let wait = duration_until_daily(8, 8);
                 tracing::info!("月度记账提醒任务将在 {} 秒后执行", wait.as_secs());
                 tokio::time::sleep(wait).await;
 
@@ -104,30 +105,4 @@ fn build_monthly_mail_params(user: &UserModel) -> MailParams {
 fn is_last_day_of_month(date: NaiveDate) -> bool {
     date.succ_opt()
         .is_some_and(|next_day| next_day.month() != date.month())
-}
-
-/// 计算距离下一次 08:08 的等待时长。
-///
-/// 对应 Java `@Scheduled(cron = "0 8 8 * * ?")` 的触发时间。
-fn duration_until_next_run() -> Duration {
-    let now = Local::now();
-    let run_time = NaiveTime::from_hms_opt(8, 8, 0).expect("固定时间合法");
-    let today_run = Local
-        .from_local_datetime(&now.date_naive().and_time(run_time))
-        .single();
-
-    let next_run = match today_run.filter(|t| *t > now) {
-        Some(t) => t,
-        None => {
-            let tomorrow = now.date_naive().succ_opt().expect("日期递增合法");
-            Local
-                .from_local_datetime(&tomorrow.and_time(run_time))
-                .single()
-                .unwrap_or_else(|| now + chrono::Duration::days(1))
-        }
-    };
-
-    (next_run - now)
-        .to_std()
-        .unwrap_or_else(|_| Duration::from_secs(60))
 }

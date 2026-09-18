@@ -17,7 +17,7 @@ use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
 
 use crate::service::{
-    email::EmailService, export_task::ExportTaskService,
+    cancel_cleanup_task::CancelCleanupTask, email::EmailService, export_task::ExportTaskService,
     monthly_reminder_task::MonthlyReminderTask, sys_config::SysConfigService,
     sys_user_operate_log::SysUserOperateLogService,
 };
@@ -59,6 +59,11 @@ pub struct AppState {
     ///
     /// 对应 Java `@Resource MonthlyReminderTask`，由启动流程注册 Tokio 后台循环执行。
     pub monthly_reminder_task: Arc<MonthlyReminderTask>,
+    /// 用户注销清理定时任务
+    ///
+    /// Java 端该方法仅预留注释（`SysUserServiceImpl.canceledMyUser` 中「后续会有单独的定时任务」），
+    /// 由 Rust 端补齐：每日扫描冷静期已过的待注销用户并清理数据。
+    pub cancel_cleanup_task: Arc<CancelCleanupTask>,
 }
 
 #[tokio::main]
@@ -84,6 +89,9 @@ async fn main() {
     let monthly_reminder_task = MonthlyReminderTask::new(email_service.clone());
     monthly_reminder_task.clone().start(db.clone());
 
+    let cancel_cleanup_task = CancelCleanupTask::new();
+    cancel_cleanup_task.clone().start(db.clone());
+
     let jwt_expire_secs = security.jwt_expire_secs();
     let state = AppState {
         db,
@@ -96,6 +104,7 @@ async fn main() {
         export_task_service,
         operate_log_service,
         monthly_reminder_task,
+        cancel_cleanup_task,
     };
 
     let app = router::build(state);

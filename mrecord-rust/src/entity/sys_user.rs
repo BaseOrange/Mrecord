@@ -30,7 +30,7 @@ pub struct Model {
     /// 状态（0-正常，1-停用，2-注销待生效，3-已注销）
     #[sea_orm(column_name = "MR_STATUS")]
     pub status: i32,
-    /// 账号注销申请时间，用于计算15天冷静期
+    /// 账号注销申请时间，用于计算注销冷静期（见 `service::cancel_cleanup_task::COOLING_PERIOD_DAYS`）
     #[sea_orm(column_name = "MR_CANCEL_TIME")]
     pub cancel_time: Option<NaiveDateTime>,
     /// 邮件提醒功能是否启用（0-关闭，1-开启）
