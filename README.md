@@ -160,7 +160,7 @@ cargo run
 cargo build --release
 ```
 
-#### Docker 部署
+#### Docker 部署（Java 版）
 
 ```bash
 # 在项目根目录构建镜像
@@ -169,6 +169,23 @@ docker build -t mrecord -f dockerfile .
 # 运行容器
 docker run -d -p 2333:2333 -v ./mrecord-data:/app/data --name mrecord mrecord
 ```
+
+#### Docker 部署（Rust 版）
+
+```bash
+# 多阶段构建（rust:alpine 编译 → alpine 瘦身运行），构建上下文为 mrecord-rust 目录
+docker build -t mrecord-rust ./mrecord-rust
+
+# 运行容器：映射 3000 端口，命名数据卷持久化 data.db 与 exports/
+docker volume create mrecord-data-rs
+docker run -d -p 3000:3000 -v mrecord-data-rs:/app --name mrecord-rust mrecord-rust
+```
+
+> ⚠️ **数据卷请使用命名卷**（如 `mrecord-data-rs`）。二进制与前端静态资源位于 `/app`
+> 下，命名卷首次挂载时 Docker 会自动把 `/app` 内容复制进卷；若直接把**空主机目录**
+> 绑定挂载到 `/app`，会遮盖二进制导致容器无法启动（确需主机目录挂载时，需先把镜像
+> 内 `/app` 的文件拷入主机目录）。
+
 
 ### 项目结构
 
@@ -212,6 +229,8 @@ Mrecord/
 ├── mrecord-rust/                   # 后端服务 - Rust 版（axum + sea-orm，重构中）
 │   ├── Cargo.toml                  # Rust 项目配置
 │   ├── Cargo.lock                  # 依赖锁定文件
+│   ├── Dockerfile                  # Rust 版容器化（多阶段构建）
+│   ├── .dockerignore               # Docker 构建上下文排除规则
 │   ├── data.db                     # SQLite 数据库文件
 │   ├── migration/                  # 数据库迁移模块
 │   │   ├── Cargo.toml
