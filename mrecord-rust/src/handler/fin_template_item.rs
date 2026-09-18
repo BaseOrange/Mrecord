@@ -21,7 +21,7 @@ use crate::{
         },
     },
     error::AppError,
-    model::finance::{FinTempItemDto, TemplateItemResponse},
+    model::finance::{FinTempItemDto, TemplateItemEntry, TemplateItemResponse},
 };
 
 /// 构造参数错误业务异常。
@@ -88,12 +88,8 @@ pub async fn create(
     // 校验账簿权限（通过查询操作隐式校验）
     let _ = check_book_and_get_template_items(&state.db, book_id, &user_id).await?;
 
-    let item_list = params
-        .item_list
-        .ok_or_else(|| param_err("模板项列表不能为空"))?;
-    if item_list.is_empty() {
-        return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
-    }
+    // 模板项列表为空（含字段缺失）→ FinItemTempNotExist，对齐 Java
+    let item_list = require_template_item_list(params.item_list)?;
 
     let mut result = Vec::with_capacity(item_list.len());
 
@@ -122,6 +118,19 @@ pub async fn create(
     Ok(Json(ApiResponse::success(result)))
 }
 
+/// 校验模板项列表非空。
+///
+/// 对齐 Java `FinTemplateItemServiceImpl.ceateFinTemplateItemList`：
+/// `itemList` 为 `null` 或空列表时抛 `FIN_ITEM_TEMP_IS_NOT`（14301）。
+/// Rust 此前对「字段缺失」返回 `ParamError`（10001），与 Java 不一致，此处统一为 14301。
+fn require_template_item_list(
+    item_list: Option<Vec<TemplateItemEntry>>,
+) -> Result<Vec<TemplateItemEntry>, AppError> {
+    item_list
+        .filter(|list| !list.is_empty())
+        .ok_or(AppError::ResCode(ResCode::FinItemTempNotExist))
+}
+
 /// 更新账本模板项：`POST /tempItem/update`
 ///
 /// 对应 Java: `FinTemplateItemController.update` 与 `FinTemplateItemServiceImpl.updateFinTemplateItemList`
@@ -135,12 +144,8 @@ pub async fn update(
         return Err(param_err("账簿ID不能为空"));
     }
 
-    let item_list = params
-        .item_list
-        .ok_or_else(|| param_err("模板项列表不能为空"))?;
-    if item_list.is_empty() {
-        return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
-    }
+    // 模板项列表为空（含字段缺失）→ FinItemTempNotExist，对齐 Java
+    let item_list = require_template_item_list(params.item_list)?;
 
     let txn = state.db.begin().await?;
     // 获取现有模板项并校验权限
@@ -284,4 +289,52 @@ pub async fn list(
     let result = items.into_iter().map(TemplateItemResponse::from).collect();
 
     Ok(Json(ApiResponse::success(result)))
+}
+
+#[cfg(test)]
+mod tests {
+    //! 模板项列表空值校验测试。
+    //!
+    //! 对应 Java: `FinTemplateItemServiceImpl.ceateFinTemplateItemList`——
+    //! `itemList` 为 null 或空列表时抛 `FIN_ITEM_TEMP_IS_NOT`（14301）。
+
+    use super::*;
+    use crate::error::AppError;
+    use crate::model::finance::TemplateItemEntry;
+
+    fn entry(name: &str) -> TemplateItemEntry {
+        TemplateItemEntry {
+            id: None,
+            item_name: name.to_string(),
+            item_type: 1,
+            icon: String::new(),
+            sort: "1".to_string(),
+        }
+    }
+
+    #[test]
+    fn missing_list_returns_fin_item_temp_not_exist() {
+        // 字段缺失（null）：此前返回 ParamError(10001)，对齐 Java 后应为 14301
+        let err = require_template_item_list(None).unwrap_err();
+        assert!(matches!(
+            err,
+            AppError::ResCode(ResCode::FinItemTempNotExist)
+        ));
+    }
+
+    #[test]
+    fn empty_list_returns_fin_item_temp_not_exist() {
+        let err = require_template_item_list(Some(vec![])).unwrap_err();
+        assert!(matches!(
+            err,
+            AppError::ResCode(ResCode::FinItemTempNotExist)
+        ));
+    }
+
+    #[test]
+    fn non_empty_list_is_returned_unchanged() {
+        let list = require_template_item_list(Some(vec![entry("现金"), entry("基金")])).unwrap();
+        assert_eq!(list.len(), 2);
+        assert_eq!(list[0].item_name, "现金");
+    }
 }

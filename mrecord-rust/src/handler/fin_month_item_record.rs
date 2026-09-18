@@ -46,6 +46,11 @@ fn param_err(msg: impl Into<String>) -> AppError {
 }
 
 /// 校验账簿存在且属于当前登录用户。
+///
+/// 【有意收紧】Java 的查询接口（`queryByBookIdAndMonth` / `queryAllByBookId`）只校验
+/// 账簿ID 非空（`checkBookId`），查询时不带 `userId` 过滤，任意登录用户猜对 `bookId`
+/// 即可读取他人数据（IDOR 越权读取）。Rust 要求账簿必须属于当前登录用户，否则返回
+/// `FinBookNotFound`。
 async fn check_book_ownership<C>(
     db: &C,
     book_id: &str,
@@ -128,6 +133,56 @@ fn next_month(year: i32, month: i32) -> (i32, i32) {
     }
 }
 
+/// 校验单个记账明细条目，对齐 Java `FinMonthItemRecordServiceImpl.checkFinItemList`
+/// 的逐项校验，并保留 Rust 更严格的模板项归属校验。
+///
+/// Java 逐项校验顺序：`templateItemId` 非空 → `itemValue` 非空 → `itemValue` 非负 →
+/// `bookId` 非空 → `year` / `month` 非空。其中后三项在 Java **插入**路径里会先用 DTO 级
+/// 值覆盖逐项字段再校验，故等价于恒通过；只有**更新**路径才真正校验逐项字段。本函数用
+/// `is_insert` 参数复现这一语义。
+///
+/// 与 Java 的两处有意差异（已记录于 REFACTOR_TODO 3.2）：
+/// - Rust 额外校验 `template_item_id` 必须属于当前账簿（Java 静默接受跨账簿模板项，
+///   仅在汇总时不计入），返回 `FinItemTempNotExist`；
+/// - 逐项 `book_id` / `year` / `month` 仅校验、**不用于写库**：写库统一取 DTO 级值，
+///   避免逐项 `bookId` 指向其它账簿造成跨库写入（与 `item.id` 归属校验同一类收紧）。
+fn validate_item_entry(
+    item: &MonthItemEntry,
+    template_ids: &std::collections::HashSet<&str>,
+    is_insert: bool,
+) -> Result<(), AppError> {
+    if item.template_item_id.trim().is_empty() {
+        return Err(param_err("记账账目ID不能为空"));
+    }
+    // 模板项归属校验（Rust 严格化：拒绝跨账簿模板项）
+    if !template_ids.contains(item.template_item_id.trim()) {
+        return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
+    }
+    // itemValue 非空（对齐 Java itemValue == null 判断，原依赖反序列化裸 400）
+    let item_value = item
+        .item_value
+        .ok_or_else(|| param_err("记账账目金额不能为空"))?;
+    if item_value < Decimal::ZERO {
+        return Err(param_err("记账账目金额必须大于等于零"));
+    }
+    if !is_insert {
+        // 更新路径逐项字段必填（Java checkFinItemList 在 isInsert=false 时生效）
+        if item
+            .book_id
+            .as_deref()
+            .map(str::trim)
+            .unwrap_or("")
+            .is_empty()
+        {
+            return Err(param_err("账簿ID不能为空"));
+        }
+        if item.year.is_none() || item.month.is_none() {
+            return Err(param_err("年份和月份不能为空"));
+        }
+    }
+    Ok(())
+}
+
 /// 月度汇总计算结果。
 struct CalculatedMonthRecord {
     total_asset: Decimal,
@@ -161,10 +216,12 @@ where
 
     for item in item_list {
         if let Some(&item_type) = type_map.get(&item.template_item_id) {
+            // 调用方已通过 validate_item_entry 校验金额非空，此处兜底取 0
+            let item_value = item.item_value.unwrap_or(Decimal::ZERO);
             match item_type {
-                1 => total_asset += item.item_value,      // 资产
-                -1 => total_liability += item.item_value, // 负债
-                0 => {}                                   // 仅记录，不计入
+                1 => total_asset += item_value,      // 资产
+                -1 => total_liability += item_value, // 负债
+                0 => {}                              // 仅记录，不计入
                 _ => {}
             }
         }
@@ -323,31 +380,24 @@ pub async fn insert_month_item(
     // 校验账簿权限并获取模板项
     let template_items = check_book_and_get_template_items(&txn, book_id, &user_id).await?;
 
-    // 校验明细项
+    // 校验明细项（对齐 Java checkFinItemList，is_insert=true）
     let template_ids: std::collections::HashSet<_> =
         template_items.iter().map(|i| i.id.as_str()).collect();
     for item in &item_list {
-        if item.template_item_id.trim().is_empty() {
-            return Err(param_err("模板项ID不能为空"));
-        }
-        if !template_ids.contains(item.template_item_id.as_str()) {
-            return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
-        }
-        if item.item_value < Decimal::ZERO {
-            return Err(param_err("账目金额不能为负数"));
-        }
+        validate_item_entry(item, &template_ids, true)?;
     }
 
     // 插入明细项
     let mut result: Vec<MonthItemRecordResponse> = Vec::with_capacity(item_list.len());
     for item in item_list {
+        // 校验已保证 item_value 非空；写库统一用 DTO 级 bookId/year/month（见 validate_item_entry 注释）
         let active = MonthItemActive {
             id: Set(Uuid::new_v4().simple().to_string()),
             year: Set(year),
             month: Set(month),
             book_id: Set(book_id.to_string()),
             template_item_id: Set(item.template_item_id),
-            item_value: Set(item.item_value),
+            item_value: Set(item.item_value.unwrap_or(Decimal::ZERO)),
             create_by: Set(Some(user_id.clone())),
             create_time: Set(chrono::Utc::now().naive_utc()),
             ..Default::default()
@@ -362,7 +412,10 @@ pub async fn insert_month_item(
         .map(|r: &MonthItemRecordResponse| MonthItemEntry {
             id: Some(r.id.clone()),
             template_item_id: r.template_item_id.clone(),
-            item_value: r.item_value,
+            item_value: Some(r.item_value),
+            book_id: Some(r.book_id.clone()),
+            year: Some(r.year),
+            month: Some(r.month),
         })
         .collect();
 
@@ -413,19 +466,11 @@ pub async fn update_month_item(
     // 校验账簿权限并获取模板项
     let template_items = check_book_and_get_template_items(&txn, book_id, &user_id).await?;
 
-    // 校验明细项
+    // 校验明细项（对齐 Java checkFinItemList，is_insert=false：逐项 bookId/year/month 必填）
     let template_ids: std::collections::HashSet<_> =
         template_items.iter().map(|i| i.id.as_str()).collect();
     for item in &item_list {
-        if item.template_item_id.trim().is_empty() {
-            return Err(param_err("模板项ID不能为空"));
-        }
-        if !template_ids.contains(item.template_item_id.as_str()) {
-            return Err(AppError::ResCode(ResCode::FinItemTempNotExist));
-        }
-        if item.item_value < Decimal::ZERO {
-            return Err(param_err("账目金额不能为负数"));
-        }
+        validate_item_entry(item, &template_ids, false)?;
     }
 
     // 获取现有记录
@@ -447,13 +492,13 @@ pub async fn update_month_item(
         match item.id {
             Some(ref id) if !id.trim().is_empty() => {
                 let id_str: &str = id;
-                // 更新现有项
+                // 更新现有项（item.id 归属校验：不存在于本账簿本月时拒绝，修复 Java 的越权写入）
                 let existing = existing_map
                     .get(id_str)
                     .ok_or(AppError::ResCode(ResCode::FinItemNotFound))?;
                 let mut active: MonthItemActive = existing.clone().into();
                 active.template_item_id = Set(item.template_item_id);
-                active.item_value = Set(item.item_value);
+                active.item_value = Set(item.item_value.unwrap_or(Decimal::ZERO));
                 active.update_by = Set(Some(user_id.clone()));
                 active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
                 let model = active.update(&txn).await?;
@@ -467,7 +512,7 @@ pub async fn update_month_item(
                     month: Set(month),
                     book_id: Set(book_id.to_string()),
                     template_item_id: Set(item.template_item_id),
-                    item_value: Set(item.item_value),
+                    item_value: Set(item.item_value.unwrap_or(Decimal::ZERO)),
                     create_by: Set(Some(user_id.clone())),
                     create_time: Set(chrono::Utc::now().naive_utc()),
                     ..Default::default()
@@ -484,7 +529,10 @@ pub async fn update_month_item(
         .map(|r: &MonthItemRecordResponse| MonthItemEntry {
             id: Some(r.id.clone()),
             template_item_id: r.template_item_id.clone(),
-            item_value: r.item_value,
+            item_value: Some(r.item_value),
+            book_id: Some(r.book_id.clone()),
+            year: Some(r.year),
+            month: Some(r.month),
         })
         .collect();
 
@@ -524,7 +572,7 @@ pub async fn query_month_item(
     let year = params.year.ok_or_else(|| param_err("年份不能为空"))?;
     let month = params.month.ok_or_else(|| param_err("月份不能为空"))?;
 
-    // 校验账簿权限
+    // 【有意收紧】账簿归属校验：修复 Java `queryByBookIdAndMonth` 的 IDOR 越权读取（见 check_book_ownership）
     let _ = check_book_ownership(&state.db, book_id, &user_id).await?;
 
     let items = MonthItemEntity::find()
@@ -546,6 +594,11 @@ pub async fn query_month_item(
 /// 查询所有月度财务账目：`POST /monthItem/queryAll`
 ///
 /// 对应 Java: `FinMonthItemRecordController.queryAll` 与 `FinMonthItemRecordServiceImpl.queryAllByBookId`
+///
+/// 与 Java 的差异：账簿无模板项时返回空分组数据而非抛 `FinItemTempNotExist`——对齐
+/// Java `queryAllByBookId`「无明细记录时返回空 Map」的主语义（Java 仅在「有明细但无
+/// 模板项」这一自相矛盾的场景下才经 `getSortMap` → `selectByFinBookIdExternal` 抛
+/// 14301；该场景在正常业务流中不可能出现，Rust 统一返回空分组更稳健）。
 pub async fn query_all(
     AuthUser(user_id): AuthUser,
     State(state): State<AppState>,
@@ -559,14 +612,17 @@ pub async fn query_all(
         return Err(param_err("账簿ID不能为空"));
     }
 
-    // 校验账簿权限并获取模板项（用于排序）
-    let template_items = check_book_and_get_template_items(&state.db, book_id, &user_id).await?;
-    let sort_map: HashMap<_, _> = template_items
+    // 【有意收紧】账簿归属校验：修复 Java `queryAllByBookId` 的 IDOR 越权读取（见 check_book_ownership）
+    let _ = check_book_ownership(&state.db, book_id, &user_id).await?;
+
+    // 模板项仅用于排序，缺失时 sort_map 为空（排序兜底 i32::MAX），不抛异常
+    let sort_map: HashMap<_, _> = TemplateItemEntity::find()
+        .filter(TemplateItemCol::BookId.eq(book_id))
+        .filter(TemplateItemCol::IsDeleted.eq(0))
+        .all(&state.db)
+        .await?
         .into_iter()
-        .map(|item| {
-            let sort_order = item.sort.parse::<i32>().unwrap_or(i32::MAX);
-            (item.id, sort_order)
-        })
+        .map(|item| (item.id, item.sort.parse::<i32>().unwrap_or(i32::MAX)))
         .collect();
 
     // 查询所有明细项
@@ -601,13 +657,26 @@ pub async fn query_all(
 
 #[cfg(test)]
 mod tests {
-    //! `recalculate_related_months` 的验收测试。
+    //! 月度明细校验、查询与重算的验收测试。
     //!
-    //! 对应 REFACTOR_TODO 3.1「月度汇总重算范围」：修改历史月份明细后，下月/明年同月的
-    //! MoM/YoY 流转须与 Java `FinMonthRecordServiceImpl.recalculateFinMonthRecord` 一致。
+    //! - 校验部分对应 REFACTOR_TODO 3.2 与 Java
+    //!   `FinMonthItemRecordServiceImpl.checkFinItemList`；
+    //! - 查询部分对应 REFACTOR_TODO 3.3：归属校验（修复 Java IDOR）与
+    //!   `queryAll` 无模板项时返回空分组（对齐 Java 空结果语义）；
+    //! - 重算部分对应 REFACTOR_TODO 3.1：修改历史月份明细后，下月/明年同月的
+    //!   MoM/YoY 流转须与 Java `FinMonthRecordServiceImpl.recalculateFinMonthRecord` 一致。
 
     use super::*;
+    use crate::AppState;
     use crate::common::money::calculate_growth_rate;
+    use crate::error::AppError;
+    use crate::model::finance::{MonthItemDto, MonthItemEntry};
+    use crate::service::{
+        cancel_cleanup_task::CancelCleanupTask, email::EmailService,
+        export_task::ExportTaskService, monthly_reminder_task::MonthlyReminderTask,
+        sys_config::SysConfigService, sys_user_operate_log::SysUserOperateLogService,
+    };
+    use axum::extract::State;
     use rust_decimal::Decimal;
     use sea_orm::{ConnectionTrait, Database, DatabaseConnection};
 
@@ -842,5 +911,321 @@ mod tests {
         recalculate_related_months(&db, "bk1", 2026, 3, "u1", &curr)
             .await
             .expect("无下游记录时应为空操作");
+    }
+
+    // ==================== validate_item_entry 测试 ====================
+    //
+    // 对应 Java: FinMonthItemRecordServiceImpl.checkFinItemList
+
+    /// 提取 AppError 的响应码字符串（ParamError→10001，ResCode→对应码）。
+    fn err_code(err: &AppError) -> &str {
+        match err {
+            AppError::Business { code, .. } => code.as_str(),
+            AppError::ResCode(rc) => rc.code(),
+            AppError::NotFound => ResCode::DataNotExist.code(),
+            AppError::Internal(_) => ResCode::Error.code(),
+        }
+    }
+
+    /// 本账簿的模板项 ID 集合：含 tpl-a，不含 tpl-other（模拟跨账簿模板项）。
+    fn book_template_ids() -> std::collections::HashSet<&'static str> {
+        ["tpl-a"].into_iter().collect()
+    }
+
+    /// 构造明细条目；`item_value` / `book_id` / `year` / `month` 按需置空以覆盖各校验分支。
+    fn entry_of(
+        template_item_id: &str,
+        item_value: Option<Decimal>,
+        book_id: Option<&str>,
+        year: Option<i32>,
+        month: Option<i32>,
+    ) -> MonthItemEntry {
+        MonthItemEntry {
+            id: None,
+            template_item_id: template_item_id.to_string(),
+            item_value,
+            book_id: book_id.map(str::to_string),
+            year,
+            month,
+        }
+    }
+
+    /// 合法条目（插入 / 更新路径都应通过）。
+    #[test]
+    fn valid_entry_passes_both_paths() {
+        let ids = book_template_ids();
+        let item = entry_of("tpl-a", Some(dec(100, 0)), Some("bk1"), Some(2026), Some(3));
+        validate_item_entry(&item, &ids, true).expect("插入校验应通过");
+        validate_item_entry(&item, &ids, false).expect("更新校验应通过");
+    }
+
+    /// templateItemId 为空 → ParamError(10001)。
+    #[test]
+    fn blank_template_item_id_rejected() {
+        let ids = book_template_ids();
+        let item = entry_of(" ", Some(dec(100, 0)), Some("bk1"), Some(2026), Some(3));
+        assert_eq!(
+            err_code(&validate_item_entry(&item, &ids, true).unwrap_err()),
+            "10001"
+        );
+    }
+
+    /// itemValue 缺失 / null → 业务响应 ParamError(10001)，不再是反序列化的裸 400。
+    #[test]
+    fn missing_item_value_rejected_as_business_error() {
+        let ids = book_template_ids();
+        let item = entry_of("tpl-a", None, Some("bk1"), Some(2026), Some(3));
+        assert_eq!(
+            err_code(&validate_item_entry(&item, &ids, true).unwrap_err()),
+            "10001"
+        );
+        assert_eq!(
+            err_code(&validate_item_entry(&item, &ids, false).unwrap_err()),
+            "10001"
+        );
+    }
+
+    /// itemValue 为负 → ParamError(10001)。
+    #[test]
+    fn negative_item_value_rejected() {
+        let ids = book_template_ids();
+        let item = entry_of("tpl-a", Some(dec(-5, 0)), Some("bk1"), Some(2026), Some(3));
+        assert_eq!(
+            err_code(&validate_item_entry(&item, &ids, true).unwrap_err()),
+            "10001"
+        );
+    }
+
+    /// 模板项不属于本账簿 → FinItemTempNotExist(14301)（Rust 比 Java 更严格，有意保留）。
+    #[test]
+    fn cross_book_template_item_rejected() {
+        let ids = book_template_ids();
+        let item = entry_of(
+            "tpl-other",
+            Some(dec(100, 0)),
+            Some("bk1"),
+            Some(2026),
+            Some(3),
+        );
+        assert_eq!(
+            err_code(&validate_item_entry(&item, &ids, false).unwrap_err()),
+            "14301"
+        );
+    }
+
+    /// 插入路径不要求逐项 bookId/year/month（Java 插入时先用 DTO 级值覆盖，等价恒通过）。
+    #[test]
+    fn insert_tolerates_missing_per_item_fields() {
+        let ids = book_template_ids();
+        let item = entry_of("tpl-a", Some(dec(100, 0)), None, None, None);
+        validate_item_entry(&item, &ids, true).expect("插入路径不应校验逐项 bookId/year/month");
+    }
+
+    /// 更新路径逐项 bookId 缺失 → ParamError(10001)。
+    #[test]
+    fn update_requires_per_item_book_id() {
+        let ids = book_template_ids();
+        let item = entry_of("tpl-a", Some(dec(100, 0)), None, Some(2026), Some(3));
+        assert_eq!(
+            err_code(&validate_item_entry(&item, &ids, false).unwrap_err()),
+            "10001"
+        );
+    }
+
+    /// 更新路径逐项 year/month 缺失 → ParamError(10001)。
+    #[test]
+    fn update_requires_per_item_year_and_month() {
+        let ids = book_template_ids();
+        let no_year = entry_of("tpl-a", Some(dec(100, 0)), Some("bk1"), None, Some(3));
+        assert_eq!(
+            err_code(&validate_item_entry(&no_year, &ids, false).unwrap_err()),
+            "10001"
+        );
+        let no_month = entry_of("tpl-a", Some(dec(100, 0)), Some("bk1"), Some(2026), None);
+        assert_eq!(
+            err_code(&validate_item_entry(&no_month, &ids, false).unwrap_err()),
+            "10001"
+        );
+    }
+
+    /// 请求 JSON 反序列化：itemValue 缺失 / null → None（交业务层校验，不再是裸 400），
+    /// 数字 / 字符串 → Some；逐项 bookId/year/month 按驼峰映射。
+    #[test]
+    fn month_item_entry_tolerates_missing_and_null_value() {
+        // 缺失 itemValue
+        let no_value: MonthItemEntry = serde_json::from_str(
+            r#"{"templateItemId":"tpl-a","bookId":"bk1","year":2026,"month":3}"#,
+        )
+        .unwrap();
+        assert!(no_value.item_value.is_none());
+        assert_eq!(no_value.book_id.as_deref(), Some("bk1"));
+        assert_eq!(no_value.year, Some(2026));
+
+        // 显式 null
+        let null_value: MonthItemEntry =
+            serde_json::from_str(r#"{"templateItemId":"tpl-a","itemValue":null}"#).unwrap();
+        assert!(null_value.item_value.is_none());
+
+        // 数字与字符串金额
+        let num: MonthItemEntry =
+            serde_json::from_str(r#"{"templateItemId":"tpl-a","itemValue":12.5}"#).unwrap();
+        assert_eq!(num.item_value, Some(dec(1250, 2)));
+        let str_val: MonthItemEntry =
+            serde_json::from_str(r#"{"templateItemId":"tpl-a","itemValue":"12.5"}"#).unwrap();
+        assert_eq!(str_val.item_value, Some(dec(1250, 2)));
+    }
+
+    // ==================== query_all 测试 ====================
+    //
+    // 对应 REFACTOR_TODO 3.3：归属校验（修复 Java IDOR）+
+    // 账簿无模板项时返回空分组数据（对齐 Java，原先抛 FinItemTempNotExist）
+
+    /// 建好账簿 / 模板项 / 明细三张表，并写入一个属于 u1 的账簿。
+    async fn setup_query_db() -> DatabaseConnection {
+        let db = Database::connect("sqlite::memory:")
+            .await
+            .expect("连接内存库失败");
+        for ddl in [
+            "CREATE TABLE IF NOT EXISTS FIN_BOOK (
+                MR_ID TEXT PRIMARY KEY, MR_USER_ID TEXT, MR_BOOK_NAME TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+            "CREATE TABLE IF NOT EXISTS FIN_TEMPLATE_ITEM (
+                MR_ID TEXT PRIMARY KEY, MR_BOOK_ID TEXT, MR_ITEM_NAME TEXT, MR_ITEM_TYPE INTEGER,
+                MR_ICON TEXT, MR_SORT TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+            "CREATE TABLE IF NOT EXISTS FIN_MONTH_ITEM_RECORD (
+                MR_ID TEXT PRIMARY KEY, MR_YEAR INTEGER, MR_MONTH INTEGER, MR_BOOK_ID TEXT,
+                MR_TEMPLATE_ITEM_ID TEXT, MR_ITEM_VALUE REAL,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+        ] {
+            db.execute_unprepared(ddl).await.expect("建表失败");
+        }
+        db.execute_unprepared(
+            "INSERT INTO FIN_BOOK (MR_ID, MR_USER_ID, MR_BOOK_NAME) VALUES ('bk1', 'u1', '我的账簿')",
+        )
+        .await
+        .unwrap();
+        db
+    }
+
+    /// 用内存库构造最小可用的 `AppState`（handler 只用到 db 与 AuthUser）。
+    fn test_state(db: DatabaseConnection) -> AppState {
+        let config_service = SysConfigService::new();
+        let email_service = EmailService::new(config_service.clone());
+        AppState {
+            db,
+            jwt_secret: "test-secret".to_string(),
+            activate_token_secret: "test-secret".to_string(),
+            reset_pwd_token_secret: "test-secret".to_string(),
+            jwt_expire_secs: 604800,
+            config_service,
+            email_service: email_service.clone(),
+            export_task_service: ExportTaskService::new(email_service.clone()),
+            operate_log_service: SysUserOperateLogService::new(),
+            monthly_reminder_task: MonthlyReminderTask::new(email_service.clone()),
+            cancel_cleanup_task: CancelCleanupTask::new(),
+        }
+    }
+
+    fn query_all_params(book_id: &str) -> MonthItemDto {
+        MonthItemDto {
+            book_id: book_id.to_string(),
+            year: None,
+            month: None,
+            item_list: None,
+            note: None,
+        }
+    }
+
+    /// 账簿无模板项且无明细时返回空分组（不抛 FinItemTempNotExist），对齐 Java 空结果。
+    #[tokio::test]
+    async fn query_all_returns_empty_when_book_has_no_template_items() {
+        let db = setup_query_db().await;
+        let state = test_state(db);
+
+        let res = query_all(
+            AuthUser("u1".to_string()),
+            State(state),
+            Json(query_all_params("bk1")),
+        )
+        .await
+        .expect("无模板项时应返回空分组而非报错");
+
+        let grouped = res.0.data.unwrap();
+        assert!(
+            grouped.is_empty(),
+            "无模板项无明细时应返回空分组: {grouped:?}"
+        );
+    }
+
+    /// 有模板项与明细时按年月分组、按模板项 sort 排序。
+    #[tokio::test]
+    async fn query_all_groups_by_month_and_sorts_by_template() {
+        let db = setup_query_db().await;
+        // 模板项：tpl-b 排序 1，tpl-a 排序 2
+        for (id, sort) in [("tpl-b", "1"), ("tpl-a", "2")] {
+            db.execute_unprepared(&format!(
+                "INSERT INTO FIN_TEMPLATE_ITEM (MR_ID, MR_BOOK_ID, MR_ITEM_NAME, MR_ITEM_TYPE, MR_ICON, MR_SORT)
+                 VALUES ('{id}', 'bk1', '{id}', 1, 'icon', '{sort}')"
+            ))
+            .await
+            .unwrap();
+        }
+        // 明细：tpl-a 在 2026-03，tpl-b 在 2026-03，另一条在 2026-01
+        for (id, year, month, value) in [
+            ("i1", 2026, 3, 100),
+            ("i2", 2026, 3, 200),
+            ("i3", 2026, 1, 50),
+        ] {
+            db.execute_unprepared(&format!(
+                "INSERT INTO FIN_MONTH_ITEM_RECORD (MR_ID, MR_YEAR, MR_MONTH, MR_BOOK_ID, MR_TEMPLATE_ITEM_ID, MR_ITEM_VALUE)
+                 VALUES ('{id}', {year}, {month}, 'bk1', 'tpl-{}', {value})",
+                if id == "i1" { "a" } else { "b" }
+            ))
+            .await
+            .unwrap();
+        }
+
+        let state = test_state(db);
+        let res = query_all(
+            AuthUser("u1".to_string()),
+            State(state),
+            Json(query_all_params("bk1")),
+        )
+        .await
+        .unwrap();
+        let grouped = res.0.data.unwrap();
+
+        assert_eq!(grouped.len(), 2, "应按年月分两组: {grouped:?}");
+        // 2026 年 3 月：tpl-b（sort=1）排在 tpl-a（sort=2）之前
+        let mar = grouped.get("202603").expect("202603 分组必须存在");
+        assert_eq!(mar.len(), 2);
+        assert_eq!(mar[0].template_item_id, "tpl-b");
+        assert_eq!(mar[1].template_item_id, "tpl-a");
+        assert_eq!(grouped.get("202601").unwrap()[0].item_value, dec(5000, 2));
+    }
+
+    /// 账簿属于他人时拒绝读取（修复 Java 的 IDOR 越权读取）。
+    #[tokio::test]
+    async fn query_all_rejects_book_of_other_user() {
+        let db = setup_query_db().await;
+        let state = test_state(db);
+
+        let err = query_all(
+            AuthUser("attacker".to_string()),
+            State(state),
+            Json(query_all_params("bk1")),
+        )
+        .await
+        .unwrap_err();
+
+        // 【有意收紧】Java 不带 userId 过滤可读他人账簿；Rust 返回账簿不存在
+        assert!(matches!(err, AppError::ResCode(ResCode::FinBookNotFound)));
     }
 }

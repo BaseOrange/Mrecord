@@ -12,7 +12,7 @@ use super::res_code::ResCode;
 /// 统一 API 响应结构
 ///
 /// 所有接口返回 `{ "code": "...", "message": "...", "data": ... }` 格式。
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct ApiResponse<T: Serialize> {
     /// 响应码（如 "00000" 成功）
     pub code: String,

@@ -27,6 +27,11 @@ fn param_err(msg: impl Into<String>) -> AppError {
 }
 
 /// 校验账簿存在且属于当前登录用户。
+///
+/// 【有意收紧】Java 的查询接口（`getMonthRecord` / `getYearRecordList`）只校验账簿ID
+/// 非空（`checkBookIdAndDate` / `StrUtil.isBlankIfStr`），查询时不带 `userId` 过滤，
+/// 任意登录用户猜对 `bookId` 即可读取他人数据（IDOR 越权读取）。Rust 要求账簿必须属于
+/// 当前登录用户，否则返回 `FinBookNotFound`。
 async fn check_book_ownership(
     state: &AppState,
     book_id: &str,
@@ -57,7 +62,7 @@ pub async fn get_month_record(
     let year = params.year.ok_or_else(|| param_err("年份不能为空"))?;
     let month = params.month.ok_or_else(|| param_err("月份不能为空"))?;
 
-    // 校验账簿权限
+    // 【有意收紧】账簿归属校验：修复 Java `getMonthRecord` 的 IDOR 越权读取（见 check_book_ownership）
     let _ = check_book_ownership(&state, book_id, &user_id).await?;
 
     let record = MonthRecordEntity::find()
@@ -85,7 +90,7 @@ pub async fn get_year_record_list(
         return Err(param_err("账簿ID不能为空"));
     }
 
-    // 校验账簿权限
+    // 【有意收紧】账簿归属校验：修复 Java `getYearRecordList` 的 IDOR 越权读取（见 check_book_ownership）
     let _ = check_book_ownership(&state, book_id, &user_id).await?;
 
     let mut query = MonthRecordEntity::find()

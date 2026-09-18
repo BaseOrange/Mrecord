@@ -89,6 +89,33 @@ where
     }
 }
 
+/// 从 JSON 数字或字符串解析**可空**金额（缺失或 `null` 解析为 `None`）。
+///
+/// 供请求 DTO 的 `#[serde(default, deserialize_with = "...")]` 使用，把「金额缺失」
+/// 从反序列化的裸 400 错误转为可由业务层统一校验的 `Option`（对应 Java
+/// `checkFinItemList` 中 `itemValue == null` 的判断），字段本身缺失时由
+/// `#[serde(default)]` 兜底为 `None`。
+pub fn deserialize_optional_decimal_from_number_or_string<'de, D>(
+    deserializer: D,
+) -> Result<Option<Decimal>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    match value {
+        serde_json::Value::Null => Ok(None),
+        serde_json::Value::Number(n) => Decimal::from_str_exact(&n.to_string())
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+        serde_json::Value::String(s) => Decimal::from_str_exact(&s)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+        other => Err(serde::de::Error::custom(format!(
+            "金额必须是数字或字符串: {other}"
+        ))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -112,6 +139,16 @@ mod tests {
     struct MoneyRequest {
         #[serde(deserialize_with = "deserialize_decimal_from_number_or_string")]
         value: Decimal,
+    }
+
+    /// 模拟可空金额字段：缺失 / null → None，其余走宽松解析
+    #[derive(Deserialize)]
+    struct OptionalMoneyRequest {
+        #[serde(
+            default,
+            deserialize_with = "deserialize_optional_decimal_from_number_or_string"
+        )]
+        value: Option<Decimal>,
     }
 
     #[test]
@@ -165,6 +202,30 @@ mod tests {
 
         // 既非数字也非字符串应报错
         assert!(serde_json::from_str::<MoneyRequest>(r#"{"value":null}"#).is_err());
+    }
+
+    #[test]
+    fn optional_decimal_accepts_missing_null_number_and_string() {
+        // 字段缺失 → None（由 #[serde(default)] 兜底，对应 Java itemValue 未传）
+        let missing: OptionalMoneyRequest = serde_json::from_str("{}").unwrap();
+        assert!(missing.value.is_none());
+
+        // 显式 null → None（对应 Java checkFinItemList 的 itemValue == null 分支）
+        let null_val: OptionalMoneyRequest = serde_json::from_str(r#"{"value":null}"#).unwrap();
+        assert!(null_val.value.is_none());
+
+        // JSON 数字 → Some
+        let from_number: OptionalMoneyRequest =
+            serde_json::from_str(r#"{"value":123.45}"#).unwrap();
+        assert_eq!(from_number.value, Some(Decimal::new(12345, 2)));
+
+        // 字符串金额 → Some（兼容旧接口）
+        let from_string: OptionalMoneyRequest =
+            serde_json::from_str(r#"{"value":"123.45"}"#).unwrap();
+        assert_eq!(from_string.value, Some(Decimal::new(12345, 2)));
+
+        // 非数字 / 非字符串 / 非 null 仍报错
+        assert!(serde_json::from_str::<OptionalMoneyRequest>(r#"{"value":true}"#).is_err());
     }
 
     // ==================== calculate_growth_rate 测试 ====================

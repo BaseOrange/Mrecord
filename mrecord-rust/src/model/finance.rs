@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 
 use super::page_info::PageInfo;
 use crate::common::money::{
-    deserialize_decimal_from_number_or_string, serialize_decimal_as_number,
+    deserialize_optional_decimal_from_number_or_string, serialize_decimal_as_number,
 };
 
 // ==================== 请求 DTO ====================
@@ -54,6 +54,11 @@ pub struct MonthItemDto {
 }
 
 /// 月度明细条目（用于 MonthItemDto 内嵌列表）
+///
+/// 对应 Java 实体 `com.dcz.mrecord.entity.FinMonthItemRecord`（在 Java 侧直接作为
+/// DTO 条目使用）。逐项的 `book_id` / `year` / `month` 与 Java 实体字段一一对应，
+/// 由 `handler::fin_month_item_record::validate_item_entry` 按
+/// `FinMonthItemRecordServiceImpl.checkFinItemList` 的语义逐项校验。
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MonthItemEntry {
@@ -62,8 +67,25 @@ pub struct MonthItemEntry {
     /// 关联模板项 ID，FIN_TEMPLATE_ITEM.MR_ID
     pub template_item_id: String,
     /// 当月该记账项实际金额
-    #[serde(deserialize_with = "deserialize_decimal_from_number_or_string")]
-    pub item_value: Decimal,
+    ///
+    /// 可空：缺失 / null 时由 [`crate::common::money::deserialize_optional_decimal_from_number_or_string`]
+    /// 解析为 `None`，交由业务层校验（对齐 Java `itemValue == null` 判断），
+    /// 不再依赖反序列化的裸 400 错误。
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_decimal_from_number_or_string"
+    )]
+    pub item_value: Option<Decimal>,
+    /// 逐项账簿 ID（更新时必填；插入时以 DTO 级 `book_id` 为准——与 Java 插入时
+    /// 先用 DTO 值覆盖逐项字段的行为等价）
+    #[serde(default)]
+    pub book_id: Option<String>,
+    /// 逐项统计年份
+    #[serde(default)]
+    pub year: Option<i32>,
+    /// 逐项统计月份
+    #[serde(default)]
+    pub month: Option<i32>,
 }
 
 /// 创建 / 复制账本模板项请求
@@ -79,7 +101,7 @@ pub struct FinTempItemDto {
 }
 
 /// 模板项条目（用于 FinTempItemDto 内嵌列表）
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateItemEntry {
     /// 主键 ID（更新时传）
@@ -278,7 +300,7 @@ impl From<crate::entity::fin_month_record::Model> for MonthRecordResponse {
 }
 
 /// 月度明细项响应
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct MonthItemRecordResponse {
     pub id: String,
