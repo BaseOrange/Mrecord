@@ -158,3 +158,138 @@ pub fn build(state: AppState) -> Router {
         .fallback_service(ServeDir::new("static").fallback(ServeFile::new("static/index.html")))
         .with_state(state)
 }
+
+#[cfg(test)]
+mod tests {
+    //! 操作日志中间件挂载在真实路由树上的回归测试。
+    //!
+    //! 对应 REFACTOR_TODO 3.10：验证「查询操作日志」本身不会被写入操作日志，
+    //! 避免日志表随查看次数无限膨胀（前端 `AdminLogsPage` 还带下拉刷新 + 滚动分页）。
+    //!
+    //! 之所以在 `router` 模块做集成测试而非只测 `should_skip_log` 纯函数：
+    //! 跳过逻辑依赖 Axum `nest("/api/v2", ...)` 会剥掉外层前缀这一行为，
+    //! 只有驱动完整路由树才能证明端到端确实跳过（曾用探针确认中间件看到的是
+    //! `/operateLog/list` 而非 `/api/v2/operateLog/list`）。
+
+    use super::*;
+    use crate::service::{
+        cancel_cleanup_task::CancelCleanupTask, email::EmailService,
+        export_task::ExportTaskService, monthly_reminder_task::MonthlyReminderTask,
+        sys_config::SysConfigService, sys_user_operate_log::SysUserOperateLogService,
+    };
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+    use tower::util::ServiceExt;
+
+    /// 建日志表与用户表（`/user/login` 与中间件落库需要）。
+    async fn setup_db() -> DatabaseConnection {
+        let db = Database::connect("sqlite::memory:")
+            .await
+            .expect("连接内存库失败");
+        for ddl in [
+            "CREATE TABLE IF NOT EXISTS SYS_USER_OPERATE_LOG (
+                MR_ID TEXT PRIMARY KEY, MR_USER_ID TEXT, MR_OPERATE_TYPE TEXT,
+                MR_CONTENT TEXT, MR_IP TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+            "CREATE TABLE IF NOT EXISTS SYS_USER (
+                MR_ID TEXT PRIMARY KEY, MR_EMAIL TEXT, MR_PASSWORD TEXT, MR_NICKNAME TEXT,
+                MR_ADMIN INTEGER DEFAULT 0, MR_STATUS INTEGER DEFAULT 1, MR_AVATAR TEXT,
+                MR_REMIND_ENABLED INTEGER, MR_REMIND_DAY INTEGER, MR_CANCEL_TIME TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+        ] {
+            db.execute_unprepared(ddl).await.expect("建表失败");
+        }
+        db
+    }
+
+    fn test_state(db: DatabaseConnection) -> AppState {
+        let config_service = SysConfigService::new();
+        let email_service = EmailService::new(config_service.clone());
+        AppState {
+            db,
+            jwt_secret: "test-secret".to_string(),
+            activate_token_secret: "test-secret".to_string(),
+            reset_pwd_token_secret: "test-secret".to_string(),
+            jwt_expire_secs: 604800,
+            config_service,
+            email_service: email_service.clone(),
+            export_task_service: ExportTaskService::new(email_service.clone()),
+            operate_log_service: SysUserOperateLogService::new(),
+            monthly_reminder_task: MonthlyReminderTask::new(email_service.clone()),
+            cancel_cleanup_task: CancelCleanupTask::new(),
+        }
+    }
+
+    async fn count_logs(db: &DatabaseConnection) -> i64 {
+        let row = db
+            .query_one(Statement::from_string(
+                DbBackend::Sqlite,
+                "SELECT COUNT(*) AS c FROM SYS_USER_OPERATE_LOG",
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        row.try_get::<i64>("", "c").unwrap()
+    }
+
+    /// 查询操作日志列表本身**不落日志**——这是防止「查看日志 → 产生日志」死循环的关键。
+    #[tokio::test]
+    async fn listing_operate_logs_does_not_write_a_log_row() {
+        let db = setup_db().await;
+        let app = build(test_state(db.clone()));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/operateLog/list")
+                    .header("Content-Type", "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // 未登录会返回业务错误（LoginExpire），但中间件早已执行完毕——
+        // 关键断言在库里的行数，而非响应状态
+        assert_ne!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(
+            count_logs(&db).await,
+            0,
+            "查询操作日志不得写入日志行，否则会形成死循环导致日志无限膨胀"
+        );
+    }
+
+    /// 反证：非排除列表的接口（登录）会正常落一条日志，证明跳过是「仅排除列表生效」而非整个中间件失效。
+    #[tokio::test]
+    async fn non_excluded_endpoint_writes_a_log_row() {
+        let db = setup_db().await;
+        let app = build(test_state(db.clone()));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/user/login")
+                    .header("Content-Type", "application/json")
+                    .body(Body::from(
+                        r#"{"email":"nobody@example.com","password":"x"}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_ne!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(
+            count_logs(&db).await,
+            1,
+            "登录接口应写入一条操作日志（中间件确实在工作）"
+        );
+    }
+}

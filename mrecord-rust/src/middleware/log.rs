@@ -68,8 +68,8 @@ pub async fn operate_log(
 
     let request = Request::from_parts(parts, Body::from(body_bytes));
 
-    if !skip_audit_log {
-        if let Err(err) = state
+    if !skip_audit_log
+        && let Err(err) = state
             .operate_log_service
             .save_log(
                 &state.db,
@@ -79,10 +79,9 @@ pub async fn operate_log(
                 client_ip.clone(),
             )
             .await
-        {
-            tracing::error!(method = %method, path = %path, "保存操作审计日志失败: {:?}", err);
-            return err.into_response();
-        }
+    {
+        tracing::error!(method = %method, path = %path, "保存操作审计日志失败: {:?}", err);
+        return err.into_response();
     }
 
     let response = next.run(request).await;
@@ -99,9 +98,23 @@ pub async fn operate_log(
 }
 
 /// 判断当前路径是否不需要写入操作日志。
+///
+/// 对应 Java `WebConfig.addInterceptors` 中 `logInterceptor` 的 `excludePathPatterns`：
+/// `/api/v2/operateLog/list`、`/api/v2/config/initialized`、`/api/v2/config/registerEnabled`。
+///
+/// 【为什么必须排除 `/operateLog/list`】查询操作日志的接口本身若被记录，
+/// 管理员每查看一次日志列表就新增一条日志，日志表会随查看次数无限膨胀
+/// （前端 `AdminLogsPage` 还带下拉刷新 + 滚动分页，每次加载都触发新日志），
+/// 形成事实上的死循环。这与 Java 端的排除语义一致。
+///
+/// 【前缀容错】Axum 的 `nest("/api/v2", ...)` 会剥掉外层前缀，中间件实际看到的是
+/// `/operateLog/list`（已通过探针测试确认）。但为了防止日后把中间件挂到外层路由
+/// （此时路径带 `/api/v2` 前缀）导致排除规则静默失效，这里统一先剥掉可选前缀再匹配，
+/// 两种挂载位置下都能正确跳过。
 fn should_skip_log(path: &str) -> bool {
+    let normalized = path.strip_prefix("/api/v2").unwrap_or(path);
     matches!(
-        path,
+        normalized,
         "/operateLog/list" | "/config/initialized" | "/config/registerEnabled"
     )
 }
@@ -189,4 +202,47 @@ fn extract_client_ip(headers: &HeaderMap) -> String {
         })
         .unwrap_or("")
         .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    //! 操作日志跳过规则的单元测试。
+    //!
+    //! 对应 REFACTOR_TODO 3.10：`should_skip_log` 必须对 `/api/v2` 前缀有无都正确跳过
+    //! `/operateLog/list`，否则「查看日志 → 产生日志」形成死循环。
+
+    use super::should_skip_log;
+
+    #[test]
+    fn skips_operate_log_list_without_prefix() {
+        // Axum 的 nest 会剥掉 /api/v2 前缀，中间件实际看到的是这个路径
+        assert!(should_skip_log("/operateLog/list"));
+    }
+
+    #[test]
+    fn skips_operate_log_list_with_prefix() {
+        // 防御：若日后把中间件挂到外层路由，路径会带 /api/v2 前缀，同样必须跳过
+        assert!(should_skip_log("/api/v2/operateLog/list"));
+    }
+
+    #[test]
+    fn skips_config_probe_endpoints() {
+        // 前端登录前高频轮询的两个接口，对齐 Java excludePathPatterns
+        assert!(should_skip_log("/config/initialized"));
+        assert!(should_skip_log("/config/registerEnabled"));
+        assert!(should_skip_log("/api/v2/config/initialized"));
+        assert!(should_skip_log("/api/v2/config/registerEnabled"));
+    }
+
+    #[test]
+    fn does_not_skip_business_endpoints() {
+        // 业务接口必须正常记录
+        assert!(!should_skip_log("/user/login"));
+        assert!(!should_skip_log("/api/v2/user/login"));
+        assert!(!should_skip_log("/book/create"));
+        assert!(!should_skip_log("/exportTask/list"));
+        // 仅前缀相似但路径不同，不能误跳过
+        assert!(!should_skip_log("/operateLog/listDetail"));
+        assert!(!should_skip_log("/api/v2/config/getEmailConfig"));
+    }
 }

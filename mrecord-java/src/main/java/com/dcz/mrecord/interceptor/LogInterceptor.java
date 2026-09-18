@@ -45,6 +45,9 @@ public class LogInterceptor implements HandlerInterceptor {
 
         SysUserOperateLog reqLog = new SysUserOperateLog();
         reqLog.setUserId(UserContext.getUserId());
+        // 补 createBy：queryList 通过 t1.MR_CREATE_BY = create_user.MR_ID 关联出 createByName，
+        // 不设的话前端 AdminLogsPage 只能回退显示 userId（原先这里漏设，导致 createByName 恒为 null）
+        reqLog.setCreateBy(UserContext.getUserId());
         reqLog.setIp(getClientIp(request));
         reqLog.setOperateType(request.getRequestURI());
 

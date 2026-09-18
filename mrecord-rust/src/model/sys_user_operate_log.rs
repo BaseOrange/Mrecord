@@ -47,6 +47,12 @@ pub struct OperateLogResponse {
     pub update_by_name: Option<String>,
     /// 更新时间
     pub update_time: Option<String>,
+    /// 逻辑删除标识（0-正常，1-已删除）
+    ///
+    /// 对应 Java `BaseEntity.isDeleted`：Java 直接返回实体，响应里天然带该字段。
+    /// 前端 `BaseEntity` 类型与 `AdminLogsPage` 均未消费，补齐仅为响应契约对齐，
+    /// 不影响任何页面渲染（多出的字段会被前端忽略）。
+    pub is_deleted: i32,
 }
 
 impl OperateLogResponse {
@@ -72,6 +78,49 @@ impl OperateLogResponse {
             update_time: log
                 .update_time
                 .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()),
+            is_deleted: log.is_deleted,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! 响应 DTO 序列化测试，锁定 `isDeleted` 的对外契约。
+
+    use super::*;
+    use crate::entity::sys_user_operate_log::Model;
+    use chrono::NaiveDateTime;
+    use serde_json;
+
+    fn sample_log(is_deleted: i32) -> Model {
+        Model {
+            id: "log1".into(),
+            user_id: "u1".into(),
+            operate_type: "/user/login".into(),
+            content: "{}".into(),
+            ip: "127.0.0.1".into(),
+            create_by: Some("u1".into()),
+            create_time: NaiveDateTime::parse_from_str("2026-04-01 12:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap(),
+            update_by: None,
+            update_time: None,
+            is_deleted,
+        }
+    }
+
+    #[test]
+    fn response_serializes_is_deleted_as_camel_case() {
+        let resp = OperateLogResponse::from_log(sample_log(0), Some("张三".into()), None);
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(
+            json.contains("\"isDeleted\":0"),
+            "响应应包含驼峰 isDeleted 字段: {json}"
+        );
+    }
+
+    #[test]
+    fn response_exposes_deleted_flag_when_logically_deleted() {
+        let resp = OperateLogResponse::from_log(sample_log(1), None, None);
+        assert_eq!(resp.is_deleted, 1);
     }
 }

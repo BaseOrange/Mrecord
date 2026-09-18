@@ -23,8 +23,6 @@ use crate::{
     model::sys_user_operate_log::OperateLogResponse,
 };
 
-const MAX_LOG_CONTENT_LEN: usize = 1000;
-
 /// 用户操作审计日志服务。
 ///
 /// 对应 Java: `SysUserOperateLogService`，负责保存请求日志和管理员分页查询日志。
@@ -39,6 +37,14 @@ impl SysUserOperateLogService {
     /// 保存操作日志。
     ///
     /// 对应 Java: `SysUserOperateLogServiceImpl.saveLog`。
+    ///
+    /// `content` 存**全量**请求体，不做长度截断——对齐 Java
+    /// （`LogInterceptor.preHandle` 直接存 `cachedRequest.getCachedBody()` 全文，
+    /// `CachedBodyHttpServletRequest` 也不做任何截断）。
+    ///
+    /// SQLite 单行体积由中间件的 `MAX_BODY_BYTES`（1 MB）读取上限兜底：
+    /// SQLite 的 `SQLITE_MAX_LENGTH` 默认上限为 1 GB，1 MB 远低于该值，
+    /// 既避免日志表行体积失控，又不影响业务请求体（登录 / 注册 / 导出参数都很小）。
     pub async fn save_log(
         &self,
         db: &DatabaseConnection,
@@ -48,7 +54,6 @@ impl SysUserOperateLogService {
         ip: String,
     ) -> Result<(), AppError> {
         let user_id = user_id.unwrap_or_default();
-        let content = truncate_content(content);
         let now = Local::now().naive_local();
         OperateLogEntity::insert(OperateLogActive {
             id: Set(Uuid::new_v4().simple().to_string()),
@@ -121,10 +126,123 @@ impl SysUserOperateLogService {
     }
 }
 
-/// 截断超长请求体，避免日志表存储过大的 JSON。
-fn truncate_content(content: String) -> String {
-    if content.chars().count() <= MAX_LOG_CONTENT_LEN {
-        return content;
+#[cfg(test)]
+mod tests {
+    //! 操作日志服务测试。
+    //!
+    //! 对应 REFACTOR_TODO 3.10：
+    //! - `content` 存全量不截断（对齐 Java `LogInterceptor` 存 `getCachedBody()` 全文）；
+    //! - 响应体带 `isDeleted`（对齐 Java `BaseEntity`）。
+
+    use super::*;
+    use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
+
+    async fn setup_db() -> DatabaseConnection {
+        let db = Database::connect("sqlite::memory:")
+            .await
+            .expect("连接内存库失败");
+        for ddl in [
+            "CREATE TABLE IF NOT EXISTS SYS_USER_OPERATE_LOG (
+                MR_ID TEXT PRIMARY KEY, MR_USER_ID TEXT, MR_OPERATE_TYPE TEXT,
+                MR_CONTENT TEXT, MR_IP TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+             )",
+            // query_list 会 LEFT JOIN SYS_USER 取昵称；字段对齐 entity::sys_user
+            "CREATE TABLE IF NOT EXISTS SYS_USER (
+                MR_ID TEXT PRIMARY KEY, MR_EMAIL TEXT, MR_PASSWORD TEXT, MR_NICKNAME TEXT,
+                MR_ADMIN INTEGER DEFAULT 0, MR_STATUS INTEGER DEFAULT 1, MR_AVATAR TEXT,
+                MR_REMIND_ENABLED INTEGER, MR_REMIND_DAY INTEGER, MR_CANCEL_TIME TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+             )",
+        ] {
+            db.execute_unprepared(ddl).await.expect("建表失败");
+        }
+        db
     }
-    content.chars().take(MAX_LOG_CONTENT_LEN).collect()
+
+    /// 超过原 `MAX_LOG_CONTENT_LEN`(1000) 的请求体也能全文落库。
+    #[tokio::test]
+    async fn save_log_stores_full_content_without_truncation() {
+        let db = setup_db().await;
+        let svc = SysUserOperateLogService::new();
+
+        // 5000 字符的请求体，远超原先的 1000 截断阈值
+        let long_content = "x".repeat(5000);
+        svc.save_log(
+            &db,
+            Some("u1".into()),
+            "/book/create".into(),
+            long_content.clone(),
+            "127.0.0.1".into(),
+        )
+        .await
+        .expect("保存日志失败");
+
+        let row = db
+            .query_one(Statement::from_string(
+                DbBackend::Sqlite,
+                "SELECT MR_CONTENT AS c, MR_USER_ID AS u FROM SYS_USER_OPERATE_LOG",
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            row.try_get::<String>("", "c").unwrap(),
+            long_content,
+            "content 应为全文，不再截断到 1000 字符"
+        );
+        assert_eq!(row.try_get::<String>("", "u").unwrap(), "u1");
+    }
+
+    /// 分页查询返回的响应体携带 `isDeleted` 字段。
+    #[tokio::test]
+    async fn query_list_response_exposes_is_deleted() {
+        let db = setup_db().await;
+        let svc = SysUserOperateLogService::new();
+        svc.save_log(
+            &db,
+            Some("u1".into()),
+            "/user/login".into(),
+            "{}".into(),
+            "127.0.0.1".into(),
+        )
+        .await
+        .expect("保存日志失败");
+
+        let result = svc.query_list(&db, 1, 10).await.expect("查询日志失败");
+        assert_eq!(result.records.len(), 1);
+        assert_eq!(
+            result.records[0].is_deleted, 0,
+            "响应体应带 isDeleted 且在册时为 0"
+        );
+    }
+
+    /// 未登录请求的 `user_id` 落空串、`create_by` 落 NULL，对齐 Java（UserContext 为 null）。
+    #[tokio::test]
+    async fn save_log_anonymous_user_writes_empty_id() {
+        let db = setup_db().await;
+        let svc = SysUserOperateLogService::new();
+        svc.save_log(
+            &db,
+            None,
+            "/config/initialized".into(),
+            "".into(),
+            "".into(),
+        )
+        .await
+        .expect("保存日志失败");
+
+        let row = db
+            .query_one(Statement::from_string(
+                DbBackend::Sqlite,
+                "SELECT MR_USER_ID AS u, MR_CREATE_BY AS cb FROM SYS_USER_OPERATE_LOG",
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(row.try_get::<String>("", "u").unwrap(), "");
+        assert!(row.try_get::<Option<String>>("", "cb").unwrap().is_none());
+    }
 }

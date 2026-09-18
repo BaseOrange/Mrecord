@@ -46,3 +46,5 @@ tower-http = { version = "0.5", features = ["fs"] }
 [dev-dependencies]
 # calamine: 单元测试中读回 rust_xlsxwriter 生成的 Excel，校验多 Sheet 布局与单元格内容
 calamine = "0.26"
+# tower: 集成测试中通过 `ServiceExt::oneshot` 驱动 Axum 路由，校验嵌套前缀下中间件看到的路径
+tower = { version = "0.5", features = ["util"] }
