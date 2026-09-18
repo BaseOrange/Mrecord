@@ -19,6 +19,7 @@ import com.dcz.mrecord.entity.SysUser;
 import com.dcz.mrecord.exception.MrecordException;
 import com.dcz.mrecord.mapper.SysUserMapper;
 import com.dcz.mrecord.service.EmailService;
+import com.dcz.mrecord.service.FinBookService;
 import com.dcz.mrecord.service.SysConfigService;
 import com.dcz.mrecord.service.SysUserService;
 import com.dcz.mrecord.util.JwtUtil;
@@ -49,6 +50,9 @@ import java.util.Set;
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
     @Resource
     private SysUserMapper userMapper;
+
+    @Resource
+    private FinBookService finBookService;
 
     @Resource
     private EmailService emailService;
@@ -312,6 +316,25 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         sysUser.setCancelTime(new Date());
         userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(userId));
         // 后续会有单独的定时任务，定时扫描待注销状态的用户。
+    }
+
+    /**
+     * 清理已过冷静期的待注销用户
+     *
+     * <p>备份并删除用户名下的全部账簿 / 月度汇总 / 明细 / 模板项，最后物理删除用户本体。
+     * 与 {@link #canceledMyUser()} 分别构成注销流程的「进入冷静期」与「冷静期后清理」两端。</p>
+     *
+     * @param sysUser 待清理用户
+     */
+    @Override
+    public void cleanupCanceledUser(SysUser sysUser) {
+        String userId = sysUser.getId();
+
+        // 备份并删除用户名下的全部账簿及其关联数据
+        finBookService.deleteFinBookByUserId(userId);
+
+        // 物理删除用户（绕过 MyBatis-Flex 逻辑删除）
+        userMapper.physicalDeleteById(userId);
     }
 
     /**

@@ -77,6 +77,16 @@ public interface SysUserService extends IService<SysUser> {
     void canceledMyUser();
 
     /**
+     * 清理已过冷静期的待注销用户
+     *
+     * <p>备份并删除用户名下的全部账簿数据后，物理删除用户本体。对应 Rust 端
+     * {@code service::cancel_cleanup_task::cleanup_user}，由注销清理定时任务调用。</p>
+     *
+     * @param sysUser 待清理用户
+     */
+    void cleanupCanceledUser(SysUser sysUser);
+
+    /**
      * 获取用户信息
      *
      * @param userId 用户ID

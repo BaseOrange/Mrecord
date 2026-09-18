@@ -41,6 +41,17 @@ public interface FinBookService extends IService<FinBook> {
     void deleteFinBook(IdDto id);
 
     /**
+     * 删除指定用户名下的全部账簿
+     *
+     * <p>复用 {@link #deleteFinBook(IdDto)} 的备份+删除流程，但不依赖登录用户上下文，
+     * 供注销清理定时任务调用。</p>
+     *
+     * @param userId 用户ID
+     * @return 删除的账簿数量
+     */
+    int deleteFinBookByUserId(String userId);
+
+    /**
      * 获取我的账簿
      *
      * @param param 查询参数

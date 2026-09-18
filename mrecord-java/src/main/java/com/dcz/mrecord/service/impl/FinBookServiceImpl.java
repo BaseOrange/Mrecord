@@ -121,6 +121,38 @@ public class FinBookServiceImpl extends ServiceImpl<FinBookMapper, FinBook> impl
     }
 
     /**
+     * 删除指定用户名下的全部账簿
+     *
+     * <p>逻辑与 {@link #deleteFinBook(IdDto)} 一致（备份月度明细/汇总/模板项/账簿后删除），
+     * 只是不做登录用户归属校验，供注销清理定时任务复用。</p>
+     *
+     * @param userId 用户ID
+     * @return 删除的账簿数量
+     */
+    @Override
+    public int deleteFinBookByUserId(String userId) {
+        QueryWrapper qw = QueryWrapper.create().eq(FinBook::getUserId, userId);
+        List<FinBook> books = finBookMapper.selectListByQuery(qw);
+        if (books == null || books.isEmpty()) {
+            return 0;
+        }
+
+        for (FinBook book : books) {
+            String id = book.getId();
+            // 删除账目数据
+            finMonthItemRecordService.deleteByBookId(id);
+            // 删除月度汇总数据
+            finMonthRecordService.deleteByBookId(id);
+            // 删除模板数据
+            finTemplateItemService.deleteByBookId(id);
+            // 备份并删除账簿
+            sysBackupBookService.backup(id);
+            finBookMapper.deleteById(id);
+        }
+        return books.size();
+    }
+
+    /**
      * 获取我的账簿
      *
      * @param param 查询参数
