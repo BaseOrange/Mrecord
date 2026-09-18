@@ -260,7 +260,7 @@ impl From<crate::entity::fin_template_item::Model> for TemplateItemResponse {
 }
 
 /// 月度汇总响应
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct MonthRecordResponse {
     pub id: String,
@@ -352,7 +352,7 @@ impl From<crate::entity::fin_month_item_record::Model> for MonthItemRecordRespon
 }
 
 /// 数据统计响应（泛型，支持普通记录和备份记录）
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DataStatisticsResponse<T>
 where

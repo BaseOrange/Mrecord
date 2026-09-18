@@ -451,10 +451,18 @@ pub async fn get_my_data_statistics(
     })))
 }
 
-/// 获取指定账簿过去 12 个月的详细统计数据：`POST /book/getBookDetailedStatistics`。
+/// 获取指定账簿近 12 个月的详细统计数据：`POST /book/getBookDetailedStatistics`。
 ///
 /// 对应 Java: `FinBookController.getBookDetailedStatistics` 与 `FinBookServiceImpl.getBookDetailedStatistics`。
 /// 先校验账簿归属，再按年月范围查询月度汇总记录。
+///
+/// 【Java 缺陷（Rust 端已修，Java 端见 REFACTOR_TODO 3.8）】Java
+/// `FinMonthRecordServiceImpl.getBookOneYearRecord` 虽在 DTO 上设置了 `startYearMonth`（近一年），
+/// 但**年月过滤被注释掉了**（`//qwObj.where("MR_YEAR * 100 + MR_MONTH between ? and ?")`），
+/// 实际返回账簿的全部历史汇总。即使解开注释，原写法传的是字符串参数（'202504'），
+/// SQLite 对 `int 表达式 BETWEEN 'text' AND 'text'` 不施加列亲和性 → 数值恒小于文本 → 返回空列表。
+/// Rust 严格按「近 12 个月」过滤（`start = 今日 - 12 个月`，与 Java 的 `offsetYear(date, -1)` 一致），
+/// 用类型安全的年/月条件实现，符合接口语义（前端 `BookStatsDetail` 展示的正是近期趋势）。
 pub async fn get_book_detailed_statistics(
     AuthUser(user_id): AuthUser,
     State(state): State<AppState>,
@@ -513,6 +521,13 @@ mod tests {
     //! 删除前先备份在册快照（备份范围 `is_deleted = 0`）。
 
     use super::*;
+    use crate::model::id_dto::IdDto;
+    use crate::service::{
+        cancel_cleanup_task::CancelCleanupTask, email::EmailService,
+        export_task::ExportTaskService, monthly_reminder_task::MonthlyReminderTask,
+        sys_config::SysConfigService, sys_user_operate_log::SysUserOperateLogService,
+    };
+    use chrono::{Months, Utc};
     use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
 
     /// 建好业务表与备份表（对齐 `schema.sql`）。
@@ -632,6 +647,25 @@ mod tests {
         row.try_get::<i64>("", "c").unwrap()
     }
 
+    /// 用内存库构造最小可用的 `AppState`（handler 只用到 db 与 AuthUser）。
+    fn test_state(db: DatabaseConnection) -> AppState {
+        let config_service = SysConfigService::new();
+        let email_service = EmailService::new(config_service.clone());
+        AppState {
+            db,
+            jwt_secret: "test-secret".to_string(),
+            activate_token_secret: "test-secret".to_string(),
+            reset_pwd_token_secret: "test-secret".to_string(),
+            jwt_expire_secs: 604800,
+            config_service,
+            email_service: email_service.clone(),
+            export_task_service: ExportTaskService::new(email_service.clone()),
+            operate_log_service: SysUserOperateLogService::new(),
+            monthly_reminder_task: MonthlyReminderTask::new(email_service.clone()),
+            cancel_cleanup_task: CancelCleanupTask::new(),
+        }
+    }
+
     /// 级联逻辑删除：业务表行保留但 `is_deleted = 1`，备份表留存在册快照。
     #[tokio::test]
     async fn purge_book_logically_deletes_cascade_and_backs_up() {
@@ -674,5 +708,113 @@ mod tests {
             0,
             "逻辑删除后再次清理不应重复处理"
         );
+    }
+
+    // ==================== 统计接口数据范围（3.8）====================
+    //
+    // 对照 Java 缺陷：`getBookOneYearRecord` 的近一年过滤被注释掉 → 返回全部历史；
+    // Rust 严格返回近 12 个月。
+
+    async fn insert_bare_book(db: &DatabaseConnection, id: &str, user_id: &str) {
+        db.execute_unprepared(&format!(
+            "INSERT INTO FIN_BOOK (MR_ID, MR_USER_ID, MR_BOOK_NAME) VALUES ('{id}', '{user_id}', '统计账簿')"
+        ))
+        .await
+        .unwrap();
+    }
+
+    async fn insert_month_summary(
+        db: &DatabaseConnection,
+        id: &str,
+        book_id: &str,
+        year: i32,
+        month: u32,
+    ) {
+        db.execute_unprepared(&format!(
+            "INSERT INTO FIN_MONTH_RECORD (MR_ID, MR_USER_ID, MR_BOOK_ID, MR_YEAR, MR_MONTH,
+                 MR_TOTAL_ASSET, MR_TOTAL_LIABILITY, MR_NET_ASSET, MR_MONTH_ON_MONTH, MR_YEAR_ON_YEAR)
+             VALUES ('{id}', 'u1', '{book_id}', {year}, {month}, 100, 40, 60, 5, 12)"
+        ))
+        .await
+        .unwrap();
+    }
+
+    /// 详细统计只返回近 12 个月内的汇总（Java 曾注释掉年月过滤返回全部历史）。
+    #[tokio::test]
+    async fn detailed_statistics_returns_only_last_twelve_months() {
+        let db = setup_db().await;
+        insert_bare_book(&db, "bk1", "u1").await;
+
+        let now = Utc::now().date_naive();
+        let m6 = now.checked_sub_months(Months::new(6)).unwrap();
+        let m13 = now.checked_sub_months(Months::new(13)).unwrap();
+        let m24 = now.checked_sub_months(Months::new(24)).unwrap();
+
+        // 窗口内：本月 + 6 个月前；窗口外：13 个月前 + 24 个月前
+        insert_month_summary(&db, "in0", "bk1", now.year(), now.month()).await;
+        insert_month_summary(&db, "in6", "bk1", m6.year(), m6.month()).await;
+        insert_month_summary(&db, "out13", "bk1", m13.year(), m13.month()).await;
+        insert_month_summary(&db, "out24", "bk1", m24.year(), m24.month()).await;
+
+        let res = get_book_detailed_statistics(
+            AuthUser("u1".to_string()),
+            State(test_state(db)),
+            Json(IdDto {
+                id: "bk1".to_string(),
+            }),
+        )
+        .await
+        .expect("查询详细统计失败");
+
+        let data = res.0.data.unwrap();
+        // 边界 yyyyMM 与「今日 - 12 个月」一致
+        let start = now.checked_sub_months(Months::new(12)).unwrap();
+        assert_eq!(
+            data.start_year_month,
+            format!("{:04}{:02}", start.year(), start.month())
+        );
+        assert_eq!(
+            data.end_year_month,
+            format!("{:04}{:02}", now.year(), now.month())
+        );
+        // 只含窗口内两条（窗口外 13 / 24 个月被过滤）
+        let mut got: Vec<String> = data
+            .record_list
+            .iter()
+            .map(|r| format!("{}-{:02}", r.year, r.month))
+            .collect();
+        got.sort();
+        let mut want = vec![
+            format!("{}-{:02}", now.year(), now.month()),
+            format!("{}-{:02}", m6.year(), m6.month()),
+        ];
+        want.sort();
+        assert_eq!(got, want, "详细统计应只返回近 12 个月内的汇总");
+    }
+
+    /// 非账簿归属用户查询详细统计 → 无权限（对齐 Java `checkUpdateMyFinBook` 抛 NO_PERMISSION）。
+    #[tokio::test]
+    async fn detailed_statistics_rejects_other_users_book() {
+        let db = setup_db().await;
+        insert_bare_book(&db, "bk1", "owner").await;
+
+        let err = get_book_detailed_statistics(
+            AuthUser("attacker".to_string()),
+            State(test_state(db)),
+            Json(IdDto {
+                id: "bk1".to_string(),
+            }),
+        )
+        .await
+        .expect_err("越权查询应被拒绝");
+
+        // 账簿存在但不属于当前用户 → NO_PERMISSION（11004），与 Java 一致
+        match err {
+            AppError::Business { code, message } => {
+                assert_eq!(code, "11004");
+                assert!(message.contains("无该账簿权限"));
+            }
+            other => panic!("期望无权限业务错误，实际得到 {other:?}"),
+        }
     }
 }
