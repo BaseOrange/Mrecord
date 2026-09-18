@@ -134,28 +134,42 @@ const onMonthClick = (record: FinMonthRecord) => {
               class="month-card"
               @click="onMonthClick(record)"
             >
-              <div class="month-main">
-                <div class="month-label">{{ record.month }}月</div>
-                <div class="month-net">
-                  <span class="net-label">净资产</span>
-                  <span class="net-value">{{ formatMoney(record.netAsset) }}</span>
+              <div class="month-top">
+                <div class="month-main">
+                  <div class="month-label">{{ record.month }}月</div>
+                  <div class="month-net">
+                    <span class="net-label">净资产</span>
+                    <span class="net-value">{{ formatMoney(record.netAsset) }}</span>
+                  </div>
+                </div>
+                <div class="month-meta">
+                  <div class="meta-row">
+                    <span class="meta-label">总资产</span>
+                    <span class="meta-value asset">{{ formatMoney(record.totalAsset) }}</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">总负债</span>
+                    <span class="meta-value liability">{{ formatMoney(record.totalLiability) }}</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">环比</span>
+                    <span class="meta-value" :style="{ color: getChangeColor(record.monthOnMonth) }">
+                      {{ getChangeText(record.monthOnMonth) }}
+                    </span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">同比</span>
+                    <span class="meta-value" :style="{ color: getChangeColor(record.yearOnYear) }">
+                      {{ getChangeText(record.yearOnYear) }}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div class="month-meta">
-                <div class="meta-row">
-                  <span class="meta-label">总资产</span>
-                  <span class="meta-value asset">{{ formatMoney(record.totalAsset) }}</span>
-                </div>
-                <div class="meta-row">
-                  <span class="meta-label">总负债</span>
-                  <span class="meta-value liability">{{ formatMoney(record.totalLiability) }}</span>
-                </div>
-                <div class="meta-row">
-                  <span class="meta-label">环比</span>
-                  <span class="meta-value" :style="{ color: getChangeColor(record.monthOnMonth) }">
-                    {{ getChangeText(record.monthOnMonth) }}
-                  </span>
-                </div>
+              <div v-if="record.note" class="month-note">
+                <svg class="note-icon" viewBox="0 0 24 24" width="13" height="13">
+                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="note-text">{{ record.note }}</span>
               </div>
             </div>
           </div>
@@ -315,8 +329,8 @@ const onMonthClick = (record: FinMonthRecord) => {
   border-radius: 14px;
   padding: 16px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -325,6 +339,12 @@ const onMonthClick = (record: FinMonthRecord) => {
 .month-card:active {
   transform: scale(0.985);
   background: #fafafa;
+}
+.month-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .month-main {
@@ -377,6 +397,29 @@ const onMonthClick = (record: FinMonthRecord) => {
 }
 .meta-value.liability {
   color: #ff3b30;
+}
+
+/* 备注行 */
+.month-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed #eee;
+}
+.note-icon {
+  color: #FF6500;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.note-text {
+  font-size: 12px;
+  color: #8e8e93;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* 底部记账按钮 */

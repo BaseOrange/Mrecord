@@ -6,6 +6,8 @@ import { listTempItems } from '@/api/modules/tempItem'
 import type { FinTemplateItem } from '@/api/modules/tempItem'
 import { queryMonthItem, insertMonthItem, updateMonthItem } from '@/api/modules/monthItem'
 import type { FinMonthItemRecord } from '@/api/modules/monthItem'
+import { getYearRecordList } from '@/api/modules/monthRecord'
+import type { FinMonthRecord } from '@/api/modules/monthRecord'
 
 const route = useRoute()
 const router = useRouter()
@@ -41,6 +43,12 @@ const existingRecords = ref<FinMonthItemRecord[]>([])
 // 每个模板项对应的输入金额
 const itemValues = ref<Record<string, string>>({})
 
+// 本月备注（为什么多赚了 / 多花了）
+const note = ref('')
+
+// 该账簿全部月度汇总（用于对比上月 / 去年同月，以及回填本月已存备注）
+const monthRecords = ref<FinMonthRecord[]>([])
+
 // 按类型分组模板项（防御性过滤 null：后端 LEFT JOIN 在无模板时可能返回 [null]）
 const assetItems = computed(() => templateItems.value.filter(i => i && i.itemType === 1).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
 const liabilityItems = computed(() => templateItems.value.filter(i => i && i.itemType === -1).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
@@ -66,16 +74,100 @@ const formatMoney = (val: number) => {
   return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// ---- 环比 / 同比对比 ----
+
+// 按 `${year}-${month}` 索引月度汇总，便于查找上月与去年同月
+const recordIndex = computed(() => {
+  const map = new Map<string, FinMonthRecord>()
+  for (const r of monthRecords.value) {
+    if (r.year && r.month) map.set(`${r.year}-${r.month}`, r)
+  }
+  return map
+})
+
+// 上月汇总 key（跨年时落到去年 12 月）
+const prevMonthKey = computed(() => {
+  const y = currentYear.value
+  const m = currentMonth.value
+  return m === 1 ? `${y - 1}-12` : `${y}-${m - 1}`
+})
+
+// 去年同月汇总 key
+const lastYearKey = computed(() => `${currentYear.value - 1}-${currentMonth.value}`)
+
+// 本月净资产（实时，随输入变动）与上月净资产的差额，null 表示上月无数据
+const momAmount = computed(() => {
+  const prev = recordIndex.value.get(prevMonthKey.value)
+  if (!prev || prev.netAsset === undefined || prev.netAsset === null) return null
+  return netAsset.value - prev.netAsset
+})
+
+// 本月净资产与去年同月净资产的差额
+const yoyAmount = computed(() => {
+  const prev = recordIndex.value.get(lastYearKey.value)
+  if (!prev || prev.netAsset === undefined || prev.netAsset === null) return null
+  return netAsset.value - prev.netAsset
+})
+
+// 增长率（百分比），分母为 0 或无数据时返回 null
+const growthRate = (cur: number, base: number | undefined | null): number | null => {
+  if (base === undefined || base === null || base === 0) return null
+  return ((cur - base) / Math.abs(base)) * 100
+}
+
+const momRate = computed(() => {
+  const prev = recordIndex.value.get(prevMonthKey.value)
+  return growthRate(netAsset.value, prev?.netAsset)
+})
+
+const yoyRate = computed(() => {
+  const prev = recordIndex.value.get(lastYearKey.value)
+  return growthRate(netAsset.value, prev?.netAsset)
+})
+
+// 差额描述：多攒了 / 多花了 / 持平 / 无数据
+const deltaText = (val: number | null, emptyText: string, flatText: string) => {
+  if (val === null) return emptyText
+  if (val === 0) return flatText
+  return (val > 0 ? '多攒了 ' : '多花了 ') + formatMoney(Math.abs(val))
+}
+
+const momText = computed(() => deltaText(momAmount.value, '上月暂无数据', '与上月持平'))
+const yoyText = computed(() => deltaText(yoyAmount.value, '去年同月暂无数据', '与去年同月持平'))
+
+// 百分比文字
+const rateText = (rate: number | null) => {
+  if (rate === null) return '--'
+  if (rate === 0) return '持平'
+  return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%'
+}
+
+// 涨跌颜色：多攒了（净资产上升）绿色，多花了（净资产下降）红色
+const deltaColor = (val: number | null) => {
+  if (val === null || val === 0) return '#8e8e93'
+  return val > 0 ? '#34c759' : '#ff3b30'
+}
+
+// 备注输入框的动态提示：根据本月与上月的对比引导用户记录原因
+const noteHint = computed(() => {
+  const d = momAmount.value
+  if (d !== null && d > 0) return `本月比上月多攒了 ${formatMoney(Math.abs(d))} 元，写下原因吧～`
+  if (d !== null && d < 0) return `本月比上月多花了 ${formatMoney(Math.abs(d))} 元，写下原因吧～`
+  return '记录本月财务小结，比如大额收支的原因'
+})
+
 // ---- 数据拉取 ----
 const fetchData = async () => {
   loading.value = true
-  // 两个请求独立处理：模板项为空时后端会抛 14301 异常，不应阻塞另一个请求，也不应让 loading 卡住
-  const [tplRes, recRes] = await Promise.allSettled([
+  // 三个请求独立处理：模板项为空时后端会抛 14301 异常，不应阻塞其他请求，也不应让 loading 卡住
+  const [tplRes, recRes, yearRes] = await Promise.allSettled([
     listTempItems({ bookId }),
-    queryMonthItem({ bookId, year: currentYear.value, month: currentMonth.value })
+    queryMonthItem({ bookId, year: currentYear.value, month: currentMonth.value }),
+    getYearRecordList({ bookId })
   ])
   templateItems.value = tplRes.status === 'fulfilled' && Array.isArray(tplRes.value) ? tplRes.value.filter((x): x is FinTemplateItem => x != null) : []
   existingRecords.value = recRes.status === 'fulfilled' && Array.isArray(recRes.value) ? recRes.value.filter((x): x is FinMonthItemRecord => x != null) : []
+  monthRecords.value = yearRes.status === 'fulfilled' && Array.isArray(yearRes.value) ? yearRes.value.filter((x): x is FinMonthRecord => x != null) : []
 
   // 填充已有金额
   const values: Record<string, string> = {}
@@ -85,6 +177,10 @@ const fetchData = async () => {
     }
   }
   itemValues.value = values
+
+  // 回填本月已保存的备注
+  const curRecord = recordIndex.value.get(`${currentYear.value}-${currentMonth.value}`)
+  note.value = curRecord?.note ?? ''
   loading.value = false
 }
 
@@ -134,10 +230,10 @@ const handleSave = async () => {
     }
 
     if (updateList.length > 0) {
-      await updateMonthItem({ bookId, year: currentYear.value, month: currentMonth.value, itemList: updateList })
+      await updateMonthItem({ bookId, year: currentYear.value, month: currentMonth.value, itemList: updateList, note: note.value })
     }
     if (insertList.length > 0) {
-      await insertMonthItem({ bookId, year: currentYear.value, month: currentMonth.value, itemList: insertList })
+      await insertMonthItem({ bookId, year: currentYear.value, month: currentMonth.value, itemList: insertList, note: note.value })
     }
 
     Snackbar.success('保存成功')
@@ -285,6 +381,51 @@ const handleSave = async () => {
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- 环比 / 同比对比卡片 -->
+        <div class="compare-card">
+          <div class="compare-row">
+            <div class="compare-label">
+              <span class="compare-name">环比</span>
+              <span class="compare-sub">较上月</span>
+            </div>
+            <div class="compare-values">
+              <span class="compare-amount" :style="{ color: deltaColor(momAmount) }">{{ momText }}</span>
+              <span class="compare-rate" :style="{ color: deltaColor(momAmount) }">{{ rateText(momRate) }}</span>
+            </div>
+          </div>
+          <div class="compare-divider"></div>
+          <div class="compare-row">
+            <div class="compare-label">
+              <span class="compare-name">同比</span>
+              <span class="compare-sub">较去年同月</span>
+            </div>
+            <div class="compare-values">
+              <span class="compare-amount" :style="{ color: deltaColor(yoyAmount) }">{{ yoyText }}</span>
+              <span class="compare-rate" :style="{ color: deltaColor(yoyAmount) }">{{ rateText(yoyRate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 本月备注 -->
+        <div class="note-card">
+          <div class="note-header">
+            <svg class="note-icon" viewBox="0 0 24 24" width="16" height="16">
+              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="note-title">本月备注</span>
+          </div>
+          <textarea
+            class="note-textarea"
+            v-model="note"
+            rows="3"
+            maxlength="200"
+            :placeholder="noteHint"
+          ></textarea>
+          <div class="note-foot">
+            <span class="note-count">{{ note.length }}/200</span>
           </div>
         </div>
       </template>
@@ -489,6 +630,111 @@ const handleSave = async () => {
   width: 1px;
   height: 28px;
   background: #eee;
+}
+
+/* 环比 / 同比对比卡片 */
+.compare-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  margin-bottom: 10px;
+}
+.compare-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.compare-divider {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 2px 0;
+}
+.compare-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.compare-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+.compare-sub {
+  font-size: 11px;
+  color: #aeaeb2;
+}
+.compare-values {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.compare-amount {
+  font-size: 14px;
+  font-weight: 600;
+}
+.compare-rate {
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 56px;
+  text-align: right;
+}
+
+/* 本月备注 */
+.note-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  margin-bottom: 8px;
+}
+.note-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.note-icon {
+  color: #FF6500;
+  flex-shrink: 0;
+}
+.note-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+.note-textarea {
+  width: 100%;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1d1d1f;
+  background: #fafafa;
+  resize: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.note-textarea:focus {
+  outline: none;
+  border-color: #FF6500;
+  background: #fff;
+}
+.note-textarea::placeholder {
+  color: #c2c2c7;
+  font-size: 13px;
+}
+.note-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.note-count {
+  font-size: 11px;
+  color: #c2c2c7;
 }
 
 /* 分组 */
