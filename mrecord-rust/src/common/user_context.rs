@@ -68,6 +68,10 @@ where
 ///
 /// 提取 JWT 后会再查一次数据库确认 admin 标志和用户状态，
 /// 与 Java 切面行为一致。
+///
+/// 注意：内部 `String`（用户 ID）刻意不被读取——该提取器存在的目的是让 handler
+/// 声明 `_admin: AdminUser` 即可强制管理员鉴权（副作用），因此字段标记为允许死代码。
+#[allow(dead_code)]
 pub struct AdminUser(pub String);
 
 impl<S> FromRequestParts<S> for AdminUser

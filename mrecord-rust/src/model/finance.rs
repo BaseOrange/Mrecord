@@ -140,11 +140,6 @@ pub struct QueryFinBookDto {
     pub page: PageInfo,
     /// 账簿名称（模糊匹配）
     pub name: Option<String>,
-    /// 账簿类型
-    #[serde(rename = "type")]
-    pub book_type: Option<String>,
-    /// 账簿年份
-    pub year: Option<String>,
 }
 
 /// 账簿导出请求

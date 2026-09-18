@@ -25,17 +25,6 @@ impl ExportTaskStatus {
             Self::Fail => "FAIL",
         }
     }
-
-    /// 从数据库字符串还原
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "WAIT" => Some(Self::Wait),
-            "RUN" => Some(Self::Run),
-            "SUCCESS" => Some(Self::Success),
-            "FAIL" => Some(Self::Fail),
-            _ => None,
-        }
-    }
 }
 
 impl std::fmt::Display for ExportTaskStatus {
