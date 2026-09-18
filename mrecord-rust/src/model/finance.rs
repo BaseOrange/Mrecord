@@ -109,7 +109,11 @@ pub struct TemplateItemEntry {
     /// 记账项名称，如"招行储蓄卡"、"花呗"
     pub item_name: String,
     /// 账簿类型（-1:负债，0:不统计仅记录，1:资产）
-    pub item_type: i32,
+    ///
+    /// 可空：缺失时由业务层校验（对齐 Java `itemType == null` → FIN_ITEM_TEMP_TYPE_IS_NOT），
+    /// 不再依赖反序列化的裸 400。
+    #[serde(default)]
+    pub item_type: Option<i32>,
     /// 图标标识；兼容前端旧请求未传 icon 的模板项，等同 Java 端空字符串默认值。
     #[serde(default)]
     pub icon: String,
@@ -231,7 +235,7 @@ impl FinBookRecordResponse {
 }
 
 /// 模板项列表响应
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateItemResponse {
     pub id: String,
