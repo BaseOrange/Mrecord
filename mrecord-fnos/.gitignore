@@ -1,0 +1,8 @@
+# 交叉编译二进制产物（由 scripts/build.sh 生成，不入库）
+app/mrecord-rust-*
+
+# 打包产物
+*.fpk
+
+# 本地调试数据
+data/
