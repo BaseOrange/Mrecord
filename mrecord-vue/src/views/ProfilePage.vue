@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
-import { logout } from '@/api'
+import { logout, canceledMyUser } from '@/api'
 import AgreementPopup from '@/components/AgreementPopup.vue'
 
 const router = useRouter()
@@ -11,6 +11,10 @@ const userStore = useUserStore()
 const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 const showAgreement = ref(false)
+// 注销账户：两步确认
+const showCancelStep1 = ref(false)
+const showCancelStep2 = ref(false)
+const cancelling = ref(false)
 
 const handleLogout = async () => {
   showLogoutConfirm.value = false
@@ -26,6 +30,22 @@ const handleLogout = async () => {
     router.replace('/login')
   } finally {
     loggingOut.value = false
+  }
+}
+
+const handleCancelAccount = async () => {
+  showCancelStep2.value = false
+  cancelling.value = true
+  try {
+    await canceledMyUser()
+    // 注销申请提交成功后，本地登录态立即失效（账号已进入「注销待生效」状态）
+    userStore.logout()
+    Snackbar.success('已提交注销申请，进入 15 天冷静期')
+    router.replace('/login')
+  } catch {
+    // 拦截器已处理错误提示
+  } finally {
+    cancelling.value = false
   }
 }
 </script>
@@ -87,6 +107,12 @@ const handleLogout = async () => {
           <span class="menu-text">修改密码</span>
           <span class="menu-arrow">›</span>
         </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" @click="showCancelStep1 = true">
+          <span class="menu-icon">⚠️</span>
+          <span class="menu-text danger-text">注销账户</span>
+          <span class="menu-arrow">›</span>
+        </div>
       </div>
 
       <!-- 退出登录按钮 -->
@@ -112,6 +138,43 @@ const handleLogout = async () => {
       @cancel="showLogoutConfirm = false"
     >
       确定要退出登录吗？
+    </var-dialog>
+
+    <!-- 注销确认 第一步：说明后果 -->
+    <var-dialog
+      v-model:show="showCancelStep1"
+      title="注销账户"
+      confirm-button-text="继续注销"
+      cancel-button-text="取消"
+      confirm-button-text-color="#fff"
+      confirm-button-color="#e74c3c"
+      @confirm="showCancelStep1 = false; showCancelStep2 = true"
+      @cancel="showCancelStep1 = false"
+    >
+      <div class="cancel-tips">
+        注销后账户将进入 <b>15 天冷静期</b>，期间：<br />
+        · 账号将<b>无法登录</b>；<br />
+        · 冷静期内可在登录页<b>撤销注销</b>恢复账号；<br />
+        · 超过冷静期后，名下账簿及全部数据将被备份并<b>永久删除</b>。
+      </div>
+    </var-dialog>
+
+    <!-- 注销确认 第二步：最终确认 -->
+    <var-dialog
+      v-model:show="showCancelStep2"
+      title="最终确认"
+      confirm-button-text="确认注销"
+      cancel-button-text="我再想想"
+      confirm-button-text-color="#fff"
+      confirm-button-color="#e74c3c"
+      :confirm-button-disabled="cancelling"
+      @confirm="handleCancelAccount"
+      @cancel="showCancelStep2 = false"
+    >
+      <div class="cancel-tips">
+        注销操作不可立即撤回，请确认你了解上述后果。<br />
+        点击「确认注销」后立即生效。
+      </div>
     </var-dialog>
 
     <!-- 协议弹窗 -->
@@ -262,6 +325,23 @@ const handleLogout = async () => {
   height: 1px;
   background: #f5f5f5;
   margin: 0 16px;
+}
+
+/* 注销账户危险项 */
+.danger-text {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
+/* 注销确认弹窗提示文案 */
+.cancel-tips {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
+}
+.cancel-tips b {
+  color: #e74c3c;
+  font-weight: 600;
 }
 
 /* 退出登录按钮 */

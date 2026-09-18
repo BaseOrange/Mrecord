@@ -117,6 +117,11 @@ export function canceledMyUser() {
     return post<void>('/user/canceledMyUser')
 }
 
+/** 撤销注销（冷静期内恢复账户，免登录接口） */
+export function revokeCancel(data: UserAuthParams) {
+    return post<void>('/user/revokeCancel', data)
+}
+
 /** 管理员查询所有用户 */
 export function listUsers(data?: ListUsersParams) {
     return post<PageResult<SysUser>>('/user/list', data)

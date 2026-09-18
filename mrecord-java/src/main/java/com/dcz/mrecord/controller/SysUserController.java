@@ -190,6 +190,26 @@ public class SysUserController {
     }
 
     /**
+     * 撤销注销（冷静期内恢复账户）
+     *
+     * <p>注销后用户处于「注销待生效」状态无法登录，故本接口免登录鉴权，
+     * 改为凭邮箱+密码确认身份。详见 {@link SysUserService#revokeCancel}。</p>
+     *
+     * @param params 邮箱 + 密码
+     * @return 撤销结果
+     */
+    @PostMapping("/revokeCancel")
+    public Result<String> revokeCancel(@RequestBody UserDTO params) {
+        // 数据脱敏后打印日志
+        UserDTO clone = ObjUtil.clone(params);
+        clone.setPassword(DesensitizedUtil.password(params.getPassword()));
+        log.info("撤销注销[/user/revokeCancel]请求传参：{}", clone);
+
+        sysUserService.revokeCancel(params);
+        return Result.success();
+    }
+
+    /**
      * 管理员查询所有用户
      *
      * @return 所有用户分页集合

@@ -21,6 +21,8 @@ pub enum ResCode {
     UserStatusError,
     /// 用户账户未激活
     UserNotActivated,
+    /// 账号处于注销冷静期，可撤销注销
+    UserCanceledWait,
     /// 数据不存在
     DataNotExist,
     /// 数据重复，操作失败
@@ -65,6 +67,7 @@ impl ResCode {
             Self::NoPermission => "11004",
             Self::UserStatusError => "11005",
             Self::UserNotActivated => "11006",
+            Self::UserCanceledWait => "11007",
             Self::DataNotExist => "12001",
             Self::DataDuplication => "12002",
             Self::AsyncProcess => "13008",
@@ -94,6 +97,7 @@ impl ResCode {
             Self::NoPermission => "无操作权限",
             Self::UserStatusError => "用户状态异常",
             Self::UserNotActivated => "用户账户未激活，请先激活账户",
+            Self::UserCanceledWait => "账号处于注销冷静期，可撤销注销",
             Self::DataNotExist => "数据不存在",
             Self::DataDuplication => "数据重复，操作失败",
             Self::AsyncProcess => "异步任务处理中",

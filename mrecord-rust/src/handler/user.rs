@@ -385,6 +385,10 @@ pub async fn login(
     if user.status == UserStatus::Unactivated as i32 {
         return Err(AppError::ResCode(ResCode::UserNotActivated));
     }
+    if user.status == UserStatus::CanceledWait as i32 {
+        // 注销冷静期内：返回专属状态码，前端据此引导用户撤销注销
+        return Err(AppError::ResCode(ResCode::UserCanceledWait));
+    }
     if user.status != UserStatus::Normal as i32 {
         return Err(AppError::ResCode(ResCode::UserStatusError));
     }
@@ -597,6 +601,46 @@ pub async fn canceled_my_user(
     let mut active: UserActive = user.into();
     active.status = Set(UserStatus::CanceledWait as i32);
     active.cancel_time = Set(Some(chrono::Local::now().naive_local()));
+    active.update_time = Set(Some(chrono::Local::now().naive_local()));
+    active.update(&state.db).await?;
+
+    Ok(Json(ApiResponse::<()>::success_empty()))
+}
+
+/// 撤销注销（冷静期内恢复账户）：`POST /user/revokeCancel`
+///
+/// 对应 Java: `SysUserService.revokeCancel`。
+///
+/// 注销冷静期内用户无法登录，故本接口免登录鉴权，改为凭邮箱+密码确认身份。
+/// 仅「注销待生效」状态可撤销，恢复为正常状态并清空 `cancel_time`。
+pub async fn revoke_cancel(
+    State(state): State<AppState>,
+    Json(params): Json<UserDto>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    let email = params.email.unwrap_or_default();
+    let password = params.password.unwrap_or_default();
+
+    // 邮箱 + 密码校验（与登录一致，密码错误不区分用户是否存在，避免账户枚举）
+    let user = UserEntity::find()
+        .filter(UserCol::Email.eq(email))
+        .filter(UserCol::IsDeleted.eq(0))
+        .one(&state.db)
+        .await?
+        .ok_or(AppError::ResCode(ResCode::LoginInfoError))?;
+
+    if !verify(&password, &user.password).map_err(|e| AppError::Internal(anyhow::anyhow!(e)))? {
+        return Err(AppError::ResCode(ResCode::LoginInfoError));
+    }
+
+    // 只有「注销待生效」状态可以撤销注销
+    if user.status != UserStatus::CanceledWait as i32 {
+        return Err(AppError::ResCode(ResCode::UserStatusError));
+    }
+
+    // 恢复正常状态并清空注销申请时间
+    let mut active: UserActive = user.into();
+    active.status = Set(UserStatus::Normal as i32);
+    active.cancel_time = Set(None);
     active.update_time = Set(Some(chrono::Local::now().naive_local()));
     active.update(&state.db).await?;
 

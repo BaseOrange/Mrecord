@@ -30,6 +30,11 @@ pub fn build(state: AppState) -> Router {
             "/user/canceledMyUser",
             post(handler::user::canceled_my_user),
         )
+        // 撤销注销（免登录：注销冷静期内用户无法登录，入口在登录页）
+        .route(
+            "/user/revokeCancel",
+            post(handler::user::revoke_cancel),
+        )
         // 管理员接口（内部通过 AdminUser 提取器进行权限校验）
         .route("/user/list", post(handler::user::admin_query_list))
         .route(

@@ -27,6 +27,7 @@ public enum ResCode {
     NO_PERMISSION("11004", "无操作权限"),
     USER_STATUS_ERROR("11005", "用户状态异常"),
     USER_NOT_ACTIVATED("11006", "用户账户未激活，请先激活账户"),
+    USER_CANCELED_WAIT("11007", "账号处于注销冷静期，可撤销注销"),
 
     // 数据错误
     DATA_NOT_EXIST("12001", "数据不存在"),

@@ -25,6 +25,7 @@ import com.dcz.mrecord.service.SysUserService;
 import com.dcz.mrecord.util.JwtUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.core.update.UpdateChain;
 import com.mybatisflex.core.row.Db;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -206,6 +207,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (sysUser.getStatus() == UserStatusConst.UNACTIVATED.intValue()) {
             throw new MrecordException(ResCode.USER_NOT_ACTIVATED);
         }
+        if (sysUser.getStatus() == UserStatusConst.CANCELED_WAIT.intValue()) {
+            // 注销冷静期内：返回专属状态码，前端据此引导用户撤销注销
+            throw new MrecordException(ResCode.USER_CANCELED_WAIT);
+        }
         if (sysUser.getStatus() != UserStatusConst.NORMAL.intValue()) {
             throw new MrecordException(ResCode.USER_STATUS_ERROR);
         }
@@ -316,6 +321,38 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         sysUser.setCancelTime(new Date());
         userMapper.updateByQuery(sysUser, QueryWrapper.create().and(SysUser::getId).eq(userId));
         // 后续会有单独的定时任务，定时扫描待注销状态的用户。
+    }
+
+    /**
+     * 撤销注销（冷静期内恢复账户）
+     */
+    @Override
+    public void revokeCancel(UserDTO params) {
+        String email = params.getEmail();
+
+        // 邮箱验证
+        SysUser sysUser = userMapper.selectOneByQuery(QueryWrapper.create().and(SysUser::getEmail).eq(email));
+        if (sysUser == null) {
+            throw new MrecordException(ResCode.LOGIN_INFO_ERROR);
+        }
+
+        // 密码验证：注销冷静期内无法登录，此处凭密码确认是本人操作
+        String password = params.getPassword();
+        if (!BCrypt.checkpw(password, sysUser.getPassword())) {
+            throw new MrecordException(ResCode.LOGIN_INFO_ERROR);
+        }
+
+        // 只有「注销待生效」状态可以撤销注销
+        if (sysUser.getStatus() == null || sysUser.getStatus() != UserStatusConst.CANCELED_WAIT.intValue()) {
+            throw new MrecordException(ResCode.USER_STATUS_ERROR);
+        }
+
+        // 恢复正常状态并清空注销申请时间（cancelTime 需显式置 NULL，updateByQuery 默认忽略 null 字段）
+        UpdateChain.of(SysUser.class)
+                .set(SysUser::getStatus, UserStatusConst.NORMAL)
+                .setRaw(SysUser::getCancelTime, "NULL")
+                .where(SysUser::getId).eq(sysUser.getId())
+                .update();
     }
 
     /**

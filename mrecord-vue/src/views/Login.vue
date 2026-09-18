@@ -3,7 +3,8 @@ import {onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
-import {login, queryMyInfo, getRegisterEnabled} from '@/api'
+import {login, queryMyInfo, getRegisterEnabled, revokeCancel} from '@/api'
+import type {BusinessError} from '@/utils/request'
 import {md5} from 'js-md5'
 import AuthLayout from '@/components/AuthLayout.vue'
 import AgreementPopup from '@/components/AgreementPopup.vue'
@@ -16,6 +17,9 @@ const password = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
 const registerEnabled = ref(true)
+// 注销冷静期：登录被拒绝（11007）时弹出撤销注销入口
+const showCancelRevoke = ref(false)
+const revoking = ref(false)
 
 onMounted(async () => {
   try {
@@ -38,10 +42,30 @@ const onLogin = async () => {
     userStore.setUserInfo(userInfo)
     Snackbar.success('登录成功')
     router.replace('/home')
+  } catch (e) {
+    // 账号处于注销冷静期：引导用户撤销注销（表单里已填好邮箱密码，可直接复用）
+    if ((e as BusinessError).code === '11007') {
+      showCancelRevoke.value = true
+    }
+    // 其余错误由拦截器统一提示
+  } finally {
+    loading.value = false
+  }
+}
+
+// 撤销注销：冷静期内凭邮箱+密码恢复账号，成功后自动重新登录
+const onRevokeCancel = async () => {
+  revoking.value = true
+  try {
+    await revokeCancel({email: email.value, password: md5(password.value)})
+    Snackbar.success('已撤销注销，正在登录')
+    // 撤销成功后账号恢复正常，直接走登录流程
+    await onLogin()
   } catch {
     // 拦截器已处理错误提示
   } finally {
-    loading.value = false
+    revoking.value = false
+    showCancelRevoke.value = false
   }
 }
 
@@ -137,6 +161,24 @@ const showAgreement = ref(false)
     </div>
 
     <AgreementPopup v-model:show="showAgreement" />
+
+    <!-- 注销冷静期：撤销注销弹窗 -->
+    <var-dialog
+      v-model:show="showCancelRevoke"
+      title="账号注销中"
+      confirm-button-text="撤销注销并登录"
+      cancel-button-text="取消"
+      confirm-button-text-color="#fff"
+      confirm-button-color="#FF6500"
+      :confirm-button-disabled="revoking"
+      @confirm="onRevokeCancel"
+      @cancel="showCancelRevoke = false"
+    >
+      <div class="cancel-revoke-tips">
+        该账号正在注销中，处于 <b>15 天冷静期</b>。<br />
+        撤销注销后账号立即恢复正常，可继续使用。
+      </div>
+    </var-dialog>
   </AuthLayout>
 </template>
 
@@ -151,5 +193,15 @@ const showAgreement = ref(false)
 
 .agreement-link {
   font-size: 11px !important;
+}
+
+.cancel-revoke-tips {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
+}
+.cancel-revoke-tips b {
+  color: #FF6500;
+  font-weight: 600;
 }
 </style>

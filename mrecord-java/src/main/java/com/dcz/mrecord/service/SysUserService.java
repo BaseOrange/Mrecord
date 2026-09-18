@@ -77,6 +77,16 @@ public interface SysUserService extends IService<SysUser> {
     void canceledMyUser();
 
     /**
+     * 撤销注销（冷静期内恢复账户）
+     *
+     * <p>注销冷静期内用户无法登录，因此本接口免登录鉴权，改为凭邮箱+密码确认身份。
+     * 仅「注销待生效」状态可撤销，恢复为正常状态并清空注销申请时间。</p>
+     *
+     * @param params 邮箱 + 密码
+     */
+    void revokeCancel(UserDTO params);
+
+    /**
      * 清理已过冷静期的待注销用户
      *
      * <p>备份并删除用户名下的全部账簿数据后，物理删除用户本体。对应 Rust 端

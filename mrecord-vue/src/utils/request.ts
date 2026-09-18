@@ -38,6 +38,11 @@ interface Result<T = unknown> {
 // 业务成功码
 const SUCCESS_CODE = '00000'
 
+// 携带业务错误码的错误类型（供调用方按 code 分支处理，如登录页识别注销冷静期）
+export interface BusinessError extends Error {
+    code?: string
+}
+
 // 响应拦截器
 request.interceptors.response.use(
     (response: AxiosResponse<Result>) => {
@@ -50,8 +55,10 @@ request.interceptors.response.use(
                 window.location.href = '/login'
                 return Promise.reject(new Error(res.message || '登录已过期，请重新登录'))
             }
+            const error = new Error(res.message || '请求失败') as BusinessError
+            error.code = res.code
             Snackbar.error(res.message || '请求失败')
-            return Promise.reject(new Error(res.message || '请求失败'))
+            return Promise.reject(error)
         }
         // 业务成功：自动解包，直接返回 data
         return res.data as any

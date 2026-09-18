@@ -37,6 +37,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/v2/user/resendActivateEmail",
                         "/api/v2/user/forgotPassword",
                         "/api/v2/user/resetPassword",
+                        // 【撤销注销必须免登录】用户注销后处于「注销待生效」状态，登录接口会直接拒绝
+                        // （11007），撤销注销入口只能出现在登录页，必须在未登录态调用
+                        "/api/v2/user/revokeCancel",
                         "/api/v2/config/initialized",
                         "/api/v2/config/registerEnabled",
                         "/api/v2/config/initAdmin"
