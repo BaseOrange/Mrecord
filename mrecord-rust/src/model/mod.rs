@@ -4,7 +4,6 @@ pub mod finance;
 pub mod id_dto;
 pub mod mail_params;
 pub mod page_info;
-pub mod record;
 pub mod site;
 pub mod sys_user_operate_log;
 pub mod user;

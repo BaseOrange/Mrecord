@@ -108,30 +108,6 @@ where
     }
 }
 
-/// 从 JSON 数字或字符串解析金额（宽松反序列化）
-///
-/// 供请求 DTO 的 `#[serde(deserialize_with = "...")]` 使用。等价 Java `BigDecimal`
-/// 对 JSON 数值的解析行为，同时兼容旧接口可能传入的字符串金额。
-pub fn deserialize_decimal_from_number_or_string<'de, D>(
-    deserializer: D,
-) -> Result<Decimal, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = serde_json::Value::deserialize(deserializer)?;
-    match value {
-        serde_json::Value::Number(n) => {
-            Decimal::from_str_exact(&n.to_string()).map_err(serde::de::Error::custom)
-        }
-        serde_json::Value::String(s) => {
-            Decimal::from_str_exact(&s).map_err(serde::de::Error::custom)
-        }
-        other => Err(serde::de::Error::custom(format!(
-            "金额必须是数字或字符串: {other}"
-        ))),
-    }
-}
-
 /// 从 JSON 数字或字符串解析**可空**金额（缺失或 `null` 解析为 `None`）。
 ///
 /// 供请求 DTO 的 `#[serde(default, deserialize_with = "...")]` 使用，把「金额缺失」
@@ -174,13 +150,6 @@ mod tests {
     /// 无注解的金额字段：验证 `Decimal` 的**默认**序列化也是 JSON 数字
     #[derive(Serialize)]
     struct DefaultDecimal {
-        value: Decimal,
-    }
-
-    /// 模拟请求 DTO 的金额字段，验证 `deserialize_with` 的真实接入路径
-    #[derive(Deserialize)]
-    struct MoneyRequest {
-        #[serde(deserialize_with = "deserialize_decimal_from_number_or_string")]
         value: Decimal,
     }
 
@@ -231,20 +200,6 @@ mod tests {
             json["value"].is_number(),
             "Decimal 默认序列化必须是 JSON 数字（需在 Cargo.toml 保留 rust_decimal 的 `serde-float` feature）: {json}"
         );
-    }
-
-    #[test]
-    fn deserialize_accepts_number_and_string() {
-        // 前端传入 JSON 数字
-        let from_number: MoneyRequest = serde_json::from_str(r#"{"value":123.45}"#).unwrap();
-        assert_eq!(from_number.value, Decimal::new(12345, 2));
-
-        // 兼容旧接口的字符串金额
-        let from_string: MoneyRequest = serde_json::from_str(r#"{"value":"123.45"}"#).unwrap();
-        assert_eq!(from_string.value, Decimal::new(12345, 2));
-
-        // 既非数字也非字符串应报错
-        assert!(serde_json::from_str::<MoneyRequest>(r#"{"value":null}"#).is_err());
     }
 
     #[test]

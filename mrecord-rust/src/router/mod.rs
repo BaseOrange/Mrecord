@@ -3,25 +3,13 @@
 //! 对应 Java 中各 `@RestController` 的 `@RequestMapping`。
 //! 所有路由集中在此处注册，方便统一查阅。
 
-use axum::{
-    Router, middleware,
-    routing::{get, post},
-};
+use axum::{Router, middleware, routing::post};
 
 use crate::{AppState, handler};
 
 /// 构建应用路由
 pub fn build(state: AppState) -> Router {
     let api_routes = Router::new()
-        // record 模块（示例 / 旧测试用）
-        .route(
-            "/records",
-            get(handler::record::list).post(handler::record::create),
-        )
-        .route(
-            "/records/{id}",
-            get(handler::record::get).delete(handler::record::delete),
-        )
         // ==================== 用户模块 ====================
         // 对应 Java: SysUserController（@RequestMapping("/user")）
         .route("/user/initAdmin", post(handler::user::init_admin))
