@@ -113,20 +113,25 @@ public class EmailServiceImpl implements EmailService {
     }
 
     /**
-     * 送新财年总结邮件
+     * 发送年度总结邮件
+     *
+     * <p>原方法 {@code sendNewYearReminderEmail} 语义为「新财年提醒」，产品决策不做新财年功能，
+     * 改为每年 1 月 1 日 08:08 发送上一年度的财务总结。邮件主题中的年份取自
+     * {@code params.getSummaryYear()}（上一年度）。</p>
      *
      * @param paramsList 邮件参数集合
      */
     @Override
-    public void sendNewYearReminderEmail(List<MailParamsBO> paramsList) {
+    public void sendYearSummaryEmail(List<MailParamsBO> paramsList) {
         HtmlEmail mailClient = null;
 
         for (MailParamsBO params : paramsList) {
             try {
                 mailClient = mailClient == null ? getMailClient() : mailClient;
-                sendHtmlMail(mailClient, params.getTo(), "【MRecord｜月衡】开启新的一年吧", "mail/mr-year.html", params.getParams());
+                String subject = "【MRecord｜月衡】" + params.getSummaryYear() + " 年度总结";
+                sendHtmlMail(mailClient, params.getTo(), subject, "mail/mr-year.html", params.getParams());
             } catch (Exception e) {
-                log.error("新财年提醒邮件发送失败", e);
+                log.error("年度总结邮件发送失败", e);
             }
         }
     }

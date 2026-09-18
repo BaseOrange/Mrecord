@@ -42,11 +42,15 @@ public interface EmailService {
     void sendMonthReportEmail(List<MailParamsBO> paramsList);
 
     /**
-     * 送新财年总结邮件
+     * 发送年度总结邮件
+     *
+     * <p>原方法 {@code sendNewYearReminderEmail} 语义为「新财年提醒」，产品决策不做新财年功能，
+     * 改为每年 1 月 1 日 08:08 发送上一年度的财务总结（对应 Rust 端
+     * {@code EmailService::send_year_summary_email} 与 {@code YearlySummaryTask}）。</p>
      *
      * @param paramsList 邮件参数集合
      */
-    void sendNewYearReminderEmail(List<MailParamsBO> paramsList);
+    void sendYearSummaryEmail(List<MailParamsBO> paramsList);
 
     /**
      * 发送账簿导出完成邮件

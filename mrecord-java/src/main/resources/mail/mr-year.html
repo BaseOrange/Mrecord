@@ -58,6 +58,12 @@
             width: 85%;
             border-radius: 6px;
         }
+        .info-box p {
+            margin-bottom: 10px;
+        }
+        .info-box p:last-child {
+            margin-bottom: 0;
+        }
         .btn-box {
             text-align: center;
             margin: 30px 0;
@@ -97,19 +103,22 @@
 
         <!-- 邮件内容 -->
         <div class="email-body">
-            <h2>年度财务总结 · 请手动开启新年度账簿</h2>
+            <h2>${MR-SummaryYear} 年度财务总结 · 感谢一年的陪伴</h2>
             <p>亲爱的${MR-UserName}，你好：</p>
-            <p>旧年度已圆满结束，系统已为你生成专属年度财务总结报告，新年度财务记账需你手动开启后即可正常使用。</p>
+            <p>新的一年已经开启，月衡为你整理了 ${MR-SummaryYear} 年的财务足迹，快来看看这一年属于你的财富故事吧。</p>
 
             <div class="info-box">
-                <p><strong>年度总结：</strong>查看全年资产负债趋势、同比环比分析</p>
-                <p><strong>新年度：</strong>请登录系统手动开启新年度账簿</p>
+                <p><strong>记账月数：</strong>${MR-RecordedMonths} 个月（${MR-BookCount} 个账簿 · ${MR-ItemCount} 条明细）</p>
+                <p><strong>年初净资产：</strong>${MR-NetAssetStart}</p>
+                <p><strong>年末净资产：</strong>${MR-NetAsset}</p>
+                <p><strong>年度变化：</strong>${MR-NetAssetChange}（${MR-NetAssetChangeRate}）</p>
+                <p><strong>年末总资产 / 总负债：</strong>${MR-TotalAsset} / ${MR-TotalLiability}</p>
             </div>
 
-            <p>你可以登录系统查看完整年度数据总结、资产变化趋势与数据导出，并手动开启新年度账簿，继续进行月度记账，持续严谨、高效地管理个人财务数据。</p>
+            <p>每一笔记录都是认真生活的证明。过去的一年，你用 ${MR-RecordedMonths} 个月的坚持留下了 ${MR-ItemCount} 条财务足迹；新的一年，月衡继续陪你记录每一份成长。</p>
 
             <div class="btn-box">
-                <a href="${MR-WebSite}" class="login-btn" target="_blank">查看年度总结</a>
+                <a href="${MR-WebSite}" class="login-btn" target="_blank">查看我的年度数据</a>
             </div>
 
             <p>感谢你一路相伴，祝你新的一年财务稳健，万事顺遂！</p>
