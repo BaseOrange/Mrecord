@@ -5,7 +5,8 @@ FROM azul/zulu-openjdk-alpine:17
 WORKDIR /app
 
 # 将本地编译好的 jar 包复制到容器中，并重命名为 app.jar
-COPY ./mrecord-java/target/mrecord-1.0-SNAPSHOT.jar ./mrecord.jar
+# （文件名对应 mrecord-java/pom.xml 中的 <version>1.0.0</version>）
+COPY ./mrecord-java/target/mrecord-1.0.0.jar ./mrecord.jar
 
 # 声明数据卷，用于持久化存储 SQLite 数据库文件
 VOLUME ["/app/data"]
