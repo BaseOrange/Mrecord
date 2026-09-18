@@ -55,10 +55,6 @@ export interface DeleteBookParams {
 export interface ListBooksParams extends PageParams {
     /** 账簿名称 */
     name?: string
-    /** 账簿类型 */
-    type?: string
-    /** 账簿年份 */
-    year?: string
 }
 
 /** 指定账簿详细统计响应 */

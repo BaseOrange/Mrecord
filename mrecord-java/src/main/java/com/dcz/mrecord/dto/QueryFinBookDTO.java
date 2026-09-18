@@ -15,14 +15,4 @@ public class QueryFinBookDTO extends PageInfoDTO {
      * 账簿名称
      */
     private String name;
-
-    /**
-     * 账簿类型
-     */
-    private String type;
-
-    /**
-     * 账簿年份
-     */
-    private String year;
 }
