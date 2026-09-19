@@ -75,8 +75,8 @@ case "${1:-}" in
     # 网关模式：仅监听 Unix socket，不对外暴露 TCP 端口
     #   MRECORD_GATEWAY_SOCKET —— 应用监听的 socket 路径
     #   MRECORD_GATEWAY_PREFIX —— 路由前缀，与 ui/config 的 gatewayPrefix 一致
-    # 未实现 socket 监听的旧二进制会忽略这两个变量，退回 TCP（127.0.0.1:2333），
-    # 供调试使用；正式发布前必须完成该改造。
+    # 应用收到 socket 变量即跳过 TCP 绑定（见 mrecord-rust/src/main.rs），
+    # 因此与 Docker 版（-p 2333:2333）可以同时运行、互不影响。
     export MRECORD_GATEWAY_SOCKET="$SOCKET_PATH"
     export MRECORD_GATEWAY_PREFIX="$GATEWAY_PREFIX"
     export MRECORD_HOST="${MRECORD_HOST:-127.0.0.1}"

@@ -3,7 +3,7 @@
 //! 对应 Java 中各 `@RestController` 的 `@RequestMapping`。
 //! 所有路由集中在此处注册，方便统一查阅。
 
-use axum::{Router, middleware, routing::post};
+use axum::{Router, middleware, routing::{get, post}};
 
 use crate::{AppState, handler};
 
@@ -142,13 +142,37 @@ pub fn build(state: AppState) -> Router {
             crate::middleware::log::operate_log,
         ));
 
-    Router::new()
+    let app = Router::new()
         .nest("/api/v2", api_routes)
         // 静态资源走编译期内嵌（详见 `static_files` 模块）：不再依赖运行时 cwd
         // 与磁盘上的 `static/` 目录，容器外启动、命名数据卷升级等场景下前端
         // 不会再整体 404。`MRECORD_STATIC_DIR` 可切回磁盘模式以热替换前端。
         .fallback_service(crate::static_files::static_service())
-        .with_state(state)
+        .with_state(state);
+
+    // 飞牛 fnOS 统一网关：飞牛把 `/app/mrecord-fnos/...` 的**完整路径**透传给应用，
+    // 因此把整套路由（含 `/api/v2` 前缀与静态资源兜底）再嵌套到网关前缀下。
+    // `nest` 会剥掉前缀，内部的 API 路由、静态资源查找、操作日志中间件等逻辑
+    // 全部无需改动。
+    //
+    // **坑**：axum 嵌套路由的 fallback 只覆盖 `prefix/*`（至少一段路径），
+    // 「精确前缀根」`/app/mrecord-fnos` 与 `/app/mrecord-fnos/` 都会 404——
+    // 而飞牛桌面入口（`app/ui/config` 的 `url`）打开的正是这个地址。所以
+    // 额外挂两条显式路由返回 SPA 首页，交给前端 vue-router 接管。
+    //
+    // **可选开关**：未设置 `MRECORD_GATEWAY_PREFIX` 时原样返回，独立部署与
+    // Docker 部署的路由表一个字节都不会变。
+    match crate::env_nonempty("MRECORD_GATEWAY_PREFIX") {
+        Some(prefix) => {
+            tracing::info!(prefix = %prefix, "飞牛统一网关模式：路由挂载到前缀下");
+            Router::new()
+                .nest(&prefix, app)
+                // 精确前缀根（不带 / 带尾斜杠）：回 SPA 首页，否则桌面入口白屏
+                .route(&prefix, get(crate::static_files::serve_index))
+                .route(&format!("{prefix}/"), get(crate::static_files::serve_index))
+        }
+        None => app,
+    }
 }
 
 #[cfg(test)]

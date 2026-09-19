@@ -167,7 +167,9 @@ docker run -d -p 2333:2333 -v mrecord-data-rs:/app --name mrecord-rust mrecord-r
 |-------------------|---------------------------------------------|--------------|
 | `MRECORD_HOST`    | 监听地址（容器内必须为 `0.0.0.0`，镜像已默认设置）                | `127.0.0.1`  |
 | `MRECORD_PORT`    | 监听端口（与 Java 版统一为 `2333`）                | `2333`       |
-| `MRECORD_STATIC_DIR` | 设为磁盘路径可切回运行时读盘，在不重编译后端的前提下热替换前端               | 未设置（用内嵌资源）   |
+| `MRECORD_STATIC_DIR` | 设为磁盘路径可切回运行时读盘，在不重编译后端的前提下热替换前端               | 未设置（用内嵌资源）       |
+| `MRECORD_GATEWAY_SOCKET` | 飞牛 fnOS 统一网关模式：监听该 Unix socket 而非 TCP（不占任何宿主机端口） | 未设置（TCP 模式） |
+| `MRECORD_GATEWAY_PREFIX` | 飞牛 fnOS 统一网关模式：路由挂到该前缀下（如 `/app/mrecord-fnos`） | 未设置 |
 | `RUST_LOG`        | 日志级别，如 `mrecord_rust=info`                    | 镜像内置默认值       |
 
 ## 方式二：Docker 部署 Java 版

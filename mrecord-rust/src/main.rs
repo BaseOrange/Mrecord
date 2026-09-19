@@ -17,6 +17,10 @@ use std::sync::Arc;
 use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
 
+// Unix domain socket 仅存在于 Unix 平台；Windows 构建跳过网关分支（见 main 中的 cfg）
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 use crate::service::{
     cancel_cleanup_task::CancelCleanupTask, email::EmailService, export_task::ExportTaskService,
     monthly_reminder_task::MonthlyReminderTask, sys_config::SysConfigService,
@@ -119,6 +123,27 @@ async fn main() {
 
     let app = router::build(state);
 
+    // 飞牛 fnOS 统一网关模式：监听 Unix socket 而非 TCP。
+    //
+    // 飞牛把 `/app/mrecord-fnos` 下的请求校验登录态后转发到 `$TRIM_APPDEST/app.sock`，
+    // 应用自身不需要（也不应该）占用任何宿主机 TCP 端口——这正是飞牛版能与
+    // Docker 版（`-p 2333:2333`）同时运行、数据互相独立的原因。
+    //
+    // 这是**可选开关**：未设置 `MRECORD_GATEWAY_SOCKET` 时直接跳到下面的 TCP 分支，
+    // 本地 `cargo run`、Docker 部署的路由与监听逻辑与改造前完全一致。
+    #[cfg(unix)]
+    if let Some(socket_path) = env_nonempty("MRECORD_GATEWAY_SOCKET") {
+        // 残留的旧 socket 文件会让 bind 失败（飞牛 cmd/main 也会先删，这里双保险）
+        let _ = std::fs::remove_file(&socket_path);
+        let listener = tokio::net::UnixListener::bind(&socket_path)
+            .unwrap_or_else(|e| panic!("无法绑定 Unix socket「{socket_path}」: {e}"));
+        // 网关转发进程与应用可能不是同一用户，放宽权限避免连接被拒
+        let _ = std::fs::set_permissions(&socket_path, PermissionsExt::from_mode(0o666));
+        println!("Mrecord-rs server listening on unix:{socket_path}");
+        axum::serve(listener, app).await.unwrap();
+        return;
+    }
+
     // 监听地址可由环境变量覆盖（`MRECORD_HOST` / `MRECORD_PORT`），默认仍为
     // 127.0.0.1:2333（与 Java 版对齐，前端 dev 代理也指向该端口），保持本地
     // `cargo run` 行为不变；容器化部署时 Dockerfile 设置 `MRECORD_HOST=0.0.0.0`，
@@ -136,4 +161,15 @@ async fn main() {
     axum::serve(tokio::net::TcpListener::bind(addr).await.unwrap(), app)
         .await
         .unwrap();
+}
+
+/// 读取环境变量：未设置或空白统一视作未设置
+///
+/// 供网关模式两个开关使用（`MRECORD_GATEWAY_SOCKET` / `MRECORD_GATEWAY_PREFIX`），
+/// 与现有 `MRECORD_HOST` 等变量的「空值即默认」语义保持一致。
+fn env_nonempty(key: &str) -> Option<String> {
+    match std::env::var(key) {
+        Ok(value) if !value.trim().is_empty() => Some(value.trim().to_string()),
+        _ => None,
+    }
 }

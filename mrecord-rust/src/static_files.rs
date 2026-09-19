@@ -132,6 +132,16 @@ async fn serve_embedded(req: Request<Body>) -> Response<Body> {
         return file_to_response(file);
     }
 
+    index_response()
+}
+
+/// 返回内嵌的 `index.html`（SPA 入口）
+///
+/// 供 [`serve_embedded`] 的 SPA 兜底与飞牛统一网关的「精确前缀根」路由共用。
+/// 飞牛桌面入口（`app/ui/config` 的 `url`）打开的是 `/app/mrecord-fnos`
+/// 本身，而 axum 嵌套路由的 fallback 只覆盖 `prefix/*`，前缀根必须显式
+/// 挂一个返回首页的路由，否则用户点桌面图标会拿到 404 白屏。
+fn index_response() -> Response<Body> {
     match EMBEDDED.get_file("index.html") {
         Some(file) => file_to_response(file),
         None => Response::builder()
@@ -141,6 +151,14 @@ async fn serve_embedded(req: Request<Body>) -> Response<Body> {
             ))
             .expect("构造 404 响应不会失败"),
     }
+}
+
+/// 返回内嵌的 `index.html`（SPA 入口）——飞牛统一网关「精确前缀根」路由使用
+///
+/// 见 [`index_response`] 的说明：飞牛桌面入口打开 `/app/mrecord-fnos` 本身时，
+/// 需要一个显式 handler 把 SPA 首页交给浏览器。
+pub async fn serve_index() -> Response<Body> {
+    index_response()
 }
 
 /// 把内嵌文件转成 HTTP 响应（200 + 按扩展名推断的 Content-Type）

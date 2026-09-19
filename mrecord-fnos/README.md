@@ -84,29 +84,26 @@ SQLite 首次启动自动建表，JWT/令牌密钥自动生成并回写，**安�
 因此 `manifest` 声明 `platform=all`。若后续发现 fnOS 对此有更严格的校验，
 改为按架构分别出包即可（build.sh 已支持单架构参数）。
 
-## ⚠️ 当前状态：Rust 侧网关改造未完成
+## ✅ Rust 侧网关改造已完成
 
-脚手架与打包链路已就绪，但 `mrecord-rust` 目前**只支持 TCP 监听**，还不认识
-`cmd/main` 传入的两个环境变量：
+`cmd/main` 启动应用时传入两个环境变量，`mrecord-rust` 已实现支持（均为**可选开关**，
+不设置时行为完全不变，独立部署与 Docker 部署零影响）：
 
-| 环境变量 | 作用 | 现状 |
+| 环境变量 | 作用 | 状态 |
 |---|---|---|
-| `MRECORD_GATEWAY_SOCKET` | 监听该 Unix socket 而非 TCP | ❌ 未实现（会被忽略，退回 TCP） |
-| `MRECORD_GATEWAY_PREFIX` | 路由挂到 `/app/mrecord-fnos` 前缀下 | ❌ 未实现 |
+| `MRECORD_GATEWAY_SOCKET` | 监听该 Unix socket 而非 TCP（不占任何宿主机端口） | ✅ 已实现并验证 |
+| `MRECORD_GATEWAY_PREFIX` | 路由挂到 `/app/mrecord-fnos` 前缀下 | ✅ 已实现并验证 |
 
-需要改 `mrecord-rust`（都是**可选开关**，不传变量时行为完全不变，独立部署与
-Docker 部署零影响）：
+实现要点（详见 `mrecord-rust/src/main.rs` 与 `src/router/mod.rs`）：
 
-1. `src/main.rs`：`MRECORD_GATEWAY_SOCKET` 非空时用 `tokio::net::UnixListener`
-   监听 socket（否则保持现有 TCP 逻辑，一个字节都不变）
-2. `src/router`：`MRECORD_GATEWAY_PREFIX` 非空时把路由（含 API 与静态资源 fallback）
-   嵌套到该前缀下
-3. 可选：读取网关转发的 `X-Trim-Userid` / `X-Trim-Isadmin` / `X-Trim-Username`
-   header 作为可信身份上下文（应用自身的 JWT 用户体系保持不变）
+- socket 模式下跳过 TCP 绑定，socket 权限设为 `0666`，避免网关进程与应用用户不同时连接被拒
+- 路由 `nest` 到前缀下；另为「精确前缀根」（`/app/mrecord-fnos` 与 `/app/mrecord-fnos/`）
+  显式挂了返回 SPA 首页的路由——axum 嵌套 fallback 只覆盖 `prefix/*`，不补这两条的话
+  飞牛桌面入口打开会 404 白屏
+- 已通过本地冒烟测试：前缀根 / SPA 路由 / 静态资源 / API 全部正常，TCP 端口确认未占用
 
-改造完成前可以先用 `./scripts/build.sh` 走通整条构建链路，但装到设备上无法通过
-网关访问——因为应用没监听 socket。作为临时验证手段，`cmd/main` 里保留了
-`MRECORD_HOST=127.0.0.1 MRECORD_PORT=2333` 的 TCP 回退。
+后续可选增强：读取网关转发的 `X-Trim-Userid` / `X-Trim-Isadmin` / `X-Trim-Username`
+header 作为可信身份上下文（应用自身的 JWT 用户体系保持不变，非必需）。
 
 ## 参考文档
 
