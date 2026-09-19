@@ -37,8 +37,20 @@ mrecord-fnos/
 ./scripts/build.sh
 ```
 
-脚本会依次：检查工具链 → 构建网关版前端 → 交叉编译 x86_64/aarch64 musl 二进制 →
-拷进 `app/` → `fnpack build` → 生成 `mrecord-fnos.fpk`。
+按架构产出两个**符合 fnOS 规范的独立包**：
+
+| 产物 | manifest | 内容 |
+|---|---|---|
+| `mrecord-fnos-x86.fpk` | `platform=x86` | 仅含 x86_64 二进制 |
+| `mrecord-fnos-arm.fpk` | `platform=arm` | 仅含 aarch64 二进制 |
+
+飞牛应用中心按设备的 CPU 架构分发对应包，`platform` 字段与包内二进制严格一致
+（fnOS 规范：`all` 仅用于不含架构相关二进制的包，所以这里不用它）。
+
+脚本流程：检查工具链 → 构建网关版前端 → 交叉编译两个 musl 二进制 →
+逐架构拷二进制、临时改 manifest 的 `platform`、`fnpack build`、改名输出 →
+恢复 `mrecord-rust/static/` 为默认 base 构建。manifest 在脚本退出时无条件还原
+（`trap ... EXIT`），工作树不会留下被改过的字段。
 
 ### 前置条件
 
@@ -46,7 +58,8 @@ mrecord-fnos/
 |---|---|
 | Node.js + yarn | https://nodejs.org |
 | Rust | https://rustup.rs |
-| cargo-zigbuild | `cargo install cargo-zigbuild`（musl 交叉编译，按其文档装 zig） |
+| cargo-zigbuild | `cargo install cargo-zigbuild`（musl 交叉编译） |
+| zig | cargo-zigbuild 的交叉链接器，需在 PATH 上（脚本也认 `~/.local/bin/zig`） |
 | fnpack | 见 https://developer.fnnas.com/docs/cli/fnpack/#下载 |
 
 脚本会自动 `rustup target add` 两个 musl target，缺工具时会给出安装提示。
@@ -54,9 +67,12 @@ mrecord-fnos/
 ### 常用参数
 
 ```bash
-./scripts/build.sh x86_64        # 只编 x86_64（默认双架构）
+./scripts/build.sh x86_64        # 只出 x86 包（默认双架构）
 ./scripts/build.sh --no-restore  # 不恢复 mrecord-rust/static/ 的默认构建
 ```
+
+> 手动直接跑 `fnpack build` 时，`manifest` 里的 `platform` 是构建模板值
+> （`all`），且 `app/` 下可能没有二进制——正式打包请走 `build.sh`。
 
 ## 设计要点
 
@@ -80,9 +96,10 @@ SQLite 首次启动自动建表，JWT/令牌密钥自动生成并回写，**安�
 
 ### 架构支持
 
-包内同时携带两个 musl 静态二进制，`cmd/main` 按 `TRIM_SYS_ARCH` 运行时选择，
-因此 `manifest` 声明 `platform=all`。若后续发现 fnOS 对此有更严格的校验，
-改为按架构分别出包即可（build.sh 已支持单架构参数）。
+每个架构一个独立包（`platform=x86` / `platform=arm`），包内只含对应架构的
+musl 静态二进制；在 ARM Mac 上交叉编译 x86 包没有问题（zig 做交叉链接器，
+本机架构只影响构建机，不影响产物）。`cmd/main` 按 `TRIM_SYS_ARCH` 选择二进制——
+正常情况下包内只有匹配设备架构的那一个。
 
 ## ✅ Rust 侧网关改造已完成
 
