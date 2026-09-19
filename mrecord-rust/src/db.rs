@@ -178,10 +178,14 @@ async fn patch_money_column_types(conn: &DatabaseConnection) {
 
 /// PRAGMA table_info 查询结果行（Sea-ORM 2.0 的 `query_all` 只接受 `StatementBuilder`，
 /// 原生 SQL 查询需经 `FromQueryResult` 结构体承载）。
+///
+/// 注意：`FromQueryResult` 派生宏不识别实体模型用的 `column_name` 属性（那是
+/// `DeriveEntityModel` 的），只识别 `alias`/`from_alias`。PRAGMA 返回的列名是
+/// 小写的 `type`，与 Rust 关键字冲突无法直接作字段名，故此处用 `alias = "type"`。
 #[derive(Clone, Debug, PartialEq, FromQueryResult)]
 struct PragmaColumnRow {
     name: String,
-    #[sea_orm(column_name = "type")]
+    #[sea_orm(alias = "type")]
     column_type: String,
 }
 
