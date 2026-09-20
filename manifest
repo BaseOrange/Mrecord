@@ -1,0 +1,16 @@
+appname               = mrecord-fnos
+version               = 0.1.0
+display_name          = Mrecord 月衡
+desc                  = 每月快照式个人记账应用：每月一次盘点各账户的资产与负债，自动汇总总资产、总负债与净资产，并给出同比、环比变化。支持多账簿管理、多用户数据隔离、资产趋势图、Excel 导出（邮件送达）与月度记账提醒，帮助你看清自己的财务状况。数据保存在本机，不上云。
+source                = thirdparty
+platform              = x86
+maintainer            = BaseOrange
+maintainer_url        = https://log.660066.xyz
+distributor           = BaseOrange
+distributor_url       = https://github.com/BaseOrange/Mrecord
+os_min_version        = 1.2.0
+desktop_uidir         = ui
+desktop_applaunchname = mrecord-fnos.main
+ctl_stop              = true
+changelog             = 首个飞牛 fnOS 版本：月度资产负债快照记账，支持多账簿、多用户、趋势图、Excel 导出与记账提醒。
+checksum              = b326dd6726fd329316e623b80fca1550

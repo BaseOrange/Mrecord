@@ -1,10 +1,18 @@
 [
   {
-    "stepTitle": "访问方式",
+    "stepTitle": "使用须知",
     "items": [
       {
         "type": "tips",
-        "helpText": "Mrecord 通过飞牛统一网关访问，安装完成后从桌面图标或应用中心打开，路径为 /app/mrecord-fnos。不占用宿主机端口，可与已部署的 Docker 版本同时运行，两者数据相互独立。"
+        "helpText": "首次打开需要初始化管理员账号：填写邮箱、密码与昵称即可开始使用。数据保存在本机，可在文件管理器中通过共享目录「mrecord-fnos/data」找到记账数据库并自行备份，也可在应用内导出 Excel 留存。"
+      },
+      {
+        "type": "tips",
+        "helpText": "本应用为第三方个人记账工具，适用于个人日常记账与财务分析，不构成任何投资、理财或税务建议。使用者应自行核对数据的准确性，因数据记录、使用或丢失造成的任何损失，开发者不承担责任。"
+      },
+      {
+        "type": "tips",
+        "helpText": "本应用完全免费开源，使用过程中如遇到问题，可在 GitHub 提交 Issue 反馈：https://github.com/BaseOrange/Mrecord"
       }
     ]
   }

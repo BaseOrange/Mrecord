@@ -23,10 +23,22 @@ GATEWAY_PREFIX="/app/${APP_NAME}"
 
 # 目录与文件（TRIM_* 未设置时给出本地调试用的默认值）
 BIN_DIR="${TRIM_APPDEST:-./app}"
-DATA_DIR="${TRIM_PKGVAR:-./data}"
+PKG_VAR_DIR="${TRIM_PKGVAR:-./data}"
+# 数据目录优先用声明的共享目录（用户可在文件管理器中直接看到 data.db 并备份），
+# 没有共享目录时退回 $TRIM_PKGVAR。TRIM_DATA_SHARE_PATHS 是冒号分隔的路径列表，
+# config/resource 里声明了 mrecord-fnos/data，取该路径。
+DATA_DIR="$PKG_VAR_DIR"
+if [ -n "${TRIM_DATA_SHARE_PATHS:-}" ]; then
+  # 冒号分隔的列表里挑属于本应用的共享目录
+  for _p in $(echo "$TRIM_DATA_SHARE_PATHS" | tr ':' ' '); do
+    case "$_p" in
+      */mrecord-fnos/data) DATA_DIR="$_p" ;;
+    esac
+  done
+fi
 LOG_ERR="${TRIM_TEMP_LOGFILE:-/tmp/${APP_NAME}-err.log}"
-PID_FILE="${DATA_DIR}/${APP_NAME}.pid"
-LOG_FILE="${DATA_DIR}/${APP_NAME}.log"
+PID_FILE="${PKG_VAR_DIR}/${APP_NAME}.pid"
+LOG_FILE="${PKG_VAR_DIR}/${APP_NAME}.log"
 SOCKET_PATH="${BIN_DIR}/app.sock"
 
 # 把错误信息写到 UI 可见的日志（$TRIM_TEMP_LOGFILE 由 fnOS 注入）
@@ -77,12 +89,21 @@ start() {
     exit 1
   fi
 
-  # 数据目录由 fnOS 在安装时创建并赋权给包用户（/vol{n}/@appdata/{appname}）。
-  # 脚本不主动创建——包用户对 /vol{n}/@appdata/ 无写权限，mkdir 会 Permission
-  # denied 导致启动失败。目录不存在说明安装异常，明确报错。
+  # 数据目录由 fnOS 在安装时创建并赋权给包用户。共享目录（TRIM_DATA_SHARE_PATHS）
+  # 或 $TRIM_PKGVAR 都可以。目录不存在说明安装异常，明确报错。
   if [ ! -d "$DATA_DIR" ]; then
-    err "启动失败：数据目录不存在 $DATA_DIR（TRIM_PKGVAR='${TRIM_PKGVAR:-未设置}'，应由系统在安装时创建）"
+    err "启动失败：数据目录不存在 $DATA_DIR（TRIM_PKGVAR='${TRIM_PKGVAR:-未设置}'，TRIM_DATA_SHARE_PATHS='${TRIM_DATA_SHARE_PATHS:-未设置}'，应由系统在安装时创建）"
     exit 1
+  fi
+
+  # 旧版数据目录迁移：如果共享目录是新建的而 $TRIM_PKGVAR 里已有 data.db，
+  # 帮用户把数据库搬过来，避免升级后数据"丢失"。
+  if [ "$DATA_DIR" != "$PKG_VAR_DIR" ] && [ ! -f "$DATA_DIR/data.db" ] && [ -f "$PKG_VAR_DIR/data.db" ]; then
+    err "迁移历史数据：$PKG_VAR_DIR/data.db → $DATA_DIR/data.db"
+    if ! cp "$PKG_VAR_DIR/data.db" "$DATA_DIR/data.db" 2>>"$LOG_ERR"; then
+      err "迁移失败：无法写入 $DATA_DIR/data.db，继续使用原目录"
+      DATA_DIR="$PKG_VAR_DIR"
+    fi
   fi
 
   # 验证可写：应用要在这里写 data.db 与 exports/
