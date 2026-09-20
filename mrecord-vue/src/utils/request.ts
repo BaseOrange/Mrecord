@@ -14,12 +14,22 @@ const request: AxiosInstance = axios.create({
     },
 })
 
+// 飞牛统一网关模式：Authorization 头会被网关当作飞牛会话 token 拦截校验
+// （飞牛官方应用在网关下都不发 Authorization，只靠网关注入的会话 Cookie）。
+// 由构建期 base 路径识别（/app/... 前缀），此时改用应用自己的 token 头携带 JWT——
+// Rust 后端的 user_context 提取器已兼容该头，Docker/独立部署的 Java 后端不受影响。
+const GATEWAY_MODE = import.meta.env.BASE_URL.startsWith('/app/')
+
 // 请求拦截器
 request.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const userStore = useUserStore()
         if (userStore.token && config.headers) {
-            config.headers.Authorization = `Bearer ${userStore.token}`
+            if (GATEWAY_MODE) {
+                config.headers.token = userStore.token
+            } else {
+                config.headers.Authorization = `Bearer ${userStore.token}`
+            }
         }
         return config
     },
@@ -52,7 +62,8 @@ request.interceptors.response.use(
             // 特殊处理token过期情况
             if (res.code === '401' || res.message?.includes('登录') || res.message?.includes('token')) {
                 useUserStore().logout()
-                window.location.href = '/login'
+                // 网关模式下路由挂在 BASE_URL 前缀下，跳转要带上前缀
+                window.location.href = `${import.meta.env.BASE_URL}login`
                 return Promise.reject(new Error(res.message || '登录已过期，请重新登录'))
             }
             const error = new Error(res.message || '请求失败') as BusinessError
@@ -73,9 +84,9 @@ request.interceptors.response.use(
                 case 401:
                     message = '登录已过期，请重新登录'
                     useUserStore().logout()
-                    // 避免在登录页面重复跳转
-                    if (window.location.pathname !== '/login') {
-                        window.location.href = '/login'
+                    // 避免在登录页面重复跳转；网关模式下登录页带 BASE_URL 前缀
+                    if (!window.location.pathname.endsWith('/login')) {
+                        window.location.href = `${import.meta.env.BASE_URL}login`
                     }
                     break
                 case 403:
