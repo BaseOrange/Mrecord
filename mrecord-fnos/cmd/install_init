@@ -1,9 +1,15 @@
 #!/bin/bash
-# 安装前：准备数据目录。data.db 与 exports/ 由应用在运行时写入 $TRIM_PKGVAR，
-# 这里只确保目录存在并属主正确。
+# 安装前初始化。
+#
+# 对应官方 fnpack 骨架的做法：安装阶段只做最必要的事，不做任何目录创建——
+# $TRIM_PKGVAR（/vol{n}/@appdata/{appname}）由 fnOS 在安装时自动创建并赋权，
+# 脚本里主动 mkdir 反而可能因包用户无权限而失败，导致「初始化脚本异常」。
+# 应用运行时（cmd/main start）会再次确保目录存在。
+#
+# 失败时把可读信息写入 $TRIM_TEMP_LOGFILE，安装界面会直接展示给用户
+# （官方机制，见「应用框架」文档）。
 set -euo pipefail
-DATA_DIR="${TRIM_PKGVAR:-}"
-if [ -n "$DATA_DIR" ]; then
-  mkdir -p "$DATA_DIR"
-fi
+
+echo "install_init: app=${TRIM_APPNAME:-unknown} ver=${TRIM_APPVER:-unknown}"
+
 exit 0

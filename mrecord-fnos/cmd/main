@@ -11,9 +11,12 @@
 #     —— 应用按工作目录相对路径写 data.db 与 exports/，故启动前 cd 过去
 #   - 统一网关：应用监听 $TRIM_APPDEST/app.sock，fnOS 把 /app/mrecord-fnos
 #     的请求转发到该 socket，完全不占用宿主机端口
+#
+# 失败时把可读信息写入 $TRIM_TEMP_LOGFILE（未设置则回退临时文件），
+# 安装/启动界面会直接展示给用户（官方机制，见「应用框架」文档）。
 # ============================================================================
 
-set -euo pipefail
+set -uo pipefail
 
 APP_NAME="mrecord-fnos"
 GATEWAY_PREFIX="/app/${APP_NAME}"
@@ -26,99 +29,145 @@ PID_FILE="${DATA_DIR}/${APP_NAME}.pid"
 LOG_FILE="${DATA_DIR}/${APP_NAME}.log"
 SOCKET_PATH="${BIN_DIR}/app.sock"
 
+# 把错误信息写到 UI 可见的日志（$TRIM_TEMP_LOGFILE 由 fnOS 注入）
+err() {
+  echo "[$(date '+%H:%M:%S')] $*" >>"$LOG_ERR"
+}
+
 # ---------------------------------------------------------------------------
-# 按系统架构选择二进制。包内同时携带 x86_64 与 aarch64 两个 musl 静态产物，
-# 运行时按 TRIM_SYS_ARCH 挑选；取值风格做兼容匹配，匹配失败直接报错。
+# 按系统架构选择二进制。优先级：
+#   1. TRIM_SYS_ARCH（飞牛注入，取值与 manifest 的 platform 字段同词表：x86 / arm）
+#   2. uname -m（本机直接探测：x86_64 / aarch64）
+# 双重兜底，避免飞牛未注入或取值风格不匹配时启动直接失败。
 # ---------------------------------------------------------------------------
 select_binary() {
-  local arch="${TRIM_SYS_ARCH:-}"
+  local arch="${TRIM_SYS_ARCH:-$(uname -m)}"
+  local bin=""
   case "$arch" in
-    x86_64 | amd64 | x64)
-      echo "${BIN_DIR}/mrecord-rust-x86_64"
+    x86 | X86 | x86_64 | amd64 | x64 | X86_64)
+      bin="${BIN_DIR}/mrecord-rust-x86_64"
       ;;
-    aarch64 | arm64)
-      echo "${BIN_DIR}/mrecord-rust-aarch64"
-      ;;
-    "")
-      echo "TRIM_SYS_ARCH 未设置，无法选择二进制" >"$LOG_ERR"
-      return 1
+    arm | ARM | aarch64 | arm64 | AARCH64 | ARM64 | armv8l)
+      bin="${BIN_DIR}/mrecord-rust-aarch64"
       ;;
     *)
-      echo "不支持的系统架构: ${arch}" >"$LOG_ERR"
+      err "启动失败：无法确定运行的二进制（TRIM_SYS_ARCH='${TRIM_SYS_ARCH:-未设置}'，uname -m='$(uname -m)'，均未匹配已知架构）"
       return 1
       ;;
   esac
+
+  if [ ! -x "$bin" ]; then
+    err "启动失败：二进制不存在或不可执行: $bin（ls -la ${BIN_DIR} 看是否释放成功）"
+    return 1
+  fi
+  echo "$bin"
 }
 
 is_running() {
   [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null
 }
 
-case "${1:-}" in
-  start)
+start() {
+  if is_running; then
+    exit 0
+  fi
+
+  local bin
+  if ! bin="$(select_binary)"; then
+    exit 1
+  fi
+
+  # 数据目录由 fnOS 在安装时创建并赋权给包用户（/vol{n}/@appdata/{appname}）。
+  # 脚本不主动创建——包用户对 /vol{n}/@appdata/ 无写权限，mkdir 会 Permission
+  # denied 导致启动失败。目录不存在说明安装异常，明确报错。
+  if [ ! -d "$DATA_DIR" ]; then
+    err "启动失败：数据目录不存在 $DATA_DIR（TRIM_PKGVAR='${TRIM_PKGVAR:-未设置}'，应由系统在安装时创建）"
+    exit 1
+  fi
+
+  # 验证可写：应用要在这里写 data.db 与 exports/
+  if ! touch "$DATA_DIR/.write-test" 2>>"$LOG_ERR"; then
+    err "启动失败：数据目录不可写 $DATA_DIR（请检查包用户 $TRIM_USERNAME 对该目录的权限）"
+    exit 1
+  fi
+  rm -f "$DATA_DIR/.write-test"
+
+  # 数据落 $TRIM_PKGVAR：data.db 与 exports/ 都相对工作目录
+  if ! cd "$DATA_DIR" 2>>"$LOG_ERR"; then
+    err "启动失败：无法进入数据目录 $DATA_DIR"
+    exit 1
+  fi
+
+  # 网关模式：仅监听 Unix socket，不对外暴露 TCP 端口
+  #   MRECORD_GATEWAY_SOCKET —— 应用监听的 socket 路径
+  #   MRECORD_GATEWAY_PREFIX —— 路由前缀，与 ui/config 的 gatewayPrefix 一致
+  # 应用收到 socket 变量即跳过 TCP 绑定（见 mrecord-rust/src/main.rs），
+  # 因此与 Docker 版（-p 2333:2333）可以同时运行、互不影响。
+  export MRECORD_GATEWAY_SOCKET="$SOCKET_PATH"
+  export MRECORD_GATEWAY_PREFIX="$GATEWAY_PREFIX"
+  export MRECORD_HOST="${MRECORD_HOST:-127.0.0.1}"
+  export MRECORD_PORT="${MRECORD_PORT:-2333}"
+  export RUST_LOG="${RUST_LOG:-mrecord_rust=info,tower_http=info}"
+  export TZ="${TZ:-Asia/Shanghai}"
+
+  rm -f "$SOCKET_PATH" 2>>"$LOG_ERR" || true
+  nohup "$bin" >>"$LOG_FILE" 2>&1 &
+  local pid=$!
+  echo "$pid" >"$PID_FILE"
+
+  # 等待进程稳定存活（最多 10 秒）。进程秒退时把应用日志 tail 到 UI 可见日志，
+  # 否则用户只能看到「启动脚本失败」而不知道为什么。
+  local alive=0
+  local _
+  for _ in $(seq 1 20); do
     if is_running; then
-      exit 0
+      alive=1
+      break
     fi
+    sleep 0.5
+  done
 
-    BIN="$(select_binary)" || exit 1
+  if [ "$alive" -eq 0 ]; then
+    {
+      echo "[$(date '+%H:%M:%S')] 启动失败：应用进程未存活或已退出: $bin"
+      echo "--- 环境信息 ---"
+      echo "TRIM_APPDEST=${TRIM_APPDEST:-未设置} TRIM_PKGVAR=${TRIM_PKGVAR:-未设置} TRIM_SYS_ARCH=${TRIM_SYS_ARCH:-未设置}"
+      echo "--- 应用日志（${LOG_FILE}）最近 30 行 ---"
+      tail -n 30 "$LOG_FILE" 2>/dev/null || echo "（无应用日志）"
+    } >>"$LOG_ERR"
+    rm -f "$PID_FILE"
+    exit 1
+  fi
+}
 
-    if [ ! -x "$BIN" ]; then
-      echo "二进制不存在或不可执行: $BIN" >"$LOG_ERR"
-      exit 1
-    fi
-
-    mkdir -p "$DATA_DIR"
-
-    # 数据落 $TRIM_PKGVAR：data.db 与 exports/ 都相对工作目录
-    cd "$DATA_DIR"
-
-    # 网关模式：仅监听 Unix socket，不对外暴露 TCP 端口
-    #   MRECORD_GATEWAY_SOCKET —— 应用监听的 socket 路径
-    #   MRECORD_GATEWAY_PREFIX —— 路由前缀，与 ui/config 的 gatewayPrefix 一致
-    # 应用收到 socket 变量即跳过 TCP 绑定（见 mrecord-rust/src/main.rs），
-    # 因此与 Docker 版（-p 2333:2333）可以同时运行、互不影响。
-    export MRECORD_GATEWAY_SOCKET="$SOCKET_PATH"
-    export MRECORD_GATEWAY_PREFIX="$GATEWAY_PREFIX"
-    export MRECORD_HOST="${MRECORD_HOST:-127.0.0.1}"
-    export MRECORD_PORT="${MRECORD_PORT:-2333}"
-    export RUST_LOG="${RUST_LOG:-mrecord_rust=info,tower_http=info}"
-    export TZ="${TZ:-Asia/Shanghai}"
-
-    rm -f "$SOCKET_PATH"
-    nohup "$BIN" >>"$LOG_FILE" 2>&1 &
-    echo $! >"$PID_FILE"
-
-    # 等待进程存活（不等待 socket 就绪，避免阻塞过久）
+stop() {
+  if is_running; then
+    local pid
+    pid="$(cat "$PID_FILE")"
+    kill "$pid" 2>/dev/null || true
+    # 优雅等待最多 10 秒，超时强杀
+    local _
     for _ in $(seq 1 10); do
-      is_running && break
-      sleep 0.5
+      kill -0 "$pid" 2>/dev/null || break
+      sleep 1
     done
-    ;;
+    kill -9 "$pid" 2>/dev/null || true
+    rm -f "$PID_FILE"
+  fi
+  rm -f "$SOCKET_PATH" 2>/dev/null || true
+}
 
-  stop)
-    if is_running; then
-      PID="$(cat "$PID_FILE")"
-      kill "$PID" 2>/dev/null || true
-      # 优雅等待最多 10 秒，超时强杀
-      for _ in $(seq 1 10); do
-        kill -0 "$PID" 2>/dev/null || break
-        sleep 1
-      done
-      kill -9 "$PID" 2>/dev/null || true
-      rm -f "$PID_FILE"
-    fi
-    rm -f "$SOCKET_PATH"
-    ;;
-
+case "${1:-}" in
+  start) start ;;
+  stop) stop ;;
   status)
     if is_running; then
       exit 0
     fi
     exit 3
     ;;
-
   *)
-    echo "未知命令: ${1:-}（支持 start / stop / status）" >"$LOG_ERR"
+    err "未知命令: ${1:-}（支持 start / stop / status）"
     exit 1
     ;;
 esac
