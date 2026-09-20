@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import loginBg from '@/assets/login_bg.png'
+import appIcon from '@/../public/app-icon.svg'
 
-const appIcon = '/app-icon.svg'
 </script>
 
 <template>

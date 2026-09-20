@@ -4,9 +4,10 @@ import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
 import { formatMoney } from '@/utils/format'
+import appIcon from '@/../public/app-icon.svg'
 
 const router = useRouter()
-const appIcon = '/app-icon.svg'
+
 
 const quickEntries = [
   { icon: 'plus-circle', label: '记账', color: '#FF6500', action: 'record' },

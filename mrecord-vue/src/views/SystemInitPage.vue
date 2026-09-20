@@ -7,8 +7,8 @@ import {initAdmin, queryMyInfo, updateSiteConfig, updateEmailConfig, testEmail} 
 import {markSystemInitialized} from '@/router'
 import {md5} from 'js-md5'
 import agreementText from '@/assets/agreement.md?raw'
+import appIcon from '@/../public/app-icon.svg'
 
-const appIcon = '/app-icon.svg'
 const router = useRouter()
 const userStore = useUserStore()
 
