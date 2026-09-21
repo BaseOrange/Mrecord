@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
+import { formatMoney, getChangeText } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,24 +47,12 @@ const groupedByYear = computed(() => {
   return sorted
 })
 
-// 格式化金额
-const formatMoney = (val?: number) => {
-  if (val === undefined || val === null) return '--'
-  return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 // 环比颜色
+// 注意：本页为「正绿负红」，与 StatsPage/HomePage 相反，统一方向见 TODO 的 D1，
+// 统一前不要改用 utils/format 的 getChangeColor，否则会改变本页配色
 const getChangeColor = (val?: number) => {
   if (val === undefined || val === null || val === 0) return '#8e8e93'
   return val > 0 ? '#34c759' : '#ff3b30'
-}
-
-// 环比文字（百分比显示）
-const getChangeText = (val?: number) => {
-  if (val === undefined || val === null) return '--'
-  if (val === 0) return '持平'
-  const prefix = val > 0 ? '+' : ''
-  return prefix + val.toFixed(2) + '%'
 }
 
 // 开始记账

@@ -6,6 +6,7 @@ import {useUserStore} from '@/stores/user'
 import {initAdmin, queryMyInfo, updateSiteConfig, updateEmailConfig, testEmail} from '@/api'
 import type {SysUser} from '@/api'
 import {markSystemInitialized} from '@/router'
+import {parseMarkdown} from '@/utils/markdown'
 import {md5} from 'js-md5'
 import agreementText from '@/assets/agreement.md?raw'
 import appIcon from '@/../public/app-icon.svg'
@@ -40,44 +41,7 @@ const mailFrom = ref('')
 const testTo = ref('')
 
 // ========== Markdown 解析 ==========
-function parseMarkdown(text: string): string {
-  const lines = text.split('\n')
-  let html = ''
-  let inList = false
-
-  for (const line of lines) {
-    if (!line.trim()) {
-      if (inList) { html += '</ul>'; inList = false }
-      continue
-    }
-    if (line.startsWith('# ')) {
-      if (inList) { html += '</ul>'; inList = false }
-      html += `<h3>${escapeHtml(line.slice(2))}</h3>`
-      continue
-    }
-    if (line.startsWith('## ')) {
-      if (inList) { html += '</ul>'; inList = false }
-      html += `<h4>${escapeHtml(line.slice(3))}</h4>`
-      continue
-    }
-    let processed = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    processed = escapeHtml(processed).replace(/&lt;strong&gt;(.+?)&lt;\/strong&gt;/g, '<strong>$1</strong>')
-    const numMatch = processed.match(/^(\d+)\\\.\s(.+)/)
-    if (numMatch) {
-      if (!inList) { html += '<ul>'; inList = true }
-      html += `<li>${numMatch[2]}</li>`
-      continue
-    }
-    if (inList) { html += '</ul>'; inList = false }
-    html += `<p>${processed}</p>`
-  }
-  if (inList) html += '</ul>'
-  return html
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
+// 抽取到 utils/markdown.ts，与 AgreementPopup 共用同一份实现（Q1）
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

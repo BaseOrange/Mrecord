@@ -8,6 +8,7 @@ import { queryMonthItem, updateMonthItem } from '@/api/modules/monthItem'
 import type { FinMonthItemRecord } from '@/api/modules/monthItem'
 import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
+import { formatMoney, getChangeText } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,11 +69,6 @@ const totalLiability = computed(() => {
   }, 0)
 })
 const netAsset = computed(() => totalAsset.value - totalLiability.value)
-
-// 格式化显示金额
-const formatMoney = (val: number) => {
-  return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
 
 // ---- 环比 / 同比对比 ----
 
@@ -135,14 +131,9 @@ const deltaText = (val: number | null, emptyText: string, flatText: string) => {
 const momText = computed(() => deltaText(momAmount.value, '上月暂无数据', '与上月持平'))
 const yoyText = computed(() => deltaText(yoyAmount.value, '去年同月暂无数据', '与去年同月持平'))
 
-// 百分比文字
-const rateText = (rate: number | null) => {
-  if (rate === null) return '--'
-  if (rate === 0) return '持平'
-  return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%'
-}
-
 // 涨跌颜色：多攒了（净资产上升）绿色，多花了（净资产下降）红色
+// 注意：本页为「正绿负红」，与 StatsPage/HomePage 相反，统一方向见 TODO 的 D1，
+// 统一前不要改用 utils/format 的 getChangeColor，否则会改变本页配色
 const deltaColor = (val: number | null) => {
   if (val === null || val === 0) return '#8e8e93'
   return val > 0 ? '#34c759' : '#ff3b30'
@@ -392,7 +383,7 @@ const handleSave = async () => {
             </div>
             <div class="compare-values">
               <span class="compare-amount" :style="{ color: deltaColor(momAmount) }">{{ momText }}</span>
-              <span class="compare-rate" :style="{ color: deltaColor(momAmount) }">{{ rateText(momRate) }}</span>
+              <span class="compare-rate" :style="{ color: deltaColor(momAmount) }">{{ getChangeText(momRate) }}</span>
             </div>
           </div>
           <div class="compare-divider"></div>
@@ -403,7 +394,7 @@ const handleSave = async () => {
             </div>
             <div class="compare-values">
               <span class="compare-amount" :style="{ color: deltaColor(yoyAmount) }">{{ yoyText }}</span>
-              <span class="compare-rate" :style="{ color: deltaColor(yoyAmount) }">{{ rateText(yoyRate) }}</span>
+              <span class="compare-rate" :style="{ color: deltaColor(yoyAmount) }">{{ getChangeText(yoyRate) }}</span>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import agreementText from '@/assets/agreement.md?raw'
+import { parseMarkdown } from '@/utils/markdown'
 
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits<{ 'update:show': [value: boolean] }>()
@@ -9,55 +10,6 @@ const showAgreement = computed({
   get: () => props.show,
   set: (val) => emit('update:show', val)
 })
-
-/** 简易 Markdown → HTML 转换 */
-function parseMarkdown(text: string): string {
-  const lines = text.split('\n')
-  let html = ''
-  let inList = false
-
-  for (const line of lines) {
-    if (!line.trim()) {
-      if (inList) { html += '</ul>'; inList = false }
-      continue
-    }
-
-    if (line.startsWith('# ')) {
-      if (inList) { html += '</ul>'; inList = false }
-      html += `<h3>${escapeHtml(line.slice(2))}</h3>`
-      continue
-    }
-
-    if (line.startsWith('## ')) {
-      if (inList) { html += '</ul>'; inList = false }
-      html += `<h4>${escapeHtml(line.slice(3))}</h4>`
-      continue
-    }
-
-    let processed = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    processed = escapeHtml(processed).replace(/&lt;strong&gt;(.+?)&lt;\/strong&gt;/g, '<strong>$1</strong>')
-
-    const numMatch = processed.match(/^(\d+)\\\.\s(.+)/)
-    if (numMatch) {
-      if (!inList) { html += '<ul>'; inList = true }
-      html += `<li>${numMatch[2]}</li>`
-      continue
-    }
-
-    if (inList) { html += '</ul>'; inList = false }
-    html += `<p>${processed}</p>`
-  }
-
-  if (inList) html += '</ul>'
-  return html
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
 </script>
 
 <template>

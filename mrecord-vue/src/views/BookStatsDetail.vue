@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getBookDetailedStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
+import { formatMoney, getChangeText } from '@/utils/format'
 import TrendChart from '@/components/TrendChart.vue'
 
 const route = useRoute()
@@ -38,19 +39,6 @@ onMounted(() => {
 const labels = computed(() =>
   records.value.map(r => `${r.year}-${String(r.month).padStart(2, '0')}`)
 )
-
-// 格式化金额
-const formatMoney = (val?: number) => {
-  if (val === undefined || val === null) return '--'
-  return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-// 环比/同比格式化（百分比，保留正负号，0显示持平）
-const formatChange = (val?: number) => {
-  if (val === undefined || val === null) return '--'
-  if (val === 0) return '持平'
-  return (val > 0 ? '+' : '') + val.toFixed(2) + '%'
-}
 
 // 资产趋势图数据
 const assetDatasets = computed(() => [
@@ -146,13 +134,13 @@ const latest = computed(() => {
             <div class="summary-item">
               <span class="summary-label">环比</span>
               <span class="summary-value" :style="{ color: (latest.monthOnMonth || 0) > 0 ? '#ff3b30' : (latest.monthOnMonth || 0) < 0 ? '#34c759' : '#8e8e93' }">
-                {{ formatChange(latest.monthOnMonth) }}
+                {{ getChangeText(latest.monthOnMonth) }}
               </span>
             </div>
             <div class="summary-item">
               <span class="summary-label">同比</span>
               <span class="summary-value" :style="{ color: (latest.yearOnYear || 0) > 0 ? '#ff3b30' : (latest.yearOnYear || 0) < 0 ? '#34c759' : '#8e8e93' }">
-                {{ formatChange(latest.yearOnYear) }}
+                {{ getChangeText(latest.yearOnYear) }}
               </span>
             </div>
           </div>

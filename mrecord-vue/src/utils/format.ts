@@ -3,12 +3,18 @@
  */
 
 /**
- * 格式化金额为千分位字符串
- * @param val 金额数值
+ * 格式化金额为千分位字符串。
+ *
+ * 领域字段（netAsset / totalAsset 等）在类型上全部可选，直接
+ * `val.toLocaleString()` 在 undefined / null 时会抛 TypeError——这正是
+ * 各页面不敢复用、各自重写一份空值保护的根因（Q3）。
+ *
+ * @param val 金额数值；undefined / null / NaN 时返回 '--'
  * @param decimals 小数位数，默认2位
  * @returns 格式化后的字符串
  */
-export function formatMoney(val: number, decimals = 2): string {
+export function formatMoney(val?: number | null, decimals = 2): string {
+    if (val === undefined || val === null || Number.isNaN(val)) return '--'
     return val.toLocaleString('zh-CN', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
@@ -16,12 +22,17 @@ export function formatMoney(val: number, decimals = 2): string {
 }
 
 /**
- * 获取变化值的颜色
+ * 获取变化值的颜色。
+ *
+ * 注意：这里固定「正绿负红」（多攒了=绿），与 RecordPage / BookRecordPage 一致；
+ * StatsPage / HomePage 目前仍是相反的「正红负绿」，统一方向见 D1，合并前不要
+ * 让那些页面引用本函数，否则会悄悄改变其配色。
+ *
  * @param val 变化值
  * @returns 颜色值
  */
-export function getChangeColor(val: number): string {
-    if (val === 0) return '#8e8e93'
+export function getChangeColor(val?: number | null): string {
+    if (val === undefined || val === null || val === 0) return '#8e8e93'
     return val > 0 ? '#34c759' : '#ff3b30'
 }
 
@@ -33,6 +44,21 @@ export function getChangeColor(val: number): string {
 export function getChangePrefix(val: number): string {
     if (val === 0) return ''
     return val > 0 ? '+' : ''
+}
+
+/**
+ * 格式化环比 / 同比增长率为展示文本。
+ *
+ * 后端 monthOnMonth / yearOnYear 返回的是**百分比**值（`(本月-上月)/|上月|*100`，
+ * 见 B6），本函数统一为：空值 → '--'；0 → '持平'；其余 → 带 '+' 的两位小数百分比。
+ *
+ * @param val 百分比数值
+ * @returns 展示文本
+ */
+export function getChangeText(val?: number | null): string {
+    if (val === undefined || val === null) return '--'
+    if (val === 0) return '持平'
+    return (val > 0 ? '+' : '') + val.toFixed(2) + '%'
 }
 
 /**
