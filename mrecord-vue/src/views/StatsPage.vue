@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
-import { formatMoney, getChangeText } from '@/utils/format'
+import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
 
 const router = useRouter()
 
@@ -27,14 +27,6 @@ const fetchList = async () => {
 onMounted(() => {
   fetchList()
 })
-
-// 环比/同比颜色：正红负绿
-// 注意：本页配色与 RecordPage/BookRecordPage 相反，统一方向见 TODO 的 D1，
-// 在统一前不要改用 utils/format 的 getChangeColor，否则会改变本页配色
-const getChangeColor = (val?: number) => {
-  if (val === undefined || val === null || val === 0) return '#8e8e93'
-  return val > 0 ? '#ff3b30' : '#34c759'
-}
 
 // 点击卡片 → 详情页
 const onCardClick = (item: BookStatistics) => {

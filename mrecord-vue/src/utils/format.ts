@@ -22,18 +22,18 @@ export function formatMoney(val?: number | null, decimals = 2): string {
 }
 
 /**
- * 获取变化值的颜色。
+ * 获取变化值（环比/同比、净资产增减）的展示颜色。
  *
- * 注意：这里固定「正绿负红」（多攒了=绿），与 RecordPage / BookRecordPage 一致；
- * StatsPage / HomePage 目前仍是相反的「正红负绿」，统一方向见 D1，合并前不要
- * 让那些页面引用本函数，否则会悄悄改变其配色。
+ * 全站统一「正红负绿」：上涨为红（#ff3b30）、下跌为绿（#34c759），与 A 股等
+ * 中式金融惯例一致；0 / undefined / null / NaN 为中性灰（#8e8e93）。
+ * 该方向为明确的产品决策（D1），各页不得再自带相反的本地实现。
  *
  * @param val 变化值
  * @returns 颜色值
  */
 export function getChangeColor(val?: number | null): string {
-    if (val === undefined || val === null || val === 0) return '#8e8e93'
-    return val > 0 ? '#34c759' : '#ff3b30'
+    if (val === undefined || val === null || Number.isNaN(val) || val === 0) return '#8e8e93'
+    return val > 0 ? '#ff3b30' : '#34c759'
 }
 
 /**

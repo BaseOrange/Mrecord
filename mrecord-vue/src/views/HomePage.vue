@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
-import { formatMoney } from '@/utils/format'
+import { formatMoney, getChangeColor } from '@/utils/format'
 import appIcon from '@/../public/app-icon.svg'
 
 const router = useRouter()
@@ -162,7 +162,7 @@ const onBookCardClick = (item: BookStatistics) => {
             </span>
             <span
               class="overview-mom-badge"
-              :style="{ color: totalMonthOnMonth > 0 ? '#ff3b30' : totalMonthOnMonth < 0 ? '#34c759' : '#8e8e93' }"
+              :style="{ color: getChangeColor(totalMonthOnMonth) }"
             >
               环比上月：{{ (totalMonthOnMonth > 0 ? '+' : '') + totalMonthOnMonth.toFixed(2) }}%
             </span>
@@ -198,7 +198,7 @@ const onBookCardClick = (item: BookStatistics) => {
           </span>
           <span
             class="book-mini-mom"
-            :style="{ color: (item.monthOnMonth || 0) > 0 ? '#ff3b30' : (item.monthOnMonth || 0) < 0 ? '#34c759' : '#8e8e93' }"
+            :style="{ color: getChangeColor(item.monthOnMonth) }"
           >
             环比：{{ ((item.monthOnMonth || 0) > 0 ? '+' : '') + (item.monthOnMonth || 0).toFixed(2) }}%
           </span>

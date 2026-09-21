@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getBookDetailedStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
-import { formatMoney, getChangeText } from '@/utils/format'
+import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
 import TrendChart from '@/components/TrendChart.vue'
 
 const route = useRoute()
@@ -133,13 +133,13 @@ const latest = computed(() => {
             </div>
             <div class="summary-item">
               <span class="summary-label">环比</span>
-              <span class="summary-value" :style="{ color: (latest.monthOnMonth || 0) > 0 ? '#ff3b30' : (latest.monthOnMonth || 0) < 0 ? '#34c759' : '#8e8e93' }">
+              <span class="summary-value" :style="{ color: getChangeColor(latest.monthOnMonth) }">
                 {{ getChangeText(latest.monthOnMonth) }}
               </span>
             </div>
             <div class="summary-item">
               <span class="summary-label">同比</span>
-              <span class="summary-value" :style="{ color: (latest.yearOnYear || 0) > 0 ? '#ff3b30' : (latest.yearOnYear || 0) < 0 ? '#34c759' : '#8e8e93' }">
+              <span class="summary-value" :style="{ color: getChangeColor(latest.yearOnYear) }">
                 {{ getChangeText(latest.yearOnYear) }}
               </span>
             </div>
