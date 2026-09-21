@@ -4,7 +4,7 @@ import {useRouter} from 'vue-router'
 import {Snackbar} from '@varlet/ui'
 import {register} from '@/api'
 import {md5} from 'js-md5'
-import {checkPasswordStrength} from '@/utils/security'
+import {checkPasswordStrength, isValidEmail} from '@/utils/security'
 import AuthLayout from '@/components/AuthLayout.vue'
 
 const router = useRouter()
@@ -40,6 +40,12 @@ const onRegister = async () => {
     Snackbar.warning('请输入邮箱')
     return
   }
+  const trimmedEmail = email.value.trim()
+  // I13：统一用 security.ts 的 isValidEmail 校验格式，尾空格 trim 后再提交
+  if (!isValidEmail(trimmedEmail)) {
+    Snackbar.warning('邮箱格式不正确')
+    return
+  }
   if (!nickname.value) {
     Snackbar.warning('请输入昵称')
     return
@@ -60,7 +66,7 @@ const onRegister = async () => {
   loading.value = true
   try {
     await register({
-      email: email.value,
+      email: trimmedEmail,
       password: md5(password.value),
       nickname: nickname.value,
     })

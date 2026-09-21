@@ -82,8 +82,29 @@ export function getChangeText(val?: number | null): string {
  * @param format 格式化模板，默认 'YYYY-MM-DD HH:mm:ss'
  * @returns 格式化后的日期字符串
  */
-export function formatDate(date: Date | number | string, format = 'YYYY-MM-DD HH:mm:ss'): string {
-    const d = new Date(date)
+/**
+ * 将后端返回的时间值解析为 Date。
+ *
+ * 后端（Rust `model/*.rs` 的各 DTO、Java）把时间序列化为 `"2024-01-01 00:00:00"` 这类
+ * **空格分隔**的字符串；iOS Safari 的 `new Date("2024-01-01 00:00:00")` 不接受该格式，
+ * 会得到 Invalid Date，页面渲染出 "NaN-NaN-NaN"（Q4）。这里把开头的空格替换为 ISO 8601
+ * 的 `T` 后再解析，同时兼容时间戳数字、含时区的 ISO 字符串与已是 Date 的入参。
+ *
+ * @param date 时间值；null/undefined 返回 Invalid Date，formatDate 会渲染为占位符
+ * @returns Date 对象；无法解析时为 Invalid Date（调用方可按需判断）
+ */
+export function parseDate(date: Date | number | string | null | undefined): Date {
+    if (date === null || date === undefined) return new Date(NaN)
+    if (date instanceof Date) return date
+    if (typeof date === 'number') return new Date(date)
+    // 仅替换「日期 时间」之间的那个空格，避免误伤其他位
+    return new Date(String(date).replace(/^(\d{4}-\d{1,2}-\d{1,2})\s+/, '$1T'))
+}
+
+export function formatDate(date: Date | number | string | null | undefined, format = 'YYYY-MM-DD HH:mm:ss'): string {
+    const d = parseDate(date)
+    // 解析失败时返回占位符，而不是把 "NaN-NaN-NaN" 渲染到界面上（Q4）
+    if (isNaN(d.getTime())) return '-'
     
     const year = d.getFullYear()
     const month = String(d.getMonth() + 1).padStart(2, '0')

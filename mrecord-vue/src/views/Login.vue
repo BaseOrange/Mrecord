@@ -5,6 +5,7 @@ import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
 import {login, queryMyInfo, getRegisterEnabled, revokeCancel} from '@/api'
 import type {BusinessError} from '@/utils/request'
+import {isValidEmail} from '@/utils/security'
 import {md5} from 'js-md5'
 import AuthLayout from '@/components/AuthLayout.vue'
 import AgreementPopup from '@/components/AgreementPopup.vue'
@@ -36,9 +37,15 @@ const onLogin = async () => {
     Snackbar.warning('请输入邮箱和密码')
     return
   }
+  const trimmedEmail = email.value.trim()
+  if (!isValidEmail(trimmedEmail)) {
+    Snackbar.warning('邮箱格式不正确')
+    return
+  }
   loading.value = true
   try {
-    const token = await login({email: email.value, password: md5(password.value)})
+    // I13：trim 后再提交，尾空格会导致「注册成功但登录失败」
+    const token = await login({email: trimmedEmail, password: md5(password.value)})
     // token 先只入内存（请求拦截器需要它来调用 queryMyInfo），暂不落盘；
     // 拿到用户信息后才算登录完成，届时 token 与 userInfo 一起持久化（B5）
     userStore.setToken(token, false)

@@ -43,8 +43,8 @@ const onSubmit = async () => {
     userStore.setUserInfo(res)
     Snackbar.success('保存成功')
     router.back()
-  } catch (e: any) {
-    Snackbar.error(e?.message || '保存失败')
+  } catch {
+    // 拦截器已统一弹出后端报文，页面不再重复提示（I8）
   } finally {
     loading.value = false
   }

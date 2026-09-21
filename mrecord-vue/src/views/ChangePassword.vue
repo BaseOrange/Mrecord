@@ -55,8 +55,8 @@ const onSubmit = async () => {
     }
     userStore.logout()
     router.replace('/login')
-  } catch (e: any) {
-    Snackbar.error(e?.message || '修改失败，请检查旧密码是否正确')
+  } catch {
+    // 拦截器已统一弹出后端报文，页面不再重复提示（I8）
   } finally {
     loading.value = false
   }

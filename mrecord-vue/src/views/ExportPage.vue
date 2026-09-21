@@ -7,6 +7,7 @@ import type { BookInfo } from '@/api/modules/book'
 import { exportBookData, listExportTasks } from '@/api/modules/exportTask'
 import type { ExportTaskInfo } from '@/api/modules/exportTask'
 import { getEmailConfig } from '@/api/modules/config'
+import { formatDate } from '@/utils/format'
 
 const router = useRouter()
 
@@ -33,6 +34,13 @@ const endMonth = ref('')
 const exporting = ref(false)
 
 const handleExport = async () => {
+  // I9：起止月份是 type="month" 的 yyyy-MM 字符串，补零后字典序与数值序一致，可直接比较；
+  // 空区间（如起始晚于结束）会消耗一次任务创建，必须先拦下
+  if (startMonth.value && endMonth.value && startMonth.value > endMonth.value) {
+    Snackbar.warning('起始月份不能晚于结束月份')
+    return
+  }
+
   // 检查邮箱配置
   exporting.value = true
   try {
@@ -65,6 +73,9 @@ const handleExport = async () => {
     await exportBookData(params)
     Snackbar.success('导出任务已创建')
     await fetchTasks(true)
+    // I10：定时器可能在上轮任务全部结束后已自停，创建新任务后必须重新启动；
+    // 待新任务完成、无进行中任务时定时器会再次自行停止
+    startPolling()
   } catch {
     // 拦截器已处理
   } finally {
@@ -114,19 +125,49 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 // 组件存活标志：fetchTasks 的 Promise 可能在组件已卸载后才 resolve（用户快速返回），
 // 若此时仍 startPolling，会创建一个再也无人清除的定时器（I3）
 let isMounted = false
+let refreshing = false
+
+const hasRunningTask = () =>
+  tasks.value.some((t) => t.status === 'WAIT' || t.status === 'RUN')
+
+// I10：后台静默刷新——只更新已在列表中的任务状态，不重置分页、不整体替换列表，
+// 避免用户翻到第 3 页时被每 3s 的轮询打回第 1 页。仅覆盖当前已加载的页（1..pageNum）。
+const refreshTaskStatus = async () => {
+  if (refreshing) return
+  refreshing = true
+  try {
+    // 以 id 索引本轮取到的最新值
+    const latest = new Map<string, ExportTaskInfo>()
+    for (let p = 1; p <= pageNum.value; p++) {
+      const res = await listExportTasks({ pageNum: p, pageSize: PAGE_SIZE })
+      const records = res.records || []
+      for (const r of records) if (r.id) latest.set(r.id, r)
+      // 已取到末页或空页就不再往后取
+      if (records.length < PAGE_SIZE || p >= res.totalPage) break
+    }
+    if (latest.size === 0) return
+    // 保持现有顺序与分页状态不变，只就地替换状态发生变化的任务
+    tasks.value = tasks.value.map((t) => latest.get(t.id!) || t)
+  } catch {
+    // 拦截器已处理
+  } finally {
+    refreshing = false
+  }
+}
 
 const startPolling = () => {
   // 组件已卸载则不再启动轮询，避免定时器泄漏
   if (!isMounted) return
   stopPolling()
-  pollTimer = setInterval(() => {
-    // 有进行中的任务时才刷新
-    const hasRunning = tasks.value.some(
-      (t) => t.status === 'WAIT' || t.status === 'RUN'
-    )
-    if (hasRunning) {
-      fetchTasks(true)
+  pollTimer = setInterval(async () => {
+    if (!hasRunningTask()) {
+      // I10：没有进行中的任务时定时器无需常驻，自行停止
+      stopPolling()
+      return
     }
+    await refreshTaskStatus()
+    // 刷新完成后再次检查：刚刚跑完最后一个任务就停掉，避免空转
+    if (!hasRunningTask()) stopPolling()
   }, 3000)
 }
 
@@ -165,11 +206,7 @@ const formatStatus = (status?: string) => {
   return statusMap[status || ''] || { label: status || '-', color: '#8e8e93' }
 }
 
-const formatTime = (time?: string) => {
-  if (!time) return '-'
-  const d = new Date(time)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
+// formatTime 已移除：与 utils/format.ts 的 formatDate 重复（且后者已修复 iOS 日期解析 Q4）
 
 const onScroll = () => {
   if (!hasMore.value || loadingTasks.value) return
@@ -264,7 +301,7 @@ const onScroll = () => {
                   {{ task.startYearMonth }} ~ {{ task.endYearMonth }}
                 </span>
                 <span v-else>全部时间</span>
-                <span class="task-time">{{ formatTime(task.createTime) }}</span>
+                <span class="task-time">{{ formatDate(task.createTime, 'YYYY-MM-DD HH:mm') }}</span>
               </div>
             </div>
 

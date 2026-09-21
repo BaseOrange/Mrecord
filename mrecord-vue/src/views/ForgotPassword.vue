@@ -3,6 +3,8 @@ import {ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {Snackbar} from '@varlet/ui'
 import {forgotPassword} from '@/api'
+import {isValidEmail} from '@/utils/security'
+import {useCountdown} from '@/composables/useCountdown'
 import AuthLayout from '@/components/AuthLayout.vue'
 
 const router = useRouter()
@@ -11,6 +13,9 @@ const email = ref('')
 const loading = ref(false)
 const submitted = ref(false)
 
+// I13：发送成功后冷却 60 秒，防止连点刷出大量重置邮件
+const {remaining: resendRemaining, start: startResendCountdown} = useCountdown(60)
+
 const onSubmit = async () => {
   // 重入守卫：键盘 Enter 在 loading 期间可连续触发，需在这里挡住（I1）
   if (loading.value) return
@@ -18,13 +23,21 @@ const onSubmit = async () => {
     Snackbar.warning('请输入邮箱')
     return
   }
+  const trimmedEmail = email.value.trim()
+  if (!isValidEmail(trimmedEmail)) {
+    Snackbar.warning('邮箱格式不正确')
+    return
+  }
+  // 冷却期内不允许重复发送
+  if (resendRemaining.value > 0) return
 
   loading.value = true
   try {
-    await forgotPassword({email: email.value})
+    await forgotPassword({email: trimmedEmail})
     submitted.value = true
-  } catch (e: any) {
-    Snackbar.error(e?.message || '发送失败，请稍后重试')
+    startResendCountdown()
+  } catch {
+    // 拦截器已统一弹出后端报文，页面不再重复提示（I8）
   } finally {
     loading.value = false
   }
@@ -63,15 +76,16 @@ const goLogin = () => {
         <button
           class="auth-submit-btn"
           :class="{ 'auth-submit-btn--loading': loading }"
-          :disabled="loading"
+          :disabled="loading || resendRemaining > 0"
           @click="onSubmit"
         >
-          <span v-if="!loading">发送重置链接</span>
-          <span v-else class="auth-btn-loading">
+          <span v-if="loading" class="auth-btn-loading">
             <svg class="auth-spinner" viewBox="0 0 24 24" width="22" height="22">
               <circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" />
             </svg>
           </span>
+          <span v-else-if="resendRemaining > 0">{{ resendRemaining }} 秒后可重新发送</span>
+          <span v-else>发送重置链接</span>
         </button>
 
         <div class="auth-links">

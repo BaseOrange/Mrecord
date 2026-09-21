@@ -7,6 +7,7 @@ import {initAdmin, queryMyInfo, updateSiteConfig, updateEmailConfig, testEmail} 
 import type {SysUser} from '@/api'
 import {markSystemInitialized} from '@/router'
 import {parseMarkdown} from '@/utils/markdown'
+import {isValidEmail} from '@/utils/security'
 import {md5} from 'js-md5'
 import agreementText from '@/assets/agreement.md?raw'
 import appIcon from '@/../public/app-icon.svg'
@@ -43,7 +44,7 @@ const testTo = ref('')
 // ========== Markdown 解析 ==========
 // 抽取到 utils/markdown.ts，与 AgreementPopup 共用同一份实现（Q1）
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// 邮箱校验统一使用 utils/security.ts 的 isValidEmail（I13），不再内联正则
 
 // ========== 步骤操作 ==========
 function onAgree() {
@@ -55,7 +56,7 @@ async function onCreateAdmin() {
     Snackbar.warning('请输入邮箱')
     return
   }
-  if (!emailRegex.test(adminEmail.value.trim())) {
+  if (!isValidEmail(adminEmail.value.trim())) {
     Snackbar.warning('邮箱格式不正确')
     return
   }
@@ -120,7 +121,7 @@ async function onSaveSiteConfig() {
     Snackbar.warning('请输入管理员邮箱')
     return
   }
-  if (!emailRegex.test(adminMail.value.trim())) {
+  if (!isValidEmail(adminMail.value.trim())) {
     Snackbar.warning('管理员邮箱格式不正确')
     return
   }
@@ -146,7 +147,7 @@ async function onTestEmail() {
     Snackbar.warning('请先填写完整的邮箱配置')
     return
   }
-  if (!emailRegex.test(mailFrom.value.trim())) {
+  if (!isValidEmail(mailFrom.value.trim())) {
     Snackbar.warning('发送邮箱地址格式不正确')
     return
   }
@@ -154,7 +155,7 @@ async function onTestEmail() {
     Snackbar.warning('请输入测试收件邮箱')
     return
   }
-  if (!emailRegex.test(testTo.value.trim())) {
+  if (!isValidEmail(testTo.value.trim())) {
     Snackbar.warning('测试收件邮箱格式不正确')
     return
   }
@@ -184,7 +185,7 @@ async function onSaveEmailConfig() {
     Snackbar.warning('请填写完整的邮箱配置')
     return
   }
-  if (!emailRegex.test(mailFrom.value.trim())) {
+  if (!isValidEmail(mailFrom.value.trim())) {
     Snackbar.warning('发送邮箱地址格式不正确')
     return
   }

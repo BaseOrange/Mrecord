@@ -3,6 +3,8 @@ import {ref, computed, onMounted} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
 import {Snackbar} from '@varlet/ui'
 import {activateAccount, resendActivateEmail} from '@/api'
+import {isValidEmail} from '@/utils/security'
+import {useCountdown} from '@/composables/useCountdown'
 import AuthLayout from '@/components/AuthLayout.vue'
 
 const router = useRouter()
@@ -17,6 +19,9 @@ const errorMsg = ref('')
 const email = ref('')
 const resendLoading = ref(false)
 const resendSuccess = ref(false)
+
+// I13：重发激活邮件成功后冷却 60 秒，防止连点刷出大量激活邮件
+const {remaining: resendRemaining, start: startResendCountdown} = useCountdown(60)
 
 const doActivate = async () => {
   if (invalidToken.value) return
@@ -40,11 +45,20 @@ const onResendEmail = async () => {
     Snackbar.warning('请输入邮箱')
     return
   }
+  const trimmedEmail = email.value.trim()
+  if (!isValidEmail(trimmedEmail)) {
+    Snackbar.warning('邮箱格式不正确')
+    return
+  }
+  // 冷却期内不允许重复发送
+  if (resendRemaining.value > 0) return
+
   resendLoading.value = true
   try {
-    await resendActivateEmail(email.value)
+    await resendActivateEmail(trimmedEmail)
     resendSuccess.value = true
     Snackbar.success('激活邮件已发送')
+    startResendCountdown()
   } catch {
     // 拦截器已处理错误提示
   } finally {
@@ -127,15 +141,16 @@ onMounted(() => {
         <button
           class="auth-submit-btn"
           :class="{ 'auth-submit-btn--loading': resendLoading }"
-          :disabled="resendLoading"
+          :disabled="resendLoading || resendRemaining > 0"
           @click="onResendEmail"
         >
-          <span v-if="!resendLoading">重新发送激活邮件</span>
-          <span v-else class="auth-btn-loading">
+          <span v-if="resendLoading" class="auth-btn-loading">
             <svg class="auth-spinner" viewBox="0 0 24 24" width="22" height="22">
               <circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" />
             </svg>
           </span>
+          <span v-else-if="resendRemaining > 0">{{ resendRemaining }} 秒后可重新发送</span>
+          <span v-else>重新发送激活邮件</span>
         </button>
       </div>
 
