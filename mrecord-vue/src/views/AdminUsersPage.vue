@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { listUsers, enableOrDisableUser, deleteUser, adminResetPassword, type SysUser, type ListUsersParams } from '@/api'
@@ -25,20 +25,45 @@ const pageResult = ref<PageResult<SysUser>>({
   totalRow: 0,
 })
 
-async function loadUsers() {
+// 「全部状态」在 DOM 里只能是字符串：用 '' 做哨兵，写回 searchParams 时转回 undefined，
+// 否则选中「全部状态」会向后端发出 status: ""（I5）
+const statusFilter = computed<number | ''>({
+  get: () => searchParams.status ?? '',
+  set: (v) => { searchParams.status = v === '' ? undefined : v },
+})
+
+// 请求序号：连点翻页时只采纳最新一次的响应，防止旧响应覆盖新页码（I5）
+let requestSeq = 0
+
+async function loadUsers(page?: number) {
+  // loading 守卫：进行中的请求完成前不受理新请求（按钮也随 loading 禁用）
+  if (loading.value) return
+  // 页码在此赋值而非在 changePage 里，否则守卫拦截时 pageNum 已被改到目标页（I5）
+  if (page !== undefined) searchParams.pageNum = page
   loading.value = true
+  const seq = ++requestSeq
   try {
-    pageResult.value = await listUsers(searchParams)
+    const res = await listUsers(searchParams)
+    // 期间又触发了新请求 → 这次过期响应直接丢弃
+    if (seq !== requestSeq) return
+    pageResult.value = res
+    // I4: 删除最后一页的最后一条后后端 totalPage 已减，但本次仍请求了已空的旧页；
+    // 仅在「本页空 + 确有数据」时回退到新的最后一页重载，无数据时正确保留空状态
+    if (res.records.length === 0 && res.totalPage > 0 && (searchParams.pageNum ?? 1) > res.totalPage) {
+      searchParams.pageNum = res.totalPage
+      loading.value = false
+      return loadUsers()
+    }
   } catch {
     // 拦截器处理
   } finally {
-    loading.value = false
+    // 只在仍是自己这一次请求时复位，避免与重载请求互相干扰
+    if (seq === requestSeq) loading.value = false
   }
 }
 
 function handleSearch() {
-  searchParams.pageNum = 1
-  loadUsers()
+  loadUsers(1)
 }
 
 function resetSearch() {
@@ -46,13 +71,11 @@ function resetSearch() {
   searchParams.email = ''
   searchParams.status = undefined
   searchParams.isAdmin = undefined
-  searchParams.pageNum = 1
-  loadUsers()
+  loadUsers(1)
 }
 
 function changePage(page: number) {
-  searchParams.pageNum = page
-  loadUsers()
+  loadUsers(page)
 }
 
 // ==================== 用户操作 ====================
@@ -204,8 +227,8 @@ onMounted(() => {
           <input v-model="searchParams.email" placeholder="邮箱" class="search-input" />
         </div>
         <div class="input-wrapper select-wrapper">
-          <select v-model="searchParams.status" class="search-select">
-            <option :value="undefined">全部状态</option>
+          <select v-model="statusFilter" class="search-select">
+            <option value="">全部状态</option>
             <option :value="0">正常</option>
             <option :value="1">停用</option>
             <option :value="2">注销中</option>
@@ -265,9 +288,9 @@ onMounted(() => {
 
     <!-- 分页 -->
     <div v-if="pageResult.totalPage > 1" class="pagination">
-      <button class="page-btn" :disabled="(searchParams.pageNum ?? 1) <= 1" @click="changePage((searchParams.pageNum ?? 1) - 1)">上一页</button>
+      <button class="page-btn" :disabled="loading || (searchParams.pageNum ?? 1) <= 1" @click="changePage((searchParams.pageNum ?? 1) - 1)">上一页</button>
       <span class="page-info">{{ searchParams.pageNum ?? 1 }} / {{ pageResult.totalPage }}</span>
-      <button class="page-btn" :disabled="(searchParams.pageNum ?? 1) >= pageResult.totalPage" @click="changePage((searchParams.pageNum ?? 1) + 1)">下一页</button>
+      <button class="page-btn" :disabled="loading || (searchParams.pageNum ?? 1) >= pageResult.totalPage" @click="changePage((searchParams.pageNum ?? 1) + 1)">下一页</button>
     </div>
 
     <!-- 操作菜单 ActionSheet -->
