@@ -272,9 +272,9 @@
             <h1>月衡 <span>MRecord</span></h1>
             <p>月度快照式个人财务记账系统，面向个人及小范围多用户，按月记录完整资产与负债，支持统计、同比环比分析、数据导出与统一管理，让财务更清晰、更严谨。</p>
             
-            <!-- ✅ 最终完美效果 -->
+            <!-- ✅ 正式版发布标识 -->
             <div class="dev-tag">
-                <span class="text-shine">🚧 项目开发中 · 敬请期待</span>
+                <span class="text-shine">🎉 v2.0.0 正式版已发布 · Rust 单二进制 + 飞牛 fnOS 原生应用</span>
             </div>
         </div>
     </section>
@@ -297,11 +297,19 @@
                 </div>
                 <div class="card">
                     <h3>🔔 便捷提醒</h3>
-                    <p>每月记账提醒、数据核对提醒，避免遗漏，保持财务记录持续完整。</p>
+                    <p>每月记账提醒、年度财务总结邮件自动送达，避免遗漏，保持财务记录持续完整。</p>
                 </div>
                 <div class="card">
                     <h3>📤 数据导出</h3>
                     <p>支持一键导出报表，方便存档、审计或在其他工具中二次分析。</p>
+                </div>
+                <div class="card">
+                    <h3>🐮 飞牛 fnOS 原生应用</h3>
+                    <p>原生接入飞牛 fnOS 应用中心，统一网关访问、零端口冲突，安装零配置、数据自动持久化。</p>
+                </div>
+                <div class="card">
+                    <h3>🦀 双后端架构</h3>
+                    <p>Rust 版与 Java 版功能完全对齐、数据库互相兼容。Rust 版为 musl 静态单二进制，开箱即用。</p>
                 </div>
                 <div class="card">
                     <h3>⚙️ 后台管理</h3>
@@ -344,6 +352,28 @@
         <div class="section-title">版本更新日志</div>
         <div class="changelog">
         	<div class="log-item">
+                <div class="log-date">2026-9-20</div>
+                <div class="log-version">v2.0.0</div>
+                <div class="log-content">
+                    • 新增：Rust 后端从零追平 Java 版全部 38 个接口，成为推荐后端（单二进制、无运行时依赖）<br>
+                    • 新增：飞牛 fnOS 原生应用，统一网关 + 零端口冲突，x86 / ARM 双架构独立发包<br>
+                    • 新增：年度财务总结邮件、注销冷静期撤销与数据自动清理<br>
+                    • 修改：Rust 版默认端口统一为 2333，金额改用 Decimal 消除浮点误差<br>
+                    • 修改：Spring Boot 4.1、Vue Router 5、Pinia 4、sea-orm 2 等依赖全面升级<br>
+                    • 后续计划：飞牛真机安装验证、更多 NAS 平台适配
+                </div>
+            </div>
+            <div class="log-item">
+                <div class="log-date">2026-6-8</div>
+                <div class="log-version">v1.0.0</div>
+                <div class="log-content">
+                    • 首个正式版本发布<br>
+                    • 完成：用户认证与多用户体系、账簿 CRUD、月度记录管理<br>
+                    • 完成：财务数据统计与同比环比分析、数据导出（含邮箱配置校验）<br>
+                    • 完成：Docker 一键部署，Rust 版开始重构
+                </div>
+            </div>
+            <div class="log-item">
                 <div class="log-date">2026-5-25</div>
                 <div class="log-version">v0.9.2</div>
                 <div class="log-content">
