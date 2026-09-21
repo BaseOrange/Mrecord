@@ -6,6 +6,9 @@ import { listTempItems, createTempItem, updateTempItem, deleteTempItem } from '@
 import type { FinTemplateItem } from '@/api/modules/tempItem'
 import draggable from 'vuedraggable'
 import IconPicker from '@/components/IconPicker.vue'
+// 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
+// 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
+import iconsUrl from '@/../public/icons.svg'
 
 const route = useRoute()
 const router = useRouter()
@@ -361,7 +364,7 @@ const goBack = () => {
               <!-- 图标 -->
               <div class="item-icon-wrap" :class="{ 'item-icon-wrap--empty': !element.icon }">
                 <svg v-if="element.icon" viewBox="0 0 24 24" width="18" height="18">
-                  <use :href="`/icons.svg#icon-${element.icon}`" />
+                  <use :href="`${iconsUrl}#icon-${element.icon}`" />
                 </svg>
                 <span v-else class="item-icon-placeholder">?</span>
               </div>
@@ -406,7 +409,7 @@ const goBack = () => {
           <span class="icon-select-label">图标</span>
           <div class="icon-select-preview" v-if="items[renameIndex]?.icon">
             <svg viewBox="0 0 24 24" width="20" height="20">
-              <use :href="`/icons.svg#icon-${items[renameIndex].icon}`" />
+              <use :href="`${iconsUrl}#icon-${items[renameIndex].icon}`" />
             </svg>
           </div>
           <span v-else class="icon-select-hint">点击选择</span>
@@ -473,7 +476,7 @@ const goBack = () => {
           <span class="icon-select-label">图标</span>
           <div class="icon-select-preview" v-if="items[editNewIndex]?.icon">
             <svg viewBox="0 0 24 24" width="20" height="20">
-              <use :href="`/icons.svg#icon-${items[editNewIndex].icon}`" />
+              <use :href="`${iconsUrl}#icon-${items[editNewIndex].icon}`" />
             </svg>
           </div>
           <span v-else class="icon-select-hint">点击选择</span>
@@ -523,7 +526,7 @@ const goBack = () => {
           <span class="icon-select-label">图标</span>
           <div class="icon-select-preview" v-if="newItemIcon">
             <svg viewBox="0 0 24 24" width="20" height="20">
-              <use :href="`/icons.svg#icon-${newItemIcon}`" />
+              <use :href="`${iconsUrl}#icon-${newItemIcon}`" />
             </svg>
           </div>
           <span v-else class="icon-select-hint">点击选择</span>

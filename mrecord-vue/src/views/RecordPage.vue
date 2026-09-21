@@ -9,6 +9,9 @@ import type { FinMonthItemRecord } from '@/api/modules/monthItem'
 import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
 import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
+// 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
+// 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
+import iconsUrl from '@/../public/icons.svg'
 
 const route = useRoute()
 const router = useRouter()
@@ -297,7 +300,7 @@ const handleSave = async () => {
           <div class="item-list">
             <div v-for="item in assetItems" :key="item.id" class="item-row">
               <div class="item-info">
-                <svg v-if="item.icon" class="item-icon"><use :href="`/icons.svg#icon-${item.icon}`"/></svg>
+                <svg v-if="item.icon" class="item-icon"><use :href="`${iconsUrl}#icon-${item.icon}`"/></svg>
                 <span v-else class="item-icon-placeholder">¥</span>
                 <span class="item-name">{{ item.itemName }}</span>
               </div>
@@ -323,7 +326,7 @@ const handleSave = async () => {
           <div class="item-list">
             <div v-for="item in liabilityItems" :key="item.id" class="item-row">
               <div class="item-info">
-                <svg v-if="item.icon" class="item-icon"><use :href="`/icons.svg#icon-${item.icon}`"/></svg>
+                <svg v-if="item.icon" class="item-icon"><use :href="`${iconsUrl}#icon-${item.icon}`"/></svg>
                 <span v-else class="item-icon-placeholder">¥</span>
                 <span class="item-name">{{ item.itemName }}</span>
               </div>
@@ -349,7 +352,7 @@ const handleSave = async () => {
           <div class="item-list">
             <div v-for="item in ignoreItems" :key="item.id" class="item-row">
               <div class="item-info">
-                <svg v-if="item.icon" class="item-icon"><use :href="`/icons.svg#icon-${item.icon}`"/></svg>
+                <svg v-if="item.icon" class="item-icon"><use :href="`${iconsUrl}#icon-${item.icon}`"/></svg>
                 <span v-else class="item-icon-placeholder">¥</span>
                 <span class="item-name">{{ item.itemName }}</span>
               </div>

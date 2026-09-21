@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+// 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
+// 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
+import iconsUrl from '@/../public/icons.svg'
 
 const props = defineProps<{
   show: boolean
@@ -119,7 +122,7 @@ const onClose = () => {
         >
           <div class="picker-icon-circle">
             <svg class="picker-svg" viewBox="0 0 24 24" width="24" height="24">
-              <use :href="`/icons.svg#icon-${icon.key}`" />
+              <use :href="`${iconsUrl}#icon-${icon.key}`" />
             </svg>
           </div>
           <span class="picker-label">{{ icon.label }}</span>
