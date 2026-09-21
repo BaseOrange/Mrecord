@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { Snackbar } from '@varlet/ui'
 import { listOperateLogs, type OperateLogInfo } from '@/api'
 import type { PageResult, PageParams } from '@/api/types'
 import { formatDate } from '@/utils/format'
@@ -24,9 +25,9 @@ const pageResult = ref<PageResult<OperateLogInfo>>({
   totalRow: 0,
 })
 
-async function loadLogs(reset = false) {
-  if (loading.value) return
-  if (!reset && !hasMore.value) return
+async function loadLogs(reset = false): Promise<boolean> {
+  if (loading.value) return false
+  if (!reset && !hasMore.value) return false
 
   if (reset) {
     pageParams.pageNum = 1
@@ -55,8 +56,10 @@ async function loadLogs(reset = false) {
     } else {
       pageParams.pageNum += 1
     }
+    return true
   } catch {
     // 拦截器处理
+    return false
   } finally {
     loading.value = false
     if (reset) {
@@ -94,7 +97,12 @@ const onTouchEnd = async () => {
 
   if (pullDistance.value >= PULL_THRESHOLD && !refreshing.value) {
     refreshing.value = true
-    await loadLogs(true)
+    const loaded = await loadLogs(true)
+    // I14：loadLogs 被 loading 守卫拦截时（如首次加载尚未完成），
+    // 不做无意义的刷新动画，给用户明确提示
+    if (!loaded) {
+      Snackbar.info('正在加载中，请稍后再试')
+    }
     refreshing.value = false
   }
 

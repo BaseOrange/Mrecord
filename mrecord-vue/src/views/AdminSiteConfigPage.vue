@@ -16,9 +16,13 @@ const registerEnabled = ref(false)
 onMounted(async () => {
   try {
     const config = await getSiteConfig()
-    webSite.value = config.webSite || ''
-    adminMail.value = config.adminMail || ''
-    registerEnabled.value = config.registerEnabled ?? false
+    // I14：与 AdminEmailConfigPage 对齐——后端可能返回 null（首次部署无配置），
+    // 直接取字段会 TypeError 被 catch 静默吞掉，留下空白表单可提交
+    if (config) {
+      webSite.value = config.webSite || ''
+      adminMail.value = config.adminMail || ''
+      registerEnabled.value = config.registerEnabled ?? false
+    }
   } catch {
     // 拦截器处理
   } finally {

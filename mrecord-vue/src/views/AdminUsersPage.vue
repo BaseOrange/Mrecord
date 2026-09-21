@@ -91,6 +91,13 @@ function openResetDialog(user: SysUser) {
   showResetDialog.value = true
 }
 
+// I14：弹窗关闭时清空明文密码——避免用户取消后密码残留内存，
+// 下次打开虽会清空但中间状态可被浏览器开发者工具 / 内存转储读取
+function closeResetDialog() {
+  showResetDialog.value = false
+  resetPassword.value = ''
+}
+
 async function confirmResetPassword() {
   if (!resetTarget.value || !resetPassword.value) {
     Snackbar.warning('请输入新密码')
@@ -104,7 +111,7 @@ async function confirmResetPassword() {
   try {
     await adminResetPassword({ email: resetTarget.value.email, password: resetPassword.value })
     Snackbar.success('密码重置成功')
-    showResetDialog.value = false
+    closeResetDialog()
   } catch {
     // 拦截器处理
   } finally {
@@ -307,7 +314,7 @@ onMounted(() => {
           </div>
         </div>
         <div class="custom-dialog-footer">
-          <button class="dialog-btn dialog-btn--cancel" @click="showResetDialog = false">取消</button>
+          <button class="dialog-btn dialog-btn--cancel" @click="closeResetDialog">取消</button>
           <button class="dialog-btn dialog-btn--confirm dialog-btn--orange" :disabled="resetting" @click="confirmResetPassword">
             <span v-if="!resetting">确认重置</span>
             <span v-else class="btn-loading"><svg class="spinner" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4"/></svg></span>

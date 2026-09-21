@@ -3,6 +3,7 @@ import {onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {Snackbar} from '@varlet/ui'
 import {getEmailConfig, updateEmailConfig} from '@/api'
+import {isValidEmail} from '@/utils/security'
 import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
@@ -41,14 +42,10 @@ const onSubmit = async () => {
     Snackbar.warning('请输入SMTP服务器地址')
     return
   }
-  if (!sslSmtpPort.value) {
-    Snackbar.warning('请输入SSL-SMTP端口')
-    return
-  }
-  if (!smtpPort.value) {
-    Snackbar.warning('请输入SMTP端口')
-    return
-  }
+  // I14：端口校验——v-model.number 清空时产出 ''（空字符串），
+  // 需显式判 undefined/null/NaN/越界/负数，否则提交给后端的是无效值
+  if (!validatePort(sslSmtpPort.value, 'SSL-SMTP端口')) return
+  if (!validatePort(smtpPort.value, 'SMTP端口')) return
   if (!userName.value.trim()) {
     Snackbar.warning('请输入邮箱用户名')
     return
@@ -59,6 +56,10 @@ const onSubmit = async () => {
   }
   if (!from.value.trim()) {
     Snackbar.warning('请输入发送邮箱地址')
+    return
+  }
+  if (!isValidEmail(from.value.trim())) {
+    Snackbar.warning('发送邮箱地址格式不正确')
     return
   }
 
@@ -84,6 +85,24 @@ const onSubmit = async () => {
   } finally {
     loading.value = false
   }
+}
+
+/**
+ * 校验端口号：必须是 1-65535 的整数。
+ * v-model.number 在输入框清空时产出 ''（空字符串），直接判 !val 无法区分「未填」与「填了 0」。
+ * @returns true 表示校验通过
+ */
+function validatePort(val: number | string | undefined, label: string): boolean {
+  if (val === undefined || val === null || val === '' || val === NaN) {
+    Snackbar.warning(`请输入${label}`)
+    return false
+  }
+  const n = Number(val)
+  if (!Number.isInteger(n) || n < 1 || n > 65535) {
+    Snackbar.warning(`${label}必须在 1-65535 之间`)
+    return false
+  }
+  return true
 }
 </script>
 
