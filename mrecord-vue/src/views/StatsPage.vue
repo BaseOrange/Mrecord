@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
 import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 
@@ -14,8 +15,7 @@ const fetchList = async () => {
   loading.value = true
   try {
     const res = await getMyDataStatistics()
-    // 兼容后端返回数组或 { recordList: [] } 对象两种情况
-    const data = Array.isArray(res) ? res : (res as any)?.recordList || []
+    const data: BookStatistics[] = Array.isArray(res) ? res : []
     list.value = data.filter((item: any) => item != null)
   } catch {
     // 拦截器已处理
@@ -40,9 +40,7 @@ const onCardClick = (item: BookStatistics) => {
 
 <template>
   <div class="stats-page">
-    <div class="page-header">
-      <h2>统计</h2>
-    </div>
+    <PageHeader title="统计" />
 
     <div class="page-body">
       <!-- 加载态 -->
@@ -123,19 +121,6 @@ const onCardClick = (item: BookStatistics) => {
 .stats-page {
   min-height: 100vh;
   background: #f5f5f5;
-}
-
-.page-header {
-  background: #fff;
-  padding: 16px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
 }
 
 .page-body {

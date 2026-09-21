@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 
@@ -14,15 +15,7 @@ const menus = [
 
 <template>
   <div class="admin-page">
-    <div class="page-header">
-      <button class="back-btn" @click="router.push('/profile')">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
-      <h2>管理中心</h2>
-      <span class="header-spacer"></span>
-    </div>
+    <PageHeader title="管理中心" show-back back-path="/profile" />
 
     <div class="page-body">
       <div v-for="menu in menus" :key="menu.path" class="admin-card" @click="router.push(menu.path)">
@@ -42,42 +35,6 @@ const menus = [
   min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-}
-
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #f0f0f0;
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
-}
-.back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s;
-  padding: 0;
-}
-.back-btn:active {
-  background: rgba(0, 0, 0, 0.06);
-  color: #FF6500;
-}
-.header-spacer {
-  width: 36px;
 }
 
 .page-body {

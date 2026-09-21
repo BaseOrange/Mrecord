@@ -9,6 +9,7 @@ import type { FinMonthItemRecord } from '@/api/modules/monthItem'
 import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
 import { formatMoney, getChangeText, getChangeColor, roundMoney } from '@/utils/format'
+import PageHeader from '@/components/PageHeader.vue'
 // 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
 // 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
 import iconsUrl from '@/../public/icons.svg'
@@ -193,11 +194,46 @@ const openMonthPicker = () => {
   showMonthPicker.value = true
 }
 
+// ---- I6：脏数据检测（未保存的金额或备注） ----
+const isDirty = computed(() => {
+  // 构建服务端值 Map
+  const serverMap = new Map<string, string>()
+  for (const r of existingRecords.value) {
+    if (r.templateItemId) serverMap.set(r.templateItemId, String(r.itemValue ?? ''))
+  }
+  // 对比每个模板项的输入值
+  for (const item of templateItems.value) {
+    if (!item?.id) continue
+    if ((itemValues.value[item.id] ?? '') !== (serverMap.get(item.id) ?? '')) return true
+  }
+  // 对比备注
+  const curRecord = recordIndex.value.get(`${currentYear.value}-${currentMonth.value}`)
+  return note.value !== (curRecord?.note ?? '')
+})
+
+// 切换月份前确认
+const showSwitchConfirm = ref(false)
+const pendingYear = ref(0)
+const pendingMonth = ref(0)
+
 // 切换年月
 const confirmMonthPick = () => {
+  showMonthPicker.value = false
+  if (isDirty.value) {
+    pendingYear.value = pickerYear.value
+    pendingMonth.value = pickerMonth.value
+    showSwitchConfirm.value = true
+    return
+  }
   currentYear.value = pickerYear.value
   currentMonth.value = pickerMonth.value
-  showMonthPicker.value = false
+  fetchData()
+}
+
+const confirmSwitchMonth = () => {
+  showSwitchConfirm.value = false
+  currentYear.value = pendingYear.value
+  currentMonth.value = pendingMonth.value
   fetchData()
 }
 
@@ -259,16 +295,8 @@ const handleSave = async () => {
 
 <template>
   <div class="record-page">
-    <!-- 顶部导航 -->
-    <div class="page-header">
-      <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" width="18" height="18">
-          <path d="M15 19l-7-7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <h2 class="header-title">{{ bookName }}</h2>
-      <div class="header-placeholder"></div>
-    </div>
+    <!-- 顶部导航（I11 + Q1：统一用 PageHeader，含历史栈兜底） -->
+    <PageHeader :title="bookName" show-back />
 
     <!-- 年月选择 -->
     <div class="month-selector" @click="openMonthPicker">
@@ -485,6 +513,21 @@ const handleSave = async () => {
         </div>
       </div>
     </var-popup>
+
+    <!-- I6：切换月份前确认（有未保存修改时） -->
+    <var-dialog
+      v-model:show="showSwitchConfirm"
+      title="切换月份"
+      confirm-button-text="放弃修改并切换"
+      cancel-button-text="继续编辑"
+      confirm-button-text-color="#fff"
+      confirm-button-color="#e74c3c"
+      @confirm="confirmSwitchMonth"
+    >
+      <div class="switch-confirm-tips">
+        当前月份有未保存的修改，切换后将丢失。确定要放弃修改并切换到 {{ pendingYear }} 年 {{ pendingMonth }} 月吗？
+      </div>
+    </var-dialog>
   </div>
 </template>
 
@@ -496,44 +539,13 @@ const handleSave = async () => {
   flex-direction: column;
 }
 
-/* 顶部导航 */
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-}
-.back-btn {
-  width: 32px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: 50%;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-.back-btn:active {
-  background: rgba(0, 0, 0, 0.06);
-}
-.header-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0;
-  line-height: 1;
-}
-.header-placeholder {
-  width: 32px;
+/* 顶部导航样式已迁移至 PageHeader.vue（Q1） */
+
+/* I6：切换月份确认弹窗 */
+.switch-confirm-tips {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
 }
 
 /* 年月选择 */

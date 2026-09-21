@@ -6,9 +6,13 @@ import { listTempItems, createTempItem, updateTempItem, deleteTempItem } from '@
 import type { FinTemplateItem } from '@/api/modules/tempItem'
 import draggable from 'vuedraggable'
 import IconPicker from '@/components/IconPicker.vue'
+import PageHeader from '@/components/PageHeader.vue'
 // 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
 // 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
 import iconsUrl from '@/../public/icons.svg'
+
+// Q2：编辑态类型（新增项用 _tempKey 做拖拽 key，领域类型无此字段）
+type EditableItem = FinTemplateItem & { _tempKey?: string }
 
 const route = useRoute()
 const router = useRouter()
@@ -16,7 +20,7 @@ const bookId = computed(() => route.params.bookId as string)
 const bookName = computed(() => (route.query.name as string) || '账簿')
 
 // ---- 模板列表 ----
-const items = ref<FinTemplateItem[]>([])
+const items = ref<EditableItem[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const hasChanges = ref(false)
@@ -178,7 +182,7 @@ const handleAdd = () => {
     icon: newItemIcon.value || undefined,
     sort: String(items.value.length),
     _tempKey: genTempId(),
-  } as any)
+  })
   showAddDialog.value = false
   hasChanges.value = true
 }
@@ -293,31 +297,39 @@ const handleSave = async () => {
   }
 }
 
+// ---- I6：返回前确认（有未保存修改时） ----
+const showBackConfirm = ref(false)
+
 // ---- 返回 ----
 const goBack = () => {
+  if (hasChanges.value) {
+    showBackConfirm.value = true
+    return
+  }
+  router.back()
+}
+
+const confirmBack = () => {
+  showBackConfirm.value = false
   router.back()
 }
 </script>
 
 <template>
   <div class="temp-editor">
-    <!-- 顶部导航 -->
-    <div class="nav-header">
-      <button class="nav-back" @click="goBack">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-      <div class="nav-title">{{ bookName }} · 账目模板</div>
-      <button
-        class="nav-save"
-        :class="{ 'nav-save--active': hasChanges }"
-        :disabled="!hasChanges || saving"
-        @click="handleSave"
-      >
-        {{ saving ? '保存中' : '保存' }}
-      </button>
-    </div>
+    <!-- 顶部导航（I11 + Q1：统一用 PageHeader，含历史栈兜底） -->
+    <PageHeader :title="`${bookName} · 账目模板`" show-back>
+      <template #right>
+        <button
+          class="nav-save"
+          :class="{ 'nav-save--active': hasChanges }"
+          :disabled="!hasChanges || saving"
+          @click="handleSave"
+        >
+          {{ saving ? '保存中' : '保存' }}
+        </button>
+      </template>
+    </PageHeader>
 
     <div class="editor-body">
       <!-- 加载中 -->
@@ -541,6 +553,21 @@ const goBack = () => {
       v-model="iconPickerValue"
       @select="onIconSelect"
     />
+
+    <!-- I6：返回前确认（有未保存修改时） -->
+    <var-dialog
+      v-model:show="showBackConfirm"
+      title="放弃修改"
+      confirm-button-text="放弃并返回"
+      cancel-button-text="继续编辑"
+      confirm-button-text-color="#fff"
+      confirm-button-color="#e74c3c"
+      @confirm="confirmBack"
+    >
+      <div class="back-confirm-tips">
+        当前有未保存的模板修改，返回后将丢失。确定要放弃修改并返回吗？
+      </div>
+    </var-dialog>
   </div>
 </template>
 
@@ -550,39 +577,7 @@ const goBack = () => {
   background: #f5f5f5;
 }
 
-/* 顶部导航 */
-.nav-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid #f0f0f0;
-}
-.nav-back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  border: none;
-  background: none;
-  color: #333;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  flex-shrink: 0;
-}
-.nav-title {
-  flex: 1;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* 顶部导航样式已迁移至 PageHeader.vue（Q1）；保存按钮保留本页样式（在 right slot 中） */
 .nav-save {
   border: none;
   background: none;
@@ -594,7 +589,6 @@ const goBack = () => {
   cursor: pointer;
   transition: all 0.2s;
   -webkit-tap-highlight-color: transparent;
-  flex-shrink: 0;
 }
 .nav-save--active {
   color: #fff;
@@ -603,6 +597,13 @@ const goBack = () => {
 }
 .nav-save:disabled {
   opacity: 0.5;
+}
+
+/* I6：返回确认弹窗 */
+.back-confirm-tips {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
 }
 
 /* 编辑区域 */

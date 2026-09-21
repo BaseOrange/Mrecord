@@ -18,9 +18,17 @@ const router = useRouter()
 
 const displayTitle = computed(() => props.title || document.title.split(' | ')[0])
 
+/**
+ * 返回逻辑（I11）：
+ * - 有 backPath → replace 到指定路由（不往历史栈里追加记录）
+ * - 无 backPath → 先判 window.history.length：深链接进入时（length ≤ 1）没有可返回的
+ *   历史栈，router.back() 会退出应用或无响应，此时降级到 /home
+ */
 const handleBack = () => {
   if (props.backPath) {
-    router.push(props.backPath)
+    router.replace(props.backPath)
+  } else if (window.history.length <= 1) {
+    router.replace('/home')
   } else {
     router.back()
   }
@@ -33,37 +41,65 @@ const handleBack = () => {
       <var-icon name="chevron-left" :size="24" />
     </div>
     <h2 class="header-title">{{ displayTitle }}</h2>
+    <!-- 右侧插槽：有内容则渲染，无内容且 showBack 时自动补 32px 占位保持视觉平衡 -->
+    <div v-if="$slots.right" class="header-right">
+      <slot name="right" />
+    </div>
+    <div v-else-if="showBack" class="header-placeholder"></div>
   </div>
 </template>
 
 <style scoped>
 .page-header {
   background: #fff;
-  padding: 16px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border-bottom: 1px solid #f0f0f0;
 }
 
 .back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #333;
   cursor: pointer;
-  padding: 4px;
   border-radius: 50%;
-  transition: background-color 0.2s;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+  flex-shrink: 0;
 }
 
 .back-btn:active {
-  background-color: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .header-title {
+  flex: 1;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #1d1d1f;
   margin: 0;
-  flex: 1;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-placeholder {
+  width: 32px;
+  flex-shrink: 0;
 }
 </style>

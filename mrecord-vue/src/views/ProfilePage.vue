@@ -5,6 +5,7 @@ import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
 import { logout, canceledMyUser } from '@/api'
 import AgreementPopup from '@/components/AgreementPopup.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -53,9 +54,7 @@ const handleCancelAccount = async () => {
 <template>
   <div class="profile-page">
     <!-- 顶部标题 -->
-    <div class="page-header">
-      <h2>我的</h2>
-    </div>
+    <PageHeader title="我的" />
 
     <div class="page-body">
       <!-- 用户信息卡片 -->
@@ -187,19 +186,6 @@ const handleCancelAccount = async () => {
   min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-}
-
-.page-header {
-  background: #fff;
-  padding: 16px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
 }
 
 .page-body {

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
 import { updateMyInfo } from '@/api'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -12,6 +13,18 @@ const nickname = ref(userStore.userInfo?.nickname || '')
 const remindEnabled = ref(userStore.userInfo?.remindEnabled === 1)
 const remindDay = ref(userStore.userInfo?.remindDay || 1)
 const loading = ref(false)
+
+// I6：记录初始值，用于脏数据检测
+const initialNickname = ref(nickname.value)
+const initialRemindEnabled = ref(remindEnabled.value)
+const initialRemindDay = ref(remindDay.value)
+
+// I6：是否有未保存的修改
+const isDirty = computed(() =>
+  nickname.value.trim() !== initialNickname.value ||
+  remindEnabled.value !== initialRemindEnabled.value ||
+  remindDay.value !== initialRemindDay.value
+)
 
 // 提醒日期选项 1-31
 const dayOptions = Array.from({ length: 31 }, (_, i) => i + 1)
@@ -42,25 +55,54 @@ const onSubmit = async () => {
     })
     userStore.setUserInfo(res)
     Snackbar.success('保存成功')
-    router.back()
+    // I11：历史栈兜底
+    if (window.history.length <= 1) {
+      router.replace('/profile')
+    } else {
+      router.back()
+    }
   } catch {
     // 拦截器已统一弹出后端报文，页面不再重复提示（I8）
   } finally {
     loading.value = false
   }
 }
+
+// I6：返回前确认（有未保存修改时）
+const showBackConfirm = ref(false)
+
+const goBack = () => {
+  if (isDirty.value) {
+    showBackConfirm.value = true
+    return
+  }
+  if (window.history.length <= 1) {
+    router.replace('/profile')
+  } else {
+    router.back()
+  }
+}
+
+const confirmBack = () => {
+  showBackConfirm.value = false
+  if (window.history.length <= 1) {
+    router.replace('/profile')
+  } else {
+    router.back()
+  }
+}
 </script>
 
 <template>
   <div class="profile-edit-page">
-    <!-- 顶部导航 -->
-    <div class="page-header">
-      <button class="header-back" @click="router.back()">
-        <var-icon name="chevron-left" :size="18" color="#333" />
-      </button>
-      <h2>个人资料</h2>
-      <div class="header-placeholder"></div>
-    </div>
+    <!-- 顶部导航（I11 + Q1：统一用 PageHeader，含历史栈兜底） -->
+    <PageHeader title="个人资料" show-back>
+      <template #right>
+        <button class="header-save-btn" :disabled="loading" @click="goBack">
+          完成
+        </button>
+      </template>
+    </PageHeader>
 
     <div class="page-body">
       <!-- 昵称卡片 -->
@@ -124,6 +166,21 @@ const onSubmit = async () => {
         {{ loading ? '保存中...' : '保存' }}
       </button>
     </div>
+
+    <!-- I6：返回前确认（有未保存修改时） -->
+    <var-dialog
+      v-model:show="showBackConfirm"
+      title="放弃修改"
+      confirm-button-text="放弃并返回"
+      cancel-button-text="继续编辑"
+      confirm-button-text-color="#fff"
+      confirm-button-color="#e74c3c"
+      @confirm="confirmBack"
+    >
+      <div class="back-confirm-tips">
+        当前有未保存的资料修改，返回后将丢失。确定要放弃修改并返回吗？
+      </div>
+    </var-dialog>
   </div>
 </template>
 
@@ -134,38 +191,27 @@ const onSubmit = async () => {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
-/* 顶部导航 */
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
-}
-.header-back {
-  width: 32px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* 顶部导航样式已迁移至 PageHeader.vue（Q1）；完成按钮保留本页样式 */
+.header-save-btn {
+  font-size: 15px;
+  font-weight: 500;
+  color: #FF6500;
+  background: none;
   border: none;
-  background: transparent;
-  border-radius: 50%;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.header-back:active {
-  background: #f5f5f5;
+.header-save-btn:disabled {
+  opacity: 0.5;
 }
-.header-placeholder {
-  width: 32px;
+
+/* I6：返回确认弹窗 */
+.back-confirm-tips {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
 }
 
 /* 页面主体 */

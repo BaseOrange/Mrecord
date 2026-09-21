@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { listUsers, enableOrDisableUser, deleteUser, adminResetPassword, type SysUser, type ListUsersParams } from '@/api'
 import type { PageResult } from '@/api/types'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 
@@ -122,9 +123,11 @@ function openToggleDialog(user: SysUser) {
 
 async function confirmToggle() {
   if (!toggleTarget.value) return
+  const userId = toggleTarget.value.id
+  if (!userId) { Snackbar.error('用户 ID 缺失'); return }
   toggling.value = true
   try {
-    await enableOrDisableUser([toggleTarget.value.id!])
+    await enableOrDisableUser([userId])
     Snackbar.success(toggleTarget.value.status === 0 ? '已停用' : '已启用')
     showToggleDialog.value = false
     loadUsers()
@@ -146,9 +149,11 @@ function openDeleteDialog(user: SysUser) {
 
 async function confirmDelete() {
   if (!deleteTarget.value) return
+  const userId = deleteTarget.value.id
+  if (!userId) { Snackbar.error('用户 ID 缺失'); return }
   deleting.value = true
   try {
-    await deleteUser([deleteTarget.value.id!])
+    await deleteUser([userId])
     Snackbar.success('已删除')
     showDeleteDialog.value = false
     loadUsers()
@@ -206,16 +211,7 @@ onMounted(() => {
 
 <template>
   <div class="admin-users-page">
-    <!-- 顶部导航 -->
-    <div class="page-header">
-      <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
-      <h2>用户管理</h2>
-      <span class="header-spacer"></span>
-    </div>
+    <PageHeader title="用户管理" show-back />
 
     <!-- 搜索栏 -->
     <div class="search-bar">
@@ -366,42 +362,6 @@ onMounted(() => {
   min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-}
-
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #f0f0f0;
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
-}
-.back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s;
-  padding: 0;
-}
-.back-btn:active {
-  background: rgba(0, 0, 0, 0.06);
-  color: #FF6500;
-}
-.header-spacer {
-  width: 36px;
 }
 
 /* 搜索栏 */

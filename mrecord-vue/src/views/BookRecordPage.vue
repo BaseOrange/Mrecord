@@ -5,6 +5,7 @@ import { Snackbar } from '@varlet/ui'
 import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
 import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
+import PageHeader from '@/components/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -69,15 +70,7 @@ const onMonthClick = (record: FinMonthRecord) => {
 <template>
   <div class="book-record-page">
     <!-- 顶部导航 -->
-    <div class="page-header">
-      <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" width="18" height="18">
-          <path d="M15 19l-7-7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <h2 class="header-title">{{ bookName }}</h2>
-      <div class="header-placeholder"></div>
-    </div>
+    <PageHeader :title="bookName" show-back />
 
     <div class="page-body">
       <!-- 加载态 -->
@@ -177,46 +170,6 @@ const onMonthClick = (record: FinMonthRecord) => {
   background: #f5f5f5;
   display: flex;
   flex-direction: column;
-}
-
-/* 顶部导航 */
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-}
-.back-btn {
-  width: 32px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: 50%;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-.back-btn:active {
-  background: rgba(0, 0, 0, 0.06);
-}
-.header-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0;
-  line-height: 1;
-}
-.header-placeholder {
-  width: 32px;
 }
 
 /* 页面主体 */

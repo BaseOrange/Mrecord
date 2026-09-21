@@ -5,6 +5,7 @@ import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
 import {changePassword, logout} from '@/api'
 import {md5} from 'js-md5'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -65,14 +66,8 @@ const onSubmit = async () => {
 
 <template>
   <div class="change-password-page">
-    <!-- 顶部导航 -->
-    <div class="page-header">
-      <button class="header-back" @click="router.back()">
-        <var-icon name="chevron-left" :size="18" color="#333" />
-      </button>
-      <h2>修改密码</h2>
-      <div class="header-placeholder"></div>
-    </div>
+    <!-- 顶部导航（I11 + Q1：统一用 PageHeader，含历史栈兜底） -->
+    <PageHeader title="修改密码" show-back />
 
     <div class="page-body">
       <div class="form-card">
@@ -169,42 +164,7 @@ const onSubmit = async () => {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
-}
-
-.header-back {
-  width: 32px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  border-radius: 50%;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.header-back:active {
-  background: #f5f5f5;
-}
-
-.header-placeholder {
-  width: 32px;
-}
+/* 顶部导航样式已迁移至 PageHeader.vue（Q1） */
 
 .page-body {
   padding: 16px;

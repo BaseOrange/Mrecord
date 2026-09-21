@@ -5,6 +5,7 @@ import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
 import { formatMoney, getChangeColor } from '@/utils/format'
 import appIcon from '@/../public/app-icon.svg'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 
@@ -85,7 +86,7 @@ const fetchOverview = async () => {
   loading.value = true
   try {
     const res = await getMyDataStatistics()
-    const data: BookStatistics[] = Array.isArray(res) ? res : (res as any)?.recordList || []
+    const data: BookStatistics[] = Array.isArray(res) ? res : []
     bookSnapshots.value = data.filter((item: any) => item != null)
     overview.value = {
       totalAsset: bookSnapshots.value.reduce((s, r) => s + (r.totalAsset || 0), 0),
@@ -115,12 +116,11 @@ const onBookCardClick = (item: BookStatistics) => {
 <template>
   <div class="home-page">
     <!-- 顶部区域 -->
-    <div class="page-header">
-      <div class="header-brand">
+    <PageHeader title="月衡">
+      <template #right>
         <img :src="appIcon" alt="月衡 Logo" class="header-logo" />
-        <h2>月衡 <span class="header-en">Mrecord</span></h2>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- 快捷入口 -->
     <div class="quick-section">
@@ -214,12 +214,6 @@ const onBookCardClick = (item: BookStatistics) => {
   background: #f5f5f5;
 }
 
-/* 顶部区域 */
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-}
-
 .header-brand {
   display: flex;
   align-items: center;
@@ -231,14 +225,6 @@ const onBookCardClick = (item: BookStatistics) => {
   height: 36px;
   border-radius: 10px;
   box-shadow: 0 6px 16px rgba(249, 114, 22, 0.18);
-}
-
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
 }
 
 .header-en {

@@ -5,6 +5,7 @@ import { Snackbar } from '@varlet/ui'
 import { createBook, updateBook, deleteBook, listBooks } from '@/api/modules/book'
 import type { BookInfo } from '@/api/modules/book'
 import BookCard from '@/components/BookCard.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 
@@ -232,10 +233,11 @@ const handleDelete = async () => {
     @touchend="onTouchEnd"
   >
     <!-- 顶部标题 -->
-    <div class="page-header">
-      <h2>账簿</h2>
-      <button class="header-add-btn" @click="openCreateDialog">+</button>
-    </div>
+    <PageHeader title="账簿">
+      <template #right>
+        <button class="header-add-btn" @click="openCreateDialog">+</button>
+      </template>
+    </PageHeader>
 
     <div class="page-body">
       <!-- 下拉刷新提示 -->
@@ -362,21 +364,6 @@ const handleDelete = async () => {
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
-.page-header {
-  background: #fff;
-  padding: 16px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
-}
 .header-add-btn {
   width: 32px;
   height: 32px;
