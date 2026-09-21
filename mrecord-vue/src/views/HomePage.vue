@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
@@ -43,9 +43,43 @@ const overview = ref({
   totalAsset: 0,
   totalLiability: 0,
   netAsset: 0,
-  monthOnMonth: 0,
 })
 const bookSnapshots = ref<BookStatistics[]>([])
+
+/**
+ * 由「本月净资产 + 环比增长率」反推单账簿的上月净资产。
+ *
+ * 后端 monthOnMonth = (本月 - 上月) / |上月| * 100（百分比，见 Java
+ * FinMonthRecordServiceImpl#getMonthOnMonthVal / Rust calculate_growth_rate），
+ * 故 上月 = 本月 / (1 + 环比/100)。
+ *
+ * 环比为 0 时无法区分「与上月持平」和「上月净资产为 0」（后端对分母为 0
+ * 一律返回 0），保守按「持平」处理，即将上月置为本月。
+ */
+const derivePrevNetAsset = (cur: number, rate?: number): number => {
+  if (!rate || !isFinite(rate)) return cur
+  const divisor = 1 + rate / 100
+  // 环比 -100（本月净资产归零）时除数为 0，无法反推，按持平处理
+  if (divisor === 0) return cur
+  const prev = cur / divisor
+  return isFinite(prev) ? prev : cur
+}
+
+/**
+ * 汇总环比：先汇总本月与上月净资产，再按后端同一公式计算整体增长率。
+ *
+ * 百分比不能跨账簿直接相加（各账簿分母不同），必须用汇总后的金额计算：
+ * 总环比 = (Σ本月净资产 - Σ上月净资产) / |Σ上月净资产| * 100。
+ */
+const totalMonthOnMonth = computed(() => {
+  const prevTotal = bookSnapshots.value.reduce(
+    (s, r) => s + derivePrevNetAsset(r.netAsset || 0, r.monthOnMonth),
+    0,
+  )
+  // 上月净资产合计为 0 时无法计算增长率，与后端「分母为 0 返回 0」的约定保持一致
+  if (prevTotal === 0) return 0
+  return ((overview.value.netAsset - prevTotal) / Math.abs(prevTotal)) * 100
+})
 
 const fetchOverview = async () => {
   loading.value = true
@@ -57,7 +91,6 @@ const fetchOverview = async () => {
       totalAsset: bookSnapshots.value.reduce((s, r) => s + (r.totalAsset || 0), 0),
       totalLiability: bookSnapshots.value.reduce((s, r) => s + (r.totalLiability || 0), 0),
       netAsset: bookSnapshots.value.reduce((s, r) => s + (r.netAsset || 0), 0),
-      monthOnMonth: bookSnapshots.value.reduce((s, r) => s + (r.monthOnMonth || 0), 0),
     }
   } catch {
     // 拦截器已处理
@@ -129,9 +162,9 @@ const onBookCardClick = (item: BookStatistics) => {
             </span>
             <span
               class="overview-mom-badge"
-              :style="{ color: overview.monthOnMonth > 0 ? '#ff3b30' : overview.monthOnMonth < 0 ? '#34c759' : '#8e8e93' }"
+              :style="{ color: totalMonthOnMonth > 0 ? '#ff3b30' : totalMonthOnMonth < 0 ? '#34c759' : '#8e8e93' }"
             >
-              环比上月：{{ (overview.monthOnMonth > 0 ? '+' : '') + overview.monthOnMonth.toFixed(2) }}%
+              环比上月：{{ (totalMonthOnMonth > 0 ? '+' : '') + totalMonthOnMonth.toFixed(2) }}%
             </span>
           </div>
         </div>
