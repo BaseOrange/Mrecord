@@ -111,8 +111,13 @@ const fetchTasks = async (reset = false) => {
 
 // ==================== 状态轮询 ====================
 let pollTimer: ReturnType<typeof setInterval> | null = null
+// 组件存活标志：fetchTasks 的 Promise 可能在组件已卸载后才 resolve（用户快速返回），
+// 若此时仍 startPolling，会创建一个再也无人清除的定时器（I3）
+let isMounted = false
 
 const startPolling = () => {
+  // 组件已卸载则不再启动轮询，避免定时器泄漏
+  if (!isMounted) return
   stopPolling()
   pollTimer = setInterval(() => {
     // 有进行中的任务时才刷新
@@ -133,12 +138,19 @@ const stopPolling = () => {
 }
 
 onMounted(() => {
+  isMounted = true
   fetchBooks()
   fetchTasks(true).then(() => startPolling())
+  // I2: 本页不是滚动容器（Layout 用 min-height:100vh，实际是 document 滚动），
+  // 监听必须挂在 window 上；原先挂在 .export-page 上事件永不触发，分页加载失效。
+  window.addEventListener('scroll', onScroll, { passive: true })
 })
 
 onUnmounted(() => {
+  // 先置标志再停定时器：保证此后 resolve 的 Promise 不会再次创建定时器
+  isMounted = false
   stopPolling()
+  window.removeEventListener('scroll', onScroll)
 })
 
 // ==================== 工具函数 ====================
@@ -171,7 +183,7 @@ const onScroll = () => {
 </script>
 
 <template>
-  <div class="export-page" @scroll.passive="onScroll">
+  <div class="export-page">
     <!-- 顶部标题 -->
     <div class="page-header">
       <button class="header-back" @click="router.back()">
