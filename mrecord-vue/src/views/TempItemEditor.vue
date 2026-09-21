@@ -228,6 +228,23 @@ const typeColor = (type?: number) => {
 }
 
 // ---- 保存 ----
+
+/**
+ * 用接口返回的结果回填本地模板项的 id。
+ *
+ * 后端按入参顺序逐项处理并**原序**返回：
+ * - Rust `fin_template_item::create/update` 的 `result.push(model.into())`；
+ * - Java `ceateFinTemplateItemList` / `updateFinTemplateItemList` 直接返回入参列表（已塞入新 id）。
+ *
+ * 因此按索引一一对应回填即可；数量不一致（异常响应）时放弃回填，交由调用方兜底处理。
+ */
+const reconcileItems = (local: FinTemplateItem[], remote?: FinTemplateItem[] | null) => {
+  if (!remote || remote.length !== local.length) return
+  local.forEach((item, index) => {
+    item.id = remote[index].id
+  })
+}
+
 const handleSave = async () => {
   saving.value = true
   try {
@@ -241,19 +258,33 @@ const handleSave = async () => {
 
     // 已有项更新（改名/排序）
     if (existingItems.length > 0) {
-      await updateTempItem({ bookId: bookId.value, itemList: existingItems })
+      const updated = await updateTempItem({ bookId: bookId.value, itemList: existingItems })
+      reconcileItems(existingItems, updated)
     }
-    // 新增项创建
+    // 新增项创建：响应内即含后端生成的 id，直接回填。
+    // 不能依赖随后的 fetchItems() 回补——一旦「保存成功但回拉失败」，hasChanges
+    // 已置 false 而新增项仍无 id，下次保存会把已创建的科目再创建一遍（B4）。
     if (newItems.length > 0) {
-      await createTempItem({ bookId: bookId.value, itemList: newItems })
+      const created = await createTempItem({ bookId: bookId.value, itemList: newItems })
+      reconcileItems(newItems, created)
+    }
+
+    // 回填异常（响应与入参数量不一致）→ 以服务端为准整体回拉兜底
+    if (items.value.some(i => !i.id)) {
+      await fetchItems()
+    }
+    // 仍有无 id 的项，说明保存未完整落库：保持脏标记让用户重试，绝不重复创建
+    if (items.value.some(i => !i.id)) {
+      Snackbar.warning('部分模板项保存失败，请重试')
+      hasChanges.value = true
+      return
     }
 
     Snackbar.success('保存成功')
     hasChanges.value = false
-    // 重新拉取，让新增项也有 id
-    await fetchItems()
   } catch {
-    // 拦截器已处理
+    // 拦截器已处理错误提示；保存未完成，保持脏标记便于重试
+    hasChanges.value = true
   } finally {
     saving.value = false
   }
