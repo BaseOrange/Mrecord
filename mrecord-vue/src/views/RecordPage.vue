@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { listTempItems } from '@/api/modules/tempItem'
 import type { FinTemplateItem } from '@/api/modules/tempItem'
-import { queryMonthItem, insertMonthItem, updateMonthItem } from '@/api/modules/monthItem'
+import { queryMonthItem, updateMonthItem } from '@/api/modules/monthItem'
 import type { FinMonthItemRecord } from '@/api/modules/monthItem'
 import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
@@ -198,43 +198,42 @@ const confirmMonthPick = () => {
 const handleSave = async () => {
   saving.value = true
   try {
-    // 构建明细列表
+    // 后端 updateMonthItem 会在同一事务内按 id 有无自动执行「更新已有项 / 插入新增项」
+    // （Rust: fin_month_item_record.rs 的 update 分支；Java: insertOrUpdateSelective），
+    // 因此整月保存合并为单次请求，同事务原子提交，不存在「部分成功」的中间态。
+    const existingMap = new Map(existingRecords.value.map(r => [r.templateItemId, r]))
     const itemList: FinMonthItemRecord[] = []
     for (const item of templateItems.value) {
       if (!item || !item.id) continue
       const raw = itemValues.value[item.id]
       const val = parseFloat(raw || '0')
       if (isNaN(val) && raw !== '' && raw !== undefined) continue
-      itemList.push({
+      const record: FinMonthItemRecord = {
         bookId,
         year: currentYear.value,
         month: currentMonth.value,
         templateItemId: item.id,
-        itemValue: raw === '' || raw === undefined ? 0 : val
-      })
-    }
-
-    // 区分已有记录（有id）和新增记录
-    const existingMap = new Map(existingRecords.value.map(r => [r.templateItemId, r]))
-    const updateList: FinMonthItemRecord[] = []
-    const insertList: FinMonthItemRecord[] = []
-
-    for (const i of itemList) {
-      const existing = existingMap.get(i.templateItemId)
-      if (existing) {
-        // 已有记录：补上 id，后端根据 id 更新
-        updateList.push({ ...i, id: existing.id })
-      } else {
-        insertList.push(i)
+        itemValue: raw === '' || raw === undefined ? 0 : val,
       }
+      // 已有记录补上 id → 走更新；无 id → 走插入
+      const existing = existingMap.get(item.id)
+      if (existing?.id) record.id = existing.id
+      itemList.push(record)
     }
 
-    if (updateList.length > 0) {
-      await updateMonthItem({ bookId, year: currentYear.value, month: currentMonth.value, itemList: updateList, note: note.value })
+    if (itemList.length === 0) {
+      Snackbar.warning('没有可保存的记账项')
+      return
     }
-    if (insertList.length > 0) {
-      await insertMonthItem({ bookId, year: currentYear.value, month: currentMonth.value, itemList: insertList, note: note.value })
-    }
+
+    // 单次请求完成整月保存，note 只随本次请求提交一次
+    await updateMonthItem({
+      bookId,
+      year: currentYear.value,
+      month: currentMonth.value,
+      itemList,
+      note: note.value,
+    })
 
     Snackbar.success('保存成功')
     // 刷新数据
