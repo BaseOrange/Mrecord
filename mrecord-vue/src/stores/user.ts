@@ -16,11 +16,19 @@ export const useUserStore = defineStore('user', () => {
     const isLoggedIn = computed(() => !!token.value)
 
     // ==================== Actions ====================
-    /** 设置 token */
-    function setToken(newToken: string) {
+    /**
+     * 设置 token
+     *
+     * @param persist 是否立即持久化到 localStorage，默认 true。登录与系统初始化流程中
+     * 需要先用 token 请求 `queryMyInfo`、确认用户信息拿到后再落盘——在此之前只存内存，
+     * 避免出现「token 已持久化但 userInfo 缺失」的半登录态（B5）。
+     */
+    function setToken(newToken: string, persist = true) {
         token.value = newToken
-        // 对token进行简单加密存储
-        localStorage.setItem('token', encryptStorage(newToken, 'mrecord-token-key'))
+        if (persist) {
+            // 对token进行简单加密存储
+            localStorage.setItem('token', encryptStorage(newToken, 'mrecord-token-key'))
+        }
     }
 
     /** 清除 token */

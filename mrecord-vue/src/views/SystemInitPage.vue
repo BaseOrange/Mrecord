@@ -4,6 +4,7 @@ import {useRouter} from 'vue-router'
 import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
 import {initAdmin, queryMyInfo, updateSiteConfig, updateEmailConfig, testEmail} from '@/api'
+import type {SysUser} from '@/api'
 import {markSystemInitialized} from '@/router'
 import {md5} from 'js-md5'
 import agreementText from '@/assets/agreement.md?raw'
@@ -118,14 +119,29 @@ async function onCreateAdmin() {
       password: md5(adminPassword.value),
       nickname: adminNickname.value.trim(),
     })
+    // 管理员账户已创建。token 先只入内存（后续 queryMyInfo 要用），暂不落盘——
+    // 用户信息拿到前不能持久化，否则失败时会留下「有 token 无 userInfo」的半登录态（B5）
+    userStore.setToken(token, false)
+
+    let userInfo: SysUser
+    try {
+      userInfo = await queryMyInfo()
+    } catch {
+      // 账户已创建但拉取用户信息失败：回滚到未登录态，引导去登录页正常登录
+      userStore.clearToken()
+      Snackbar.warning('管理员账户已创建，请重新登录')
+      router.replace('/login')
+      return
+    }
+
+    // 用户信息到手，token 与 userInfo 一起落盘，初始化流程继续
     userStore.setToken(token)
-    const userInfo = await queryMyInfo()
     userStore.setUserInfo(userInfo)
     markSystemInitialized()
     adminMail.value = adminEmail.value.trim()
     currentStep.value = 3
   } catch {
-    // 拦截器处理
+    // initAdmin 失败（如邮箱已被占用）：拦截器已提示，留在本页修正表单
   } finally {
     loading.value = false
   }

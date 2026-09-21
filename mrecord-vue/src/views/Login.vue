@@ -37,8 +37,11 @@ const onLogin = async () => {
   loading.value = true
   try {
     const token = await login({email: email.value, password: md5(password.value)})
-    userStore.setToken(token)
+    // token 先只入内存（请求拦截器需要它来调用 queryMyInfo），暂不落盘；
+    // 拿到用户信息后才算登录完成，届时 token 与 userInfo 一起持久化（B5）
+    userStore.setToken(token, false)
     const userInfo = await queryMyInfo()
+    userStore.setToken(token)
     userStore.setUserInfo(userInfo)
     Snackbar.success('登录成功')
     router.replace('/home')
@@ -47,7 +50,11 @@ const onLogin = async () => {
     if ((e as BusinessError).code === '11007') {
       showCancelRevoke.value = true
     }
-    // 其余错误由拦截器统一提示
+    // login 已成功但 queryMyInfo 失败 → 登录未完成，回滚到未登录态，
+    // 不留「有 token 无 userInfo」的半登录态（其余错误由拦截器统一提示）
+    if (userStore.token) {
+      userStore.clearToken()
+    }
   } finally {
     loading.value = false
   }
