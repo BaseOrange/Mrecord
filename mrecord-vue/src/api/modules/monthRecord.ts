@@ -19,9 +19,9 @@ export interface FinMonthRecord extends BaseEntity {
     totalLiability?: number
     /** 当月净资产（总资产-总负债） */
     netAsset?: number
-    /** 环比增长/下跌金额（对比上月） */
+    /** 环比增长率（百分比，非金额：如 10.50 表示较上月 +10.50%，负数为下跌；上月净资产为 0 时返回 0） */
     monthOnMonth?: number
-    /** 同比增长/下跌金额（对比去年同月） */
+    /** 同比增长率（百分比，非金额：如 -5.20 表示较去年同月 -5.20%；去年同月净资产为 0 时返回 0） */
     yearOnYear?: number
     /** 用户本月汇总备注 */
     note?: string
