@@ -4,8 +4,19 @@
 
 /**
  * 简单的密码强度检查
+ *
+ * 评分维度（每项 +1，满分 5）：
+ * - 长度 ≥ 8
+ * - 长度 ≥ 12
+ * - 包含数字
+ * - 包含字母
+ * - 包含特殊字符
+ *
+ * 注意：业务注册门槛为 6 位（Register.vue），但强度计算从 ≥ 8 位才计第一个分，
+ * 6 位密码强度显示为 0 级（「弱」），提示用户应使用更长的密码。
+ *
  * @param password 密码
- * @returns 密码强度等级 (0-4)
+ * @returns 密码强度等级 (0-5)
  */
 export function checkPasswordStrength(password: string): number {
     let strength = 0

@@ -59,8 +59,9 @@ request.interceptors.response.use(
         const res = response.data
         // 业务失败：弹出错误提示并 reject
         if (res.code !== SUCCESS_CODE) {
-            // 特殊处理token过期情况
-            if (res.code === '401' || res.message?.includes('登录') || res.message?.includes('token')) {
+            // B10：只认 code === '401'，不再用 message 关键词匹配——
+            // 含「登录」「token」字样的业务提示（如「请登录」「token 无效」）会把用户误踢下线
+            if (res.code === '401') {
                 useUserStore().logout()
                 // 网关模式下路由挂在 BASE_URL 前缀下，跳转要带上前缀
                 window.location.href = `${import.meta.env.BASE_URL}login`
