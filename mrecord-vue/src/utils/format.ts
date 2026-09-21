@@ -22,6 +22,21 @@ export function formatMoney(val?: number | null, decimals = 2): string {
 }
 
 /**
+ * 将金额按后端 `round_money` 规则舍入到分（两位小数、HALF_UP 远离零）。
+ *
+ * 对齐 Rust `common/money.rs::round_money`（`round_dp_with_strategy(2, MidpointAwayFromZero)`）
+ * 与 Java `BigDecimal.setScale(2, RoundingMode.HALF_UP)`。前端在解析输入、汇总、提交前
+ * 统一舍入，避免 `0.1 + 0.2` 类浮点误差导致前端汇总与后端落库值不一致（B7）。
+ *
+ * @param val 金额数值
+ * @returns 舍入到两位小数的数值（-0 规整为 0）
+ */
+export function roundMoney(val: number): number {
+    if (val === 0) return 0
+    return Math.sign(val) * Math.round(Math.abs(val) * 100 + Number.EPSILON * 100) / 100
+}
+
+/**
  * 获取变化值（环比/同比、净资产增减）的展示颜色。
  *
  * 全站统一「正红负绿」：上涨为红（#ff3b30）、下跌为绿（#34c759），与 A 股等

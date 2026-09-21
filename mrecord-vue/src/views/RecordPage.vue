@@ -8,7 +8,7 @@ import { queryMonthItem, updateMonthItem } from '@/api/modules/monthItem'
 import type { FinMonthItemRecord } from '@/api/modules/monthItem'
 import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
-import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
+import { formatMoney, getChangeText, getChangeColor, roundMoney } from '@/utils/format'
 // 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
 // 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
 import iconsUrl from '@/../public/icons.svg'
@@ -58,18 +58,26 @@ const assetItems = computed(() => templateItems.value.filter(i => i && i.itemTyp
 const liabilityItems = computed(() => templateItems.value.filter(i => i && i.itemType === -1).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
 const ignoreItems = computed(() => templateItems.value.filter(i => i && i.itemType === 0).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0)))
 
-// 实时汇总
+// 解析输入框金额：空/非法 → 0，并按后端 round_money 舍入到分（B7）。
+// 负号与科学计数法不在此拦截，由保存时的 isValidAmount 统一校验（B8）。
+const parseAmount = (raw: string | undefined): number => {
+  const val = parseFloat(raw || '0')
+  if (isNaN(val)) return 0
+  return roundMoney(val)
+}
+
+// 金额输入校验：空值合法（视为 0）；非空时只接受非负的纯小数（拒绝 -5、1e3 等，B8）
+const isValidAmount = (raw: string | undefined): boolean => {
+  if (raw === undefined || raw === '') return true
+  return /^\d*\.?\d*$/.test(raw.trim())
+}
+
+// 实时汇总（累加的是与后端一致的「分」级值，避免浮点误差）
 const totalAsset = computed(() => {
-  return assetItems.value.reduce((sum, item) => {
-    const val = parseFloat(itemValues.value[item.id!] || '0')
-    return sum + (isNaN(val) ? 0 : val)
-  }, 0)
+  return assetItems.value.reduce((sum, item) => sum + parseAmount(itemValues.value[item.id!]), 0)
 })
 const totalLiability = computed(() => {
-  return liabilityItems.value.reduce((sum, item) => {
-    const val = parseFloat(itemValues.value[item.id!] || '0')
-    return sum + (isNaN(val) ? 0 : val)
-  }, 0)
+  return liabilityItems.value.reduce((sum, item) => sum + parseAmount(itemValues.value[item.id!]), 0)
 })
 const netAsset = computed(() => totalAsset.value - totalLiability.value)
 
@@ -174,8 +182,21 @@ onMounted(() => {
   fetchData()
 })
 
+// 选择器内的草稿：确定时才写入 currentYear/currentMonth，
+// 否则点了别的月份再按「取消」也会让头部标签错位（I7）
+const pickerYear = ref(initYear)
+const pickerMonth = ref(initMonth)
+
+const openMonthPicker = () => {
+  pickerYear.value = currentYear.value
+  pickerMonth.value = currentMonth.value
+  showMonthPicker.value = true
+}
+
 // 切换年月
 const confirmMonthPick = () => {
+  currentYear.value = pickerYear.value
+  currentMonth.value = pickerMonth.value
   showMonthPicker.value = false
   fetchData()
 }
@@ -192,14 +213,18 @@ const handleSave = async () => {
     for (const item of templateItems.value) {
       if (!item || !item.id) continue
       const raw = itemValues.value[item.id]
-      const val = parseFloat(raw || '0')
-      if (isNaN(val) && raw !== '' && raw !== undefined) continue
+      // B8：拦截负数 / 科学计数法等非法输入，不静默钳制，明确提示用户修正
+      if (!isValidAmount(raw)) {
+        Snackbar.warning(`「${item.itemName || '记账项'}」的金额格式不正确，请输入非负数`)
+        return
+      }
+      // B7：提交值按后端 round_money 舍入到分，与落库值一致
       const record: FinMonthItemRecord = {
         bookId,
         year: currentYear.value,
         month: currentMonth.value,
         templateItemId: item.id,
-        itemValue: raw === '' || raw === undefined ? 0 : val,
+        itemValue: raw === '' || raw === undefined ? 0 : roundMoney(parseFloat(raw)),
       }
       // 已有记录补上 id → 走更新；无 id → 走插入
       const existing = existingMap.get(item.id)
@@ -246,7 +271,7 @@ const handleSave = async () => {
     </div>
 
     <!-- 年月选择 -->
-    <div class="month-selector" @click="showMonthPicker = true">
+    <div class="month-selector" @click="openMonthPicker">
       <span class="month-text">{{ monthLabel }}</span>
       <svg viewBox="0 0 24 24" width="16" height="16">
         <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -308,6 +333,7 @@ const handleSave = async () => {
                 <input
                   type="number"
                   inputmode="decimal"
+                  min="0"
                   class="item-input"
                   placeholder="0.00"
                   v-model="itemValues[item.id!]"
@@ -334,6 +360,7 @@ const handleSave = async () => {
                 <input
                   type="number"
                   inputmode="decimal"
+                  min="0"
                   class="item-input"
                   placeholder="0.00"
                   v-model="itemValues[item.id!]"
@@ -360,6 +387,7 @@ const handleSave = async () => {
                 <input
                   type="number"
                   inputmode="decimal"
+                  min="0"
                   class="item-input"
                   placeholder="0.00"
                   v-model="itemValues[item.id!]"
@@ -437,8 +465,8 @@ const handleSave = async () => {
               v-for="y in yearOptions"
               :key="y"
               class="picker-option"
-              :class="{ active: currentYear === y }"
-              @click="currentYear = y"
+              :class="{ active: pickerYear === y }"
+              @click="pickerYear = y"
             >
               {{ y }}年
             </div>
@@ -448,8 +476,8 @@ const handleSave = async () => {
               v-for="m in monthOptions"
               :key="m"
               class="picker-option"
-              :class="{ active: currentMonth === m }"
-              @click="currentMonth = m"
+              :class="{ active: pickerMonth === m }"
+              @click="pickerMonth = m"
             >
               {{ m }}月
             </div>
