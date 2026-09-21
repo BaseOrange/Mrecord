@@ -15,7 +15,7 @@ const fetchList = async () => {
   loading.value = true
   try {
     const res = await getMyDataStatistics()
-    const data: BookStatistics[] = Array.isArray(res) ? res : []
+    const data: BookStatistics[] = res?.recordList ?? []
     list.value = data.filter((item: any) => item != null)
   } catch {
     // 拦截器已处理

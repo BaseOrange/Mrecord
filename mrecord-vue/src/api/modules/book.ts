@@ -89,9 +89,9 @@ export function listBooks(data?: ListBooksParams) {
     return post<PageResult<BookInfo>>('/book/list', data)
 }
 
-/** 获取我的所有账簿统计数据 */
+/** 获取我的所有账簿统计数据（后端返回 DataStatisticsDTO：recordList 为各账簿最新月度汇总） */
 export function getMyDataStatistics() {
-    return post<BookStatistics[]>('/book/getMyDataStatistics')
+    return post<BookDetailedStatistics>('/book/getMyDataStatistics')
 }
 
 /** 获取指定账簿详细统计数据 */

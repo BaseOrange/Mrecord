@@ -86,7 +86,7 @@ const fetchOverview = async () => {
   loading.value = true
   try {
     const res = await getMyDataStatistics()
-    const data: BookStatistics[] = Array.isArray(res) ? res : []
+    const data: BookStatistics[] = res?.recordList ?? []
     bookSnapshots.value = data.filter((item: any) => item != null)
     overview.value = {
       totalAsset: bookSnapshots.value.reduce((s, r) => s + (r.totalAsset || 0), 0),
