@@ -51,6 +51,7 @@ public enum ResCode {
     FIN_ITEM_TEMP_TYPE_IS_NOT("14303", "账目模板项类型不能为空"),
     FIN_ITEM_TEMP_TYPE_ERROR("14304", "账目模板项类型错误"),
     FIN_ITEM_TEMP_UPDATE_ERROR("14305", "账目模板项仅支持修改名称、图标、顺序，无法进行修改类型、删除模板项操作"),
+    FIN_ITEM_TEMP_IN_USE("14306", "该科目已有记账记录，为保护历史数据无法删除"),
 
     /**
      * 服务端错误

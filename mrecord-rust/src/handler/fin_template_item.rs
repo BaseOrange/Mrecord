@@ -5,8 +5,8 @@
 
 use axum::{Json, extract::State};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter, QueryOrder, Set,
-    TransactionTrait, sea_query::Expr,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, Set, TransactionTrait, sea_query::Expr,
 };
 use uuid::Uuid;
 
@@ -15,13 +15,14 @@ use crate::{
     common::{res_code::ResCode, result::ApiResponse, user_context::AuthUser},
     entity::{
         fin_book::{Column as BookCol, Entity as BookEntity},
+        fin_month_item_record::{Column as MonthItemCol, Entity as MonthItemEntity},
         fin_template_item::{
             self, ActiveModel as TemplateItemActive, Column as TemplateItemCol,
             Entity as TemplateItemEntity,
         },
     },
     error::AppError,
-    model::finance::{FinTempItemDto, TemplateItemEntry, TemplateItemResponse},
+    model::finance::{DeleteTempItemDto, FinTempItemDto, TemplateItemEntry, TemplateItemResponse},
 };
 
 /// 构造参数错误业务异常。
@@ -326,6 +327,64 @@ pub async fn copy(
     Ok(Json(ApiResponse::success(result)))
 }
 
+/// 删除账本模板项：`POST /tempItem/delete`
+///
+/// 【业务规则】为保护历史快照，仅允许删除「尚无任何月份记账记录」的模板项：
+/// 若 FIN_MONTH_ITEM_RECORD 中存在引用该模板项的未删除明细，返回
+/// `FinItemTempInUse`（14306）。类型修改本身已被 `update` 接口禁止，
+/// 因此有记录的科目无法通过改名/改类型间接清理，历史汇总保持不变。
+///
+/// 删除为软删除（MR_IS_DELETED = 1），**不**级联清理月度明细，已生成的
+/// 月度汇总（FIN_MONTH_RECORD）保持不变。
+///
+/// 【有意收紧】校验账簿归属（Java 无此校验 → IDOR），且模板项必须属于该账簿。
+pub async fn delete(
+    AuthUser(user_id): AuthUser,
+    State(state): State<AppState>,
+    Json(params): Json<DeleteTempItemDto>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    let book_id = params.book_id.trim();
+    if book_id.is_empty() {
+        return Err(param_err("账簿ID不能为空"));
+    }
+    let template_item_id = params.template_item_id.trim();
+    if template_item_id.is_empty() {
+        return Err(param_err("账目模板项ID不能为空"));
+    }
+
+    let txn = state.db.begin().await?;
+    // 校验账簿归属（Java 无此校验 → IDOR）
+    check_book_ownership(&txn, book_id, &user_id).await?;
+
+    // 模板项必须存在、属于该账簿且未删除
+    let existing = TemplateItemEntity::find_by_id(template_item_id.to_string())
+        .filter(TemplateItemCol::BookId.eq(book_id))
+        .filter(TemplateItemCol::IsDeleted.eq(0))
+        .one(&txn)
+        .await?
+        .ok_or(AppError::ResCode(ResCode::FinItemTempNotExist))?;
+
+    // 有记账记录则禁止删除（保护历史快照）
+    let record_count = MonthItemEntity::find()
+        .filter(MonthItemCol::TemplateItemId.eq(template_item_id))
+        .filter(MonthItemCol::IsDeleted.eq(0))
+        .count(&txn)
+        .await?;
+    if record_count > 0 {
+        return Err(AppError::ResCode(ResCode::FinItemTempInUse));
+    }
+
+    // 软删除模板项
+    let mut active: TemplateItemActive = existing.into();
+    active.is_deleted = Set(1);
+    active.update_by = Set(Some(user_id));
+    active.update_time = Set(Some(chrono::Utc::now().naive_utc()));
+    active.update(&txn).await?;
+
+    txn.commit().await?;
+    Ok(Json(ApiResponse::success(())))
+}
+
 /// 查询账本模板项列表：`POST /tempItem/list`
 ///
 /// 对应 Java: `FinTemplateItemController.list` 与 `FinTemplateItemServiceImpl.selectByFinBookIdExternal`
@@ -474,6 +533,12 @@ mod tests {
             "CREATE TABLE IF NOT EXISTS FIN_TEMPLATE_ITEM (
                 MR_ID TEXT PRIMARY KEY, MR_BOOK_ID TEXT, MR_ITEM_NAME TEXT, MR_ITEM_TYPE INTEGER,
                 MR_ICON TEXT, MR_SORT TEXT,
+                MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
+                MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
+            )",
+            "CREATE TABLE IF NOT EXISTS FIN_MONTH_ITEM_RECORD (
+                MR_ID TEXT PRIMARY KEY, MR_YEAR INTEGER, MR_MONTH INTEGER, MR_BOOK_ID TEXT,
+                MR_TEMPLATE_ITEM_ID TEXT, MR_ITEM_VALUE REAL,
                 MR_CREATE_BY TEXT, MR_CREATE_TIME TEXT DEFAULT CURRENT_TIMESTAMP,
                 MR_UPDATE_BY TEXT, MR_UPDATE_TIME TEXT, MR_IS_DELETED INTEGER DEFAULT 0
             )",
@@ -788,5 +853,112 @@ mod tests {
 
         assert_eq!(res.0.data.unwrap().len(), 1);
         assert_eq!(count_active_templates(&db, "bk1").await, 1);
+    }
+
+    // ==================== delete 测试 ====================
+
+    /// 插入一条引用模板项的月度明细（is_deleted=0）。
+    async fn insert_month_item_record(db: &DatabaseConnection, id: &str, template_id: &str) {
+        db.execute_unprepared(&format!(
+            "INSERT INTO FIN_MONTH_ITEM_RECORD (MR_ID, MR_YEAR, MR_MONTH, MR_BOOK_ID, MR_TEMPLATE_ITEM_ID, MR_ITEM_VALUE)
+             VALUES ('{id}', 2026, 5, 'bk1', '{template_id}', 100.0)"
+        ))
+        .await
+        .unwrap();
+    }
+
+    /// 无记账记录的模板项可删除（软删除，MR_IS_DELETED 置 1）。
+    #[tokio::test]
+    async fn delete_removes_unused_template() {
+        let db = setup_db().await;
+        insert_book(&db, "bk1", "u1").await;
+        insert_template(&db, "t1", "bk1", "现金", 1).await;
+
+        delete(
+            AuthUser("u1".into()),
+            State(test_state(db.clone())),
+            Json(DeleteTempItemDto {
+                book_id: "bk1".to_string(),
+                template_item_id: "t1".to_string(),
+            }),
+        )
+        .await
+        .expect("无记录的模板项应能删除");
+
+        // 列表层面已不可见（在册数 0），但行仍在（软删除）
+        assert_eq!(count_active_templates(&db, "bk1").await, 0);
+        let row: CountRow = CountRow::find_by_statement(Statement::from_sql_and_values(
+            DbBackend::Sqlite,
+            "SELECT COUNT(*) AS c FROM FIN_TEMPLATE_ITEM WHERE MR_ID = ?",
+            ["t1".into()],
+        ))
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(row.c, 1, "软删除应保留数据行");
+    }
+
+    /// 已有记账记录的模板项禁止删除（保护历史快照）→ FinItemTempInUse（14306）。
+    #[tokio::test]
+    async fn delete_refuses_template_with_records() {
+        let db = setup_db().await;
+        insert_book(&db, "bk1", "u1").await;
+        insert_template(&db, "t1", "bk1", "现金", 1).await;
+        insert_month_item_record(&db, "m1", "t1").await;
+
+        let err = delete(
+            AuthUser("u1".into()),
+            State(test_state(db)),
+            Json(DeleteTempItemDto {
+                book_id: "bk1".to_string(),
+                template_item_id: "t1".to_string(),
+            }),
+        )
+        .await
+        .expect_err("有记录的模板项应被拒绝删除");
+
+        assert!(matches!(err, AppError::ResCode(ResCode::FinItemTempInUse)));
+    }
+
+    /// 已软删除的模板项再次删除 → FinItemTempNotExist。
+    #[tokio::test]
+    async fn delete_missing_template_returns_not_exist() {
+        let db = setup_db().await;
+        insert_book(&db, "bk1", "u1").await;
+
+        let err = delete(
+            AuthUser("u1".into()),
+            State(test_state(db)),
+            Json(DeleteTempItemDto {
+                book_id: "bk1".to_string(),
+                template_item_id: "ghost".to_string(),
+            }),
+        )
+        .await
+        .expect_err("不存在的模板项应返回 14301");
+
+        assert!(matches!(err, AppError::ResCode(ResCode::FinItemTempNotExist)));
+    }
+
+    /// 【有意收紧】不能删除他人账簿的模板项（Java 无归属校验 → IDOR）。
+    #[tokio::test]
+    async fn delete_rejects_other_users_book() {
+        let db = setup_db().await;
+        insert_book(&db, "bk1", "owner").await;
+        insert_template(&db, "t1", "bk1", "现金", 1).await;
+
+        let err = delete(
+            AuthUser("attacker".into()),
+            State(test_state(db)),
+            Json(DeleteTempItemDto {
+                book_id: "bk1".to_string(),
+                template_item_id: "t1".to_string(),
+            }),
+        )
+        .await
+        .expect_err("越权删除应被拒绝");
+
+        assert!(matches!(err, AppError::ResCode(ResCode::FinBookNotFound)));
     }
 }

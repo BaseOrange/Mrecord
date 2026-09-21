@@ -5,9 +5,14 @@ import cn.hutool.core.util.StrUtil;
 import com.dcz.mrecord.common.ResCode;
 import com.dcz.mrecord.common.UserContext;
 import com.dcz.mrecord.constant.TempItemTypeConst;
+import com.dcz.mrecord.dto.DeleteTempItemDTO;
 import com.dcz.mrecord.dto.FinTempItemDTO;
+import com.dcz.mrecord.entity.FinBook;
+import com.dcz.mrecord.entity.FinMonthItemRecord;
 import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.exception.MrecordException;
+import com.dcz.mrecord.mapper.FinBookMapper;
+import com.dcz.mrecord.mapper.FinMonthItemRecordMapper;
 import com.dcz.mrecord.mapper.FinTemplateItemMapper;
 import com.dcz.mrecord.service.FinTemplateItemService;
 import com.dcz.mrecord.service.SysBackupTemplateItemService;
@@ -35,6 +40,12 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
 
     @Resource
     private FinTemplateItemMapper finTemplateItemMapper;
+
+    @Resource
+    private FinBookMapper finBookMapper;
+
+    @Resource
+    private FinMonthItemRecordMapper finMonthItemRecordMapper;
 
     @Resource
     private SysBackupTemplateItemService sysBackupTemplateItemService;
@@ -192,5 +203,59 @@ public class FinTemplateItemServiceImpl extends ServiceImpl<FinTemplateItemMappe
         QueryWrapper queryWrapper = QueryWrapper.create();
         queryWrapper.eq(FinTemplateItem::getBookId, finBookId);
         return finTemplateItemMapper.selectListByQuery(queryWrapper);
+    }
+
+    /**
+     * 删除账本模板项：仅允许删除「尚无任何月份记账记录」的模板项。
+     * <p>
+     * 与 Rust 端 {@code fin_template_item::delete} 对齐：若存在引用该模板项的
+     * 未删除月度明细，抛 {@link ResCode#FIN_ITEM_TEMP_IN_USE}（14306），
+     * 历史月度汇总保持不变。
+     * <p>
+     * 删除前已校验「账簿归属」（补齐 Java 既有 IDOR 缺口）与「无月度明细引用」，
+     * 因此这里沿用 {@link #deleteByBookId} 的硬删除（Rust 端为软删除，
+     * 但删除前置校验保证无任何引用，两端对前端可观测行为一致：列表不再出现该项）。
+     *
+     * @param param 删除参数（账簿ID + 模板项ID）
+     */
+    @Override
+    public void deleteFinTemplateItem(DeleteTempItemDTO param) {
+        String bookId = param.getBookId();
+        String templateItemId = param.getTemplateItemId();
+        if (StrUtil.isBlankIfStr(bookId)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账簿ID不能为空");
+        }
+        if (StrUtil.isBlankIfStr(templateItemId)) {
+            throw new MrecordException(ResCode.PARAM_ERROR.getCode(), "账目模板项ID不能为空");
+        }
+
+        // 校验账簿归属：账簿必须属于当前登录用户且未删除
+        QueryWrapper bookQuery = QueryWrapper.create()
+                .eq(FinBook::getId, bookId)
+                .eq(FinBook::getUserId, UserContext.getUserId())
+                .eq(FinBook::getIsDeleted, 0);
+        if (finBookMapper.selectCountByQuery(bookQuery) == 0) {
+            throw new MrecordException(ResCode.FIN_BOOK_NOT_FOUND);
+        }
+
+        // 模板项必须存在、属于该账簿且未删除
+        QueryWrapper itemQuery = QueryWrapper.create()
+                .eq(FinTemplateItem::getId, templateItemId)
+                .eq(FinTemplateItem::getBookId, bookId)
+                .eq(FinTemplateItem::getIsDeleted, 0);
+        FinTemplateItem item = finTemplateItemMapper.selectOneByQuery(itemQuery);
+        if (item == null) {
+            throw new MrecordException(ResCode.FIN_ITEM_TEMP_IS_NOT);
+        }
+
+        // 有记账记录则禁止删除（保护历史快照）
+        QueryWrapper recordQuery = QueryWrapper.create()
+                .eq(FinMonthItemRecord::getTemplateItemId, templateItemId)
+                .eq(FinMonthItemRecord::getIsDeleted, 0);
+        if (finMonthItemRecordMapper.selectCountByQuery(recordQuery) > 0) {
+            throw new MrecordException(ResCode.FIN_ITEM_TEMP_IN_USE);
+        }
+
+        finTemplateItemMapper.deleteByQuery(itemQuery);
     }
 }

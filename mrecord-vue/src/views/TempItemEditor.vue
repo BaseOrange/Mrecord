@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
-import { listTempItems, createTempItem, updateTempItem } from '@/api/modules/tempItem'
+import { listTempItems, createTempItem, updateTempItem, deleteTempItem } from '@/api/modules/tempItem'
 import type { FinTemplateItem } from '@/api/modules/tempItem'
 import draggable from 'vuedraggable'
 import IconPicker from '@/components/IconPicker.vue'
@@ -64,6 +64,36 @@ const handleRename = () => {
   items.value[renameIndex.value].itemName = name
   showRenameDialog.value = false
   hasChanges.value = true
+}
+
+// ---- 删除已有项 ----
+const showDeleteConfirm = ref(false)
+const deleting = ref(false)
+
+const openDeleteConfirm = () => {
+  const item = items.value[renameIndex.value]
+  if (!item?.id) return
+  // 关闭编辑弹窗，改由二次确认弹窗承接
+  showRenameDialog.value = false
+  showDeleteConfirm.value = true
+}
+
+const handleDeleteExisting = async () => {
+  const item = items.value[renameIndex.value]
+  if (!item?.id) return
+  deleting.value = true
+  try {
+    await deleteTempItem({ bookId: bookId.value, templateItemId: item.id })
+    // 后端已落库，本地直接移除并重排（不用整表 refetch，避免丢失未保存的新增项）
+    items.value.splice(renameIndex.value, 1)
+    items.value.forEach((it, i) => { it.sort = String(i) })
+    showDeleteConfirm.value = false
+    Snackbar.success('已删除')
+  } catch {
+    // 拦截器已处理（如 14306「已有记账记录，无法删除」）
+  } finally {
+    deleting.value = false
+  }
 }
 
 // ---- 编辑新增项（改名+改类型+删除） ----
@@ -351,6 +381,26 @@ const goBack = () => {
           <span v-else class="icon-select-hint">点击选择</span>
           <span class="icon-select-arrow">›</span>
         </div>
+        <button class="delete-new-btn" @click="openDeleteConfirm" type="button">
+          删除此项
+        </button>
+      </div>
+    </var-dialog>
+
+    <!-- 删除确认弹窗（已有项，删除需调后端） -->
+    <var-dialog
+      v-model:show="showDeleteConfirm"
+      title="删除模板项"
+      confirm-button-text="删除"
+      cancel-button-text="取消"
+      confirm-button-text-color="#fff"
+      confirm-button-color="#e74c3c"
+      :confirm-button-loading="deleting"
+      @confirm="handleDeleteExisting"
+    >
+      <div class="delete-confirm-tips">
+        确定要删除「{{ items[renameIndex]?.itemName }}」吗？
+        <br />已有记账记录的科目无法删除（保护历史数据）。
       </div>
     </var-dialog>
 
@@ -769,6 +819,13 @@ const goBack = () => {
 }
 .delete-new-btn:active {
   background: #ffe5e5;
+}
+
+/* 删除确认提示 */
+.delete-confirm-tips {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
 }
 
 /* thinking */

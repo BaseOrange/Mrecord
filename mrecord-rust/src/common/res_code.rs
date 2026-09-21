@@ -49,6 +49,8 @@ pub enum ResCode {
     FinItemTempTypeError,
     /// 账目模板项仅支持修改名称、图标、顺序
     FinItemTempUpdateError,
+    /// 账目模板项已有记账记录，无法删除
+    FinItemTempInUse,
     /// 服务器内部错误
     Error,
     /// 业务异常
@@ -81,6 +83,7 @@ impl ResCode {
             Self::FinItemTempTypeRequired => "14303",
             Self::FinItemTempTypeError => "14304",
             Self::FinItemTempUpdateError => "14305",
+            Self::FinItemTempInUse => "14306",
             Self::Error => "50000",
             Self::BusinessError => "50001",
         }
@@ -113,6 +116,7 @@ impl ResCode {
             Self::FinItemTempUpdateError => {
                 "账目模板项仅支持修改名称、图标、顺序，无法进行修改类型、删除模板项操作"
             }
+            Self::FinItemTempInUse => "该科目已有记账记录，为保护历史数据无法删除",
             Self::Error => "服务器内部错误",
             Self::BusinessError => "业务异常",
         }

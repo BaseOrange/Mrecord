@@ -1,6 +1,7 @@
 package com.dcz.mrecord.controller;
 
 import com.dcz.mrecord.common.Result;
+import com.dcz.mrecord.dto.DeleteTempItemDTO;
 import com.dcz.mrecord.dto.FinTempItemDTO;
 import com.dcz.mrecord.entity.FinTemplateItem;
 import com.dcz.mrecord.service.FinTemplateItemService;
@@ -76,5 +77,21 @@ public class FinTemplateItemController {
         log.info("查询账本模板项列表[/tempItem/list]请求传参：{}", param);
         List<FinTemplateItem> resList = finTemplateItemService.selectByFinBookIdExternal(param.getBookId());
         return Result.success(resList);
+    }
+
+    /**
+     * 删除账本模板项
+     * <p>
+     * 仅允许删除尚无记账记录的模板项；已有记录的科目返回 14306，
+     * 以保护历史月度快照。
+     *
+     * @param param 删除账本模板项参数（账簿ID + 模板项ID）
+     * @return 无
+     */
+    @PostMapping("/delete")
+    public Result<Void> deleteFinTemplateItem(@RequestBody DeleteTempItemDTO param) {
+        log.info("删除账本模板项[/tempItem/delete]请求传参：{}", param);
+        finTemplateItemService.deleteFinTemplateItem(param);
+        return Result.success();
     }
 }

@@ -121,6 +121,16 @@ pub struct TemplateItemEntry {
     pub sort: String,
 }
 
+/// 删除账本模板项请求
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteTempItemDto {
+    /// 账本 ID
+    pub book_id: String,
+    /// 模板项 ID
+    pub template_item_id: String,
+}
+
 /// 创建 / 更新账簿请求
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]

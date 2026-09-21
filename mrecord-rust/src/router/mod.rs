@@ -67,6 +67,7 @@ pub fn build(state: AppState) -> Router {
         .route("/tempItem/update", post(handler::fin_template_item::update))
         .route("/tempItem/copy", post(handler::fin_template_item::copy))
         .route("/tempItem/list", post(handler::fin_template_item::list))
+        .route("/tempItem/delete", post(handler::fin_template_item::delete))
         // ==================== 月度汇总模块 ====================
         // 对应 Java: FinMonthRecordController（@RequestMapping("/monthRecord")）
         .route(
