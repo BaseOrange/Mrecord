@@ -35,10 +35,13 @@ import appIcon from '@/../public/app-icon.svg'
   min-height: 100vh;
   min-height: 100dvh;
   background: #ffffff;
-  overflow: hidden;
+  /* D8：overflow-y:auto 允许小屏内容超高时滚动；安全区 padding 防刘海/圆角裁切 */
+  overflow-y: auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .bg-layer {

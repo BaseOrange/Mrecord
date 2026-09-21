@@ -341,14 +341,9 @@ const confirmBack = () => {
 
     <div class="editor-body">
       <!-- 加载中 -->
-      <div v-if="loading" class="thinking-state">
-        <div class="thinking-face">🤔</div>
-        <div class="thinking-text">
-          thinking
-          <span class="thinking-dots">
-            <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
-          </span>
-        </div>
+      <div v-if="loading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>加载中...</p>
       </div>
 
       <!-- 空状态 -->
@@ -871,41 +866,27 @@ const confirmBack = () => {
   line-height: 1.8;
 }
 
-/* thinking */
-.thinking-state {
+/* 加载中 */
+.loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 100px 0 40px;
-}
-.thinking-face {
-  font-size: 48px;
-  animation: thinking-wobble 2s ease-in-out infinite;
-}
-@keyframes thinking-wobble {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-8deg); }
-  75% { transform: rotate(8deg); }
-}
-.thinking-text {
-  margin-top: 16px;
-  font-size: 16px;
-  font-weight: 500;
   color: #8e8e93;
-  font-style: italic;
-  letter-spacing: 1px;
+  font-size: 14px;
 }
-.thinking-dots .dot {
-  animation: thinking-blink 1.4s infinite both;
-  opacity: 0;
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #FF6500;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
 }
-.thinking-dots .dot:nth-child(1) { animation-delay: 0s; }
-.thinking-dots .dot:nth-child(2) { animation-delay: 0.2s; }
-.thinking-dots .dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes thinking-blink {
-  0%, 80%, 100% { opacity: 0; }
-  40% { opacity: 1; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 空状态 */

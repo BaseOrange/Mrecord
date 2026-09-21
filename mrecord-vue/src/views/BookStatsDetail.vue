@@ -122,7 +122,7 @@ const latest = computed(() => {
             </div>
             <div class="summary-item">
               <span class="summary-label">净资产</span>
-              <span class="summary-value" style="color: #FF6500;">{{ formatMoney(latest.netAsset) }}</span>
+              <span class="summary-value">{{ formatMoney(latest.netAsset) }}</span>
             </div>
             <div class="summary-item">
               <span class="summary-label">环比</span>

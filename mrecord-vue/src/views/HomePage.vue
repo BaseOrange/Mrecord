@@ -157,7 +157,7 @@ const onBookCardClick = (item: BookStatistics) => {
         <div class="overview-main">
           <span class="overview-label">净资产</span>
           <div class="overview-net-row">
-            <span class="overview-net-value" style="color: #ff3b30;">
+            <span class="overview-net-value">
               {{ formatMoney(overview.netAsset) }}
             </span>
             <span
@@ -193,7 +193,7 @@ const onBookCardClick = (item: BookStatistics) => {
           @click="onBookCardClick(item)"
         >
           <span class="book-mini-name">{{ item.bookName }}</span>
-          <span class="book-mini-net" style="color: #ff3b30;">
+          <span class="book-mini-net">
             {{ formatMoney(item.netAsset || 0) }}
           </span>
           <span

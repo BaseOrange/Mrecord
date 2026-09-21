@@ -46,7 +46,7 @@ const onCardClick = (item: BookStatistics) => {
       <!-- 加载态 -->
       <div v-if="loading && list.length === 0" class="loading-state">
         <div class="loading-spinner"></div>
-        <p>Thinking...</p>
+        <p>加载中...</p>
       </div>
 
       <!-- 空状态 -->
@@ -83,7 +83,7 @@ const onCardClick = (item: BookStatistics) => {
           <div class="card-body">
             <div class="main-value">
               <span class="main-label">净资产</span>
-              <span class="main-num" style="color: #ff3b30;">
+              <span class="main-num">
                 {{ formatMoney(item.netAsset) }}
               </span>
             </div>

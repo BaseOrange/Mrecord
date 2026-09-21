@@ -176,7 +176,7 @@ const onMonthClick = (record: FinMonthRecord) => {
 .page-body {
   flex: 1;
   padding: 16px;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 加载态 */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
@@ -28,13 +28,6 @@ const isDirty = computed(() =>
 
 // 提醒日期选项 1-31
 const dayOptions = Array.from({ length: 31 }, (_, i) => i + 1)
-
-// 当关闭提醒时，重置提醒日期
-watch(remindEnabled, (val) => {
-  if (!val) {
-    remindDay.value = 1
-  }
-})
 
 const onSubmit = async () => {
   if (!nickname.value.trim()) {

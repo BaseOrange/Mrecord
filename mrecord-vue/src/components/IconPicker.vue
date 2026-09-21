@@ -77,10 +77,12 @@ const onSelect = (key: string) => {
   emit('update:modelValue', key)
   emit('select', key)
   emit('update:show', false)
+  activeTab.value = 0
 }
 
 const onClose = () => {
   emit('update:show', false)
+  activeTab.value = 0
 }
 </script>
 

@@ -28,7 +28,7 @@ defineEmits<{
     </div>
 
     <!-- 账簿名称 -->
-    <div class="book-name">{{ book.bookName.length > 6 ? book.bookName.slice(0, 6) + '...' : book.bookName }}</div>
+    <div class="book-name">{{ book.bookName || '未命名' }}</div>
 
     <!-- 更多按钮 -->
     <button class="more-btn" @click.stop="$emit('more', book)">

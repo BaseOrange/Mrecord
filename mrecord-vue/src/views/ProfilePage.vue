@@ -72,7 +72,7 @@ const handleCancelAccount = async () => {
       <!-- 管理员入口 -->
       <div v-if="userStore.userInfo?.admin === 1" class="menu-card admin-card" @click="router.push('/admin')">
         <div class="menu-item">
-          <span class="menu-icon">🛡️</span>
+          <var-icon name="shield-outline" :size="22" class="menu-svg-icon" />
           <span class="menu-text">
             <span class="admin-label">管理中心</span>
             <span class="admin-badge">管理员</span>
@@ -84,31 +84,31 @@ const handleCancelAccount = async () => {
       <!-- 功能列表 -->
       <div class="menu-card">
         <div class="menu-item" @click="showAgreement = true">
-          <span class="menu-icon">📄</span>
+          <var-icon name="file-text-outline" :size="22" class="menu-svg-icon" />
           <span class="menu-text">用户协议及隐私政策</span>
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item" @click="router.push('/export')">
-          <span class="menu-icon">📊</span>
+          <var-icon name="download-outline" :size="22" class="menu-svg-icon" />
           <span class="menu-text">导出数据</span>
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item" @click="router.push('/profile-edit')">
-          <span class="menu-icon">👤</span>
+          <var-icon name="account-circle-outline" :size="22" class="menu-svg-icon" />
           <span class="menu-text">个人资料</span>
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item" @click="router.push('/change-password')">
-          <span class="menu-icon">🔒</span>
+          <var-icon name="lock-outline" :size="22" class="menu-svg-icon" />
           <span class="menu-text">修改密码</span>
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item" @click="showCancelStep1 = true">
-          <span class="menu-icon">⚠️</span>
+          <var-icon name="alert-circle-outline" :size="22" class="menu-svg-icon danger-svg-icon" />
           <span class="menu-text danger-text">注销账户</span>
           <span class="menu-arrow">›</span>
         </div>
@@ -185,7 +185,7 @@ const handleCancelAccount = async () => {
 .profile-page {
   min-height: 100vh;
   background: #f5f5f5;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 .page-body {
@@ -292,10 +292,13 @@ const handleCancelAccount = async () => {
 .menu-item:active {
   background: #f9f9f9;
 }
-.menu-icon {
-  font-size: 20px;
-  line-height: 1;
+.menu-svg-icon {
   margin-right: 12px;
+  color: #888;
+  flex-shrink: 0;
+}
+.menu-svg-icon.danger-svg-icon {
+  color: #ff4d4f;
 }
 .menu-text {
   flex: 1;

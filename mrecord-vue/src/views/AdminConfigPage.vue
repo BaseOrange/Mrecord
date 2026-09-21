@@ -57,7 +57,7 @@ async function handleRefreshCache() {
 .admin-config-page {
   min-height: 100vh;
   background: #f5f5f5;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 .page-body {
