@@ -8,6 +8,7 @@ import { exportBookData, listExportTasks } from '@/api/modules/exportTask'
 import type { ExportTaskInfo } from '@/api/modules/exportTask'
 import { getEmailConfig } from '@/api/modules/config'
 import { formatDate } from '@/utils/format'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 
@@ -221,14 +222,8 @@ const onScroll = () => {
 
 <template>
   <div class="export-page">
-    <!-- 顶部标题 -->
-    <div class="page-header">
-      <button class="header-back" @click="router.back()">
-        <var-icon name="chevron-left" :size="18" color="#333" />
-      </button>
-      <h2>数据导出</h2>
-      <div class="header-placeholder"></div>
-    </div>
+    <!-- 顶部标题（I11 + Q1：统一用 PageHeader，含历史栈兜底） -->
+    <PageHeader title="数据导出" show-back />
 
     <div class="page-body">
       <!-- 导出配置卡片 -->
@@ -340,39 +335,7 @@ const onScroll = () => {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
-/* 顶部标题 */
-.page-header {
-  background: #fff;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1;
-}
-.header-back {
-  width: 32px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  border-radius: 50%;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.header-back:active {
-  background: #f5f5f5;
-}
-.header-placeholder {
-  width: 32px;
-}
+/* 顶部导航样式已迁移至 PageHeader.vue（Q1） */
 
 /* 页面主体 */
 .page-body {

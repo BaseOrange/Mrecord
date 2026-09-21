@@ -23,16 +23,40 @@ export interface SysUser extends BaseEntity {
     remindDay?: number
 }
 
-/** 登录/注册/忘记密码/重置密码/修改信息/管理员重置密码 共用传参 */
-export interface UserAuthParams {
-    /** 邮箱 */
-    email?: string
-    /** 密码 */
-    password?: string
-    /** 昵称 */
-    nickname?: string
-    /** 重置密码token */
-    rePasswordToken?: string
+/** 登录传参 */
+export interface LoginParams {
+    email: string
+    password: string
+}
+
+/** 注册传参 */
+export interface RegisterParams {
+    email: string
+    password: string
+    nickname: string
+}
+
+/** 忘记密码传参 */
+export interface ForgotPasswordParams {
+    email: string
+}
+
+/** 重置密码传参 */
+export interface ResetPasswordParams {
+    password: string
+    rePasswordToken: string
+}
+
+/** 撤销注销传参 */
+export interface RevokeCancelParams {
+    email: string
+    password: string
+}
+
+/** 管理员重置密码传参 */
+export interface AdminResetPasswordParams {
+    email: string
+    password: string
 }
 
 /** 修改当前用户信息传参 */
@@ -68,7 +92,7 @@ export interface ListUsersParams extends PageParams {
 // ==================== 接口方法 ====================
 
 /** 用户注册 */
-export function register(data: UserAuthParams) {
+export function register(data: RegisterParams) {
     return post<string>('/user/register', data)
 }
 
@@ -83,7 +107,7 @@ export function resendActivateEmail(email: string) {
 }
 
 /** 用户登录 */
-export function login(data: UserAuthParams) {
+export function login(data: LoginParams) {
     return post<string>('/user/login', data)
 }
 
@@ -93,12 +117,12 @@ export function logout() {
 }
 
 /** 忘记密码 */
-export function forgotPassword(data: UserAuthParams) {
+export function forgotPassword(data: ForgotPasswordParams) {
     return post<void>('/user/forgotPassword', data)
 }
 
 /** 重置密码 */
-export function resetPassword(data: UserAuthParams) {
+export function resetPassword(data: ResetPasswordParams) {
     return post<void>('/user/resetPassword', data)
 }
 
@@ -118,7 +142,7 @@ export function canceledMyUser() {
 }
 
 /** 撤销注销（冷静期内恢复账户，免登录接口） */
-export function revokeCancel(data: UserAuthParams) {
+export function revokeCancel(data: RevokeCancelParams) {
     return post<void>('/user/revokeCancel', data)
 }
 
@@ -133,7 +157,7 @@ export function queryUserInfo(userId: string) {
 }
 
 /** 管理员重置密码 */
-export function adminResetPassword(data: UserAuthParams) {
+export function adminResetPassword(data: AdminResetPasswordParams) {
     return post<void>('/user/adminResetPassword', data)
 }
 

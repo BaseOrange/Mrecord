@@ -306,12 +306,20 @@ const goBack = () => {
     showBackConfirm.value = true
     return
   }
-  router.back()
+  if (window.history.length <= 1) {
+    router.replace('/book')
+  } else {
+    router.back()
+  }
 }
 
 const confirmBack = () => {
   showBackConfirm.value = false
-  router.back()
+  if (window.history.length <= 1) {
+    router.replace('/book')
+  } else {
+    router.back()
+  }
 }
 </script>
 

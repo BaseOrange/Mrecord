@@ -74,7 +74,11 @@ const onSubmit = async () => {
       from: from.value.trim(),
     })
     Snackbar.success('邮箱配置保存成功')
-    router.back()
+    if (window.history.length <= 1) {
+      router.replace('/admin/config')
+    } else {
+      router.back()
+    }
   } catch {
     // 拦截器处理
   } finally {
