@@ -20,6 +20,8 @@ const showConfirm = ref(false)
 const success = ref(false)
 
 const onSubmit = async () => {
+  // 重入守卫：键盘 Enter 在 loading 期间可连续触发，需在这里挡住（I1）
+  if (loading.value) return
   if (!password.value) {
     Snackbar.warning('请输入新密码')
     return
@@ -68,7 +70,7 @@ const goLogin = () => {
 
     <!-- 重置密码表单 / 成功 -->
     <Transition v-else name="auth-fade" mode="out-in">
-      <div v-if="!success" key="form" class="auth-card" @keydown.enter="onSubmit">
+      <div v-if="!success" key="form" class="auth-card">
         <h3 class="auth-card-title">重置密码</h3>
         <p class="auth-card-desc">请设置您的新密码。</p>
 
@@ -115,6 +117,7 @@ const goLogin = () => {
               placeholder="确认新密码"
               class="auth-input"
               autocomplete="new-password"
+              @keydown.enter="onSubmit"
             />
             <button class="auth-eye-btn" @click="showConfirm = !showConfirm" type="button">
               <svg v-if="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">

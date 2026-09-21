@@ -18,6 +18,8 @@ const showNew = ref(false)
 const showConfirm = ref(false)
 
 const onSubmit = async () => {
+  // 重入守卫：键盘 Enter 在 loading 期间可连续触发，需在这里挡住（I1）
+  if (loading.value) return
   if (!oldPassword.value) {
     Snackbar.warning('请输入旧密码')
     return
@@ -72,7 +74,7 @@ const onSubmit = async () => {
       <div class="header-placeholder"></div>
     </div>
 
-    <div class="page-body" @keydown.enter="onSubmit">
+    <div class="page-body">
       <div class="form-card">
         <div class="form-item">
           <label class="form-label">旧密码</label>
@@ -131,6 +133,7 @@ const onSubmit = async () => {
               placeholder="再次输入新密码"
               class="form-input"
               autocomplete="new-password"
+              @keydown.enter="onSubmit"
             />
             <button class="eye-btn" @click="showConfirm = !showConfirm" type="button">
               <svg v-if="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">

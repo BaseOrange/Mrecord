@@ -34,6 +34,8 @@ const strengthColor = computed(() => {
 })
 
 const onRegister = async () => {
+  // 重入守卫：键盘 Enter 在 loading 期间可连续触发，需在这里挡住（I1）
+  if (loading.value) return
   if (!email.value) {
     Snackbar.warning('请输入邮箱')
     return
@@ -79,7 +81,7 @@ const goLogin = () => {
   <AuthLayout>
     <Transition name="auth-fade" mode="out-in">
       <!-- 注册表单 -->
-      <div v-if="!registered" key="form" class="auth-card" @keydown.enter="onRegister">
+      <div v-if="!registered" key="form" class="auth-card">
         <!-- 邮箱 -->
         <div class="auth-input-group">
           <div class="auth-input-wrapper">
@@ -170,6 +172,7 @@ const goLogin = () => {
               placeholder="确认密码"
               class="auth-input"
               autocomplete="new-password"
+              @keydown.enter="onRegister"
             />
             <button class="auth-eye-btn" @click="showConfirm = !showConfirm" type="button">
               <svg v-if="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">

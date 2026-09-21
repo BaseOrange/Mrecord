@@ -34,6 +34,8 @@ const doActivate = async () => {
 }
 
 const onResendEmail = async () => {
+  // 重入守卫：键盘 Enter 在 loading 期间可连续触发，会连发多封激活邮件（I1）
+  if (resendLoading.value) return
   if (!email.value) {
     Snackbar.warning('请输入邮箱')
     return
@@ -91,7 +93,7 @@ onMounted(() => {
     </div>
 
     <!-- 激活失败 -->
-    <div v-else-if="errorMsg && !success" class="auth-card auth-status-card" @keydown.enter="onResendEmail">
+    <div v-else-if="errorMsg && !success" class="auth-card auth-status-card">
       <div class="auth-status-icon">
         <svg viewBox="0 0 64 64" width="64" height="64" fill="none">
           <circle cx="32" cy="32" r="30" stroke="#e74c3c" stroke-width="2.5" opacity="0.15" />
@@ -118,6 +120,7 @@ onMounted(() => {
               placeholder="请输入邮箱"
               class="auth-input"
               autocomplete="email"
+              @keydown.enter="onResendEmail"
             />
           </div>
         </div>

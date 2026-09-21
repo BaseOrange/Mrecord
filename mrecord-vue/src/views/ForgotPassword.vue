@@ -12,6 +12,8 @@ const loading = ref(false)
 const submitted = ref(false)
 
 const onSubmit = async () => {
+  // 重入守卫：键盘 Enter 在 loading 期间可连续触发，需在这里挡住（I1）
+  if (loading.value) return
   if (!email.value) {
     Snackbar.warning('请输入邮箱')
     return
@@ -37,7 +39,7 @@ const goLogin = () => {
   <AuthLayout>
     <Transition name="auth-fade" mode="out-in">
       <!-- 表单卡片 -->
-      <div v-if="!submitted" key="form" class="auth-card" @keydown.enter="onSubmit">
+      <div v-if="!submitted" key="form" class="auth-card">
         <h3 class="card-title">找回密码</h3>
         <p class="card-desc">请输入注册时使用的邮箱，我们将发送密码重置链接。</p>
 
@@ -53,6 +55,7 @@ const goLogin = () => {
               placeholder="注册邮箱"
               class="auth-input"
               autocomplete="email"
+              @keydown.enter="onSubmit"
             />
           </div>
         </div>

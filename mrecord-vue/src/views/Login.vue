@@ -30,6 +30,8 @@ onMounted(async () => {
 })
 
 const onLogin = async () => {
+  // 重入守卫：按钮的 :disabled 只挡点击，键盘 Enter 绕过得靠这里挡（I1）
+  if (loading.value) return
   if (!email.value || !password.value) {
     Snackbar.warning('请输入邮箱和密码')
     return
@@ -89,7 +91,7 @@ const showAgreement = ref(false)
 
 <template>
   <AuthLayout>
-    <div class="auth-card" @keydown.enter="onLogin">
+    <div class="auth-card">
       <!-- 邮箱 -->
       <div class="auth-input-group">
         <div class="auth-input-wrapper">
@@ -121,6 +123,7 @@ const showAgreement = ref(false)
             placeholder="密码"
             class="auth-input"
             autocomplete="current-password"
+            @keydown.enter="onLogin"
           />
           <button class="auth-eye-btn" @click="showPassword = !showPassword" type="button">
             <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
