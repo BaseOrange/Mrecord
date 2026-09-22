@@ -34,7 +34,7 @@ export default defineConfig(({mode}) => {
     // ==================== 诊断信息：构建期注入应用元数据 ====================
     // 前端诊断面板（「我的」→ 点击顶部标题 5 次）读取这三个全局常量，
     // 让用户提 GitHub issue 时能标明自己跑的是哪一份构建。
-    // 版本号与根目录 manifest / mrecord-rust Cargo.toml 保持一致（2.0.0）。
+    // 版本号与根目录 manifest / mrecord-rust Cargo.toml 保持一致（2.1.0）。
     const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'))
     const gitHash = (() => {
         try {

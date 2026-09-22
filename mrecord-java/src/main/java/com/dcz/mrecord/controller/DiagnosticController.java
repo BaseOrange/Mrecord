@@ -51,7 +51,7 @@ public class DiagnosticController {
     /**
      * 应用版本：取自 application.yml 的 mrecord.app-version，与 pom.xml / manifest 对齐
      */
-    @Value("${mrecord.app-version:2.0.0}")
+    @Value("${mrecord.app-version:2.1.0}")
     private String appVersion;
 
     /**

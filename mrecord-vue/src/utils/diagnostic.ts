@@ -18,7 +18,7 @@ import {queryDiagnostic, type DiagnosticInfo} from '@/api'
 
 /** 前端环境信息（全部可在浏览器端直接取得，不依赖后端） */
 export interface FrontendEnvInfo {
-    /** 应用版本（构建期注入，如 2.0.0+abc1234） */
+    /** 应用版本（构建期注入，如 2.1.0+abc1234） */
     appVersion: string
     /** 前端构建时间（构建期注入） */
     appBuildTime: string
