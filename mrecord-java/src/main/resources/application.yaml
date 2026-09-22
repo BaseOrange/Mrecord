@@ -1,3 +1,7 @@
+# 应用版本（与 pom.xml / 仓库根 manifest 对齐，供诊断信息展示）
+mrecord:
+  app-version: 2.0.0
+
 # 服务配置
 server:
   port: 2333

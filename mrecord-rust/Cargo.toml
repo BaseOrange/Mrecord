@@ -52,3 +52,7 @@ include_dir = "0.7.4"
 [dev-dependencies]
 # calamine: 单元测试中读回 rust_xlsxwriter 生成的 Excel，校验多 Sheet 布局与单元格内容
 calamine = "0.36"
+
+[build-dependencies]
+# chrono: build.rs 生成二进制构建时间（诊断信息展示），仅需 clock 能力
+chrono = { version = "0.4", default-features = false, features = ["clock"] }

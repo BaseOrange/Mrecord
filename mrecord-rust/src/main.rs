@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
+use std::time::Instant;
 
 // Unix domain socket 仅存在于 Unix 平台；Windows 构建跳过网关分支（见 main 中的 cfg）
 #[cfg(unix)]
@@ -74,6 +75,11 @@ pub struct AppState {
     /// Java 端该方法仅预留注释（`SysUserServiceImpl.canceledMyUser` 中「后续会有单独的定时任务」），
     /// 由 Rust 端补齐：每日扫描冷静期已过的待注销用户并清理数据。
     pub cancel_cleanup_task: Arc<CancelCleanupTask>,
+    /// 后端进程启动时刻
+    ///
+    /// 诊断接口（`handler::diagnostic`）用它计算已运行时长，供 issue 排障参考。
+    /// `Instant` 单调递增，不受系统时钟回拨影响。
+    pub started_at: Instant,
 }
 
 #[tokio::main]
@@ -119,6 +125,7 @@ async fn main() {
         monthly_reminder_task,
         yearly_summary_task,
         cancel_cleanup_task,
+        started_at: Instant::now(),
     };
 
     let app = router::build(state);

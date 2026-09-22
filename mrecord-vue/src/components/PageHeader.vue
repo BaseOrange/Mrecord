@@ -14,9 +14,17 @@ const props = withDefaults(defineProps<Props>(), {
   backPath: ''
 })
 
+// 标题点击事件：供「我的」页面实现「1.5 秒内点击 5 次打开诊断面板」的彩蛋入口
+const emit = defineEmits<{ 'title-click': [] }>()
+
 const router = useRouter()
 
 const displayTitle = computed(() => props.title || document.title.split(' | ')[0])
+
+/** 标题被点击时抛出事件，由父组件决定是否响应（不响应的页面无任何行为变化） */
+const handleTitleClick = () => {
+  emit('title-click')
+}
 
 /**
  * 返回逻辑（I11）：
@@ -40,7 +48,7 @@ const handleBack = () => {
     <div v-if="showBack" class="back-btn" @click="handleBack">
       <var-icon name="chevron-left" :size="24" />
     </div>
-    <h2 class="header-title">{{ displayTitle }}</h2>
+    <h2 class="header-title" @click="handleTitleClick">{{ displayTitle }}</h2>
     <!-- 右侧插槽：有内容则渲染，无内容且 showBack 时自动补 32px 占位保持视觉平衡 -->
     <div v-if="$slots.right" class="header-right">
       <slot name="right" />

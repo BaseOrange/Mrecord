@@ -5,6 +5,7 @@ import '@varlet/ui/es/snackbar/style/index.mjs'
 import App from './App.vue'
 import router from './router'
 import {StyleProvider} from '@varlet/ui'
+import {pushErrorLog} from './utils/errorLog'
 
 // 配置月衡 Mrecord 橙色主题
 StyleProvider({
@@ -15,7 +16,15 @@ StyleProvider({
 })
 
 // ==================== 全局错误捕获（便于定位生产环境白屏问题） ====================
+// 每个钩子在保留原有「白屏兜底渲染」的同时，额外写入错误日志环形缓冲区
+// （见 utils/errorLog），供诊断面板展示，帮用户提 issue 时带上报错上下文。
 window.addEventListener('error', (event) => {
+    pushErrorLog({
+        type: 'js-error',
+        message: event.message || 'unknown',
+        source: event.filename || undefined,
+        detail: event.lineno ? `line ${event.lineno}:${event.colno}` : undefined,
+    })
     const el = document.getElementById('app')
     if (el && el.children.length === 0) {
         el.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;">
@@ -26,11 +35,16 @@ window.addEventListener('error', (event) => {
     }
 })
 window.addEventListener('unhandledrejection', (event) => {
+    const reason = String(event.reason)
+    pushErrorLog({
+        type: 'unhandledrejection',
+        message: reason,
+    })
     const el = document.getElementById('app')
     if (el && el.children.length === 0) {
         el.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;">
             <h3>未捕获的 Promise 错误</h3>
-            <pre>${String(event.reason)}</pre>
+            <pre>${reason}</pre>
         </div>`
     }
 })
@@ -38,6 +52,11 @@ window.addEventListener('unhandledrejection', (event) => {
 const app = createApp(App)
 app.config.errorHandler = (err, _instance, info) => {
     console.error('[Vue Error]', err, info)
+    pushErrorLog({
+        type: 'vue',
+        message: String(err),
+        detail: info || undefined,
+    })
     const el = document.getElementById('app')
     if (el && el.children.length === 0) {
         el.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;">
@@ -54,6 +73,10 @@ app.use(router)
 // 路由加载失败处理
 router.onError((error) => {
     console.error('[Router Error]', error)
+    pushErrorLog({
+        type: 'router',
+        message: String(error),
+    })
     const el = document.getElementById('app')
     if (el) {
         el.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;">

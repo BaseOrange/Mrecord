@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { logout, canceledMyUser } from '@/api'
 import AgreementPopup from '@/components/AgreementPopup.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import DiagnosticSheet from '@/components/DiagnosticSheet.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -16,6 +17,27 @@ const showAgreement = ref(false)
 const showCancelStep1 = ref(false)
 const showCancelStep2 = ref(false)
 const cancelling = ref(false)
+
+// ==================== 诊断信息入口（彩蛋式） ====================
+// 「我的」页面顶部标题 1.5 秒内点击 5 次打开诊断面板，供用户提 GitHub issue 时
+// 复制环境信息。无中间进度提示，避免普通用户误触看到技术信息。
+const showDiagnostic = ref(false)
+const titleTapCount = ref(0)
+let titleTapTimer: ReturnType<typeof setTimeout> | null = null
+
+const handleTitleTap = () => {
+    titleTapCount.value += 1
+    if (titleTapTimer) clearTimeout(titleTapTimer)
+    // 1.5 秒内未点满 5 次则重置计数，防止缓慢连点误触发
+    titleTapTimer = setTimeout(() => {
+        titleTapCount.value = 0
+    }, 1500)
+    if (titleTapCount.value >= 5) {
+        titleTapCount.value = 0
+        if (titleTapTimer) clearTimeout(titleTapTimer)
+        showDiagnostic.value = true
+    }
+}
 
 const handleLogout = async () => {
   showLogoutConfirm.value = false
@@ -53,8 +75,8 @@ const handleCancelAccount = async () => {
 
 <template>
   <div class="profile-page">
-    <!-- 顶部标题 -->
-    <PageHeader title="我的" />
+    <!-- 顶部标题（1.5 秒内点击 5 次打开诊断面板） -->
+    <PageHeader title="我的" @title-click="handleTitleTap" />
 
     <div class="page-body">
       <!-- 用户信息卡片 -->
@@ -178,6 +200,9 @@ const handleCancelAccount = async () => {
 
     <!-- 协议弹窗 -->
     <AgreementPopup v-model:show="showAgreement" />
+
+    <!-- 诊断信息弹层 -->
+    <DiagnosticSheet v-model:show="showDiagnostic" />
   </div>
 </template>
 

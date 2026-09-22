@@ -4,6 +4,7 @@ import axios, {
 } from 'axios'
 import {Snackbar} from '@varlet/ui'
 import {useUserStore} from '@/stores/user'
+import {pushErrorLog} from '@/utils/errorLog'
 
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
@@ -69,6 +70,13 @@ request.interceptors.response.use(
             }
             const error = new Error(res.message || '请求失败') as BusinessError
             error.code = res.code
+            // 记录业务失败接口（不含请求体与敏感参数），供诊断面板展示
+            pushErrorLog({
+                type: 'http',
+                message: res.message || '请求失败',
+                source: buildRequestUrl(response.config),
+                detail: `业务码 ${res.code}`,
+            })
             Snackbar.error(res.message || '请求失败')
             return Promise.reject(error)
         }
@@ -114,9 +122,25 @@ request.interceptors.response.use(
         }
 
         Snackbar.error(message)
+        // 记录网络层失败接口（HTTP 状态码 / 超时 / 断网），供诊断面板展示
+        pushErrorLog({
+            type: 'http',
+            message,
+            source: buildRequestUrl(error.config),
+            detail: response ? `HTTP ${response.status}` : error.message,
+        })
         return Promise.reject(error)
     }
 )
+
+/** 拼接可读的请求标识（方法 + 完整 URL），供错误日志展示 */
+function buildRequestUrl(config?: AxiosRequestConfig): string {
+    if (!config) return 'unknown'
+    const method = (config.method || 'get').toUpperCase()
+    // baseURL + url 还原完整路径；内层 url 形如 /user/login
+    const fullUrl = `${config.baseURL || ''}${config.url || ''}`
+    return `${method} ${fullUrl}`
+}
 
 export default request
 

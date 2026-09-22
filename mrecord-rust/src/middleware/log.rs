@@ -107,6 +107,10 @@ pub async fn operate_log(
 /// （前端 `AdminLogsPage` 还带下拉刷新 + 滚动分页，每次加载都触发新日志），
 /// 形成事实上的死循环。这与 Java 端的排除语义一致。
 ///
+/// 【为什么排除 `/diagnostic/query`】诊断面板由用户主动触发，且可能反复打开
+/// （每次打开都会调用一次）。若落日志，用户的每次排障请求都会污染审计日志，
+/// 与「查看日志产生日志」是同一类问题。
+///
 /// 【前缀容错】Axum 的 `nest("/api/v2", ...)` 会剥掉外层前缀，中间件实际看到的是
 /// `/operateLog/list`（已通过探针测试确认）。但为了防止日后把中间件挂到外层路由
 /// （此时路径带 `/api/v2` 前缀）导致排除规则静默失效，这里统一先剥掉可选前缀再匹配，
@@ -115,7 +119,10 @@ fn should_skip_log(path: &str) -> bool {
     let normalized = path.strip_prefix("/api/v2").unwrap_or(path);
     matches!(
         normalized,
-        "/operateLog/list" | "/config/initialized" | "/config/registerEnabled"
+        "/operateLog/list"
+            | "/config/initialized"
+            | "/config/registerEnabled"
+            | "/diagnostic/query"
     )
 }
 

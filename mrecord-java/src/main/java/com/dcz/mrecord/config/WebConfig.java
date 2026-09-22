@@ -52,6 +52,9 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/v2/**")
                 .excludePathPatterns(
                         "/api/v2/operateLog/list",
+                        // 【诊断接口免审计日志】诊断面板由用户主动触发且会反复打开，
+                        // 若落日志会污染审计日志，与「查看日志产生日志」是同一类问题
+                        "/api/v2/diagnostic/query",
                         "/api/v2/config/initialized",
                         "/api/v2/config/registerEnabled"
                 );

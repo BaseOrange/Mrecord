@@ -33,6 +33,34 @@ fn main() {
 
     // 前端重新构建后必须重新编译本 crate 才能重新内嵌
     println!("cargo:rerun-if-changed=static");
+
+    // ==================== 诊断信息所需的编译期元数据 ====================
+    // `handler::diagnostic` 通过 `env!` 读取这两项，随二进制固化，运行时不可伪造。
+    // 获取失败时给 "unknown"，绝不阻断构建（交叉编译环境可能没有 rustc 在 PATH）。
+    println!(
+        "cargo:rustc-env=RUSTC_VERSION={}",
+        rustc_version().unwrap_or_else(|| "unknown".to_string())
+    );
+    println!(
+        "cargo:rustc-env=BUILD_TIME={}",
+        chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+    );
+}
+
+/// 获取工具链版本字符串（`rustc --version` 的首行输出）
+fn rustc_version() -> Option<String> {
+    let output = std::process::Command::new("rustc")
+        .arg("--version")
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    String::from_utf8(output.stdout)
+        .ok()?
+        .lines()
+        .next()
+        .map(|line| line.trim().to_string())
 }
 
 /// 占位首页：一眼可见的「前端未构建」提示页

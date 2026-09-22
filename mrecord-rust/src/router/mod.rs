@@ -106,6 +106,12 @@ pub fn build(state: AppState) -> Router {
             "/operateLog/list",
             post(handler::sys_user_operate_log::list),
         )
+        // ==================== 诊断信息模块 ====================
+        // 前端「我的 → 点击标题 5 次」诊断面板调用（免审计日志，见 middleware::log::should_skip_log）
+        .route(
+            "/diagnostic/query",
+            post(handler::diagnostic::query_diagnostic),
+        )
         // ==================== 配置项模块 ====================
         // 对应 Java: SysConfigController（@RequestMapping("/config")）
         .route(
@@ -251,6 +257,7 @@ mod tests {
             monthly_reminder_task: MonthlyReminderTask::new(email_service.clone()),
             yearly_summary_task: YearlySummaryTask::new(email_service.clone()),
             cancel_cleanup_task: CancelCleanupTask::new(),
+            started_at: std::time::Instant::now(),
         }
     }
 

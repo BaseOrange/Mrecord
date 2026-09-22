@@ -675,6 +675,7 @@ mod tests {
             monthly_reminder_task: MonthlyReminderTask::new(email_service.clone()),
             yearly_summary_task: YearlySummaryTask::new(email_service.clone()),
             cancel_cleanup_task: CancelCleanupTask::new(),
+            started_at: std::time::Instant::now(),
         }
     }
 

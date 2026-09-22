@@ -1,4 +1,5 @@
 pub mod fin_book;
+pub mod diagnostic;
 pub mod fin_month_item_record;
 pub mod fin_month_record;
 pub mod fin_template_item;
