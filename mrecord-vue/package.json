@@ -10,10 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
     "@varlet/ui": "^3.20.6",
     "axios": "^1.20.0",
     "chart.js": "^4.5.1",
     "js-md5": "^0.9.2",
+    "lucide-vue-next": "^1.0.0",
     "pinia": "^4.0.3",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1",

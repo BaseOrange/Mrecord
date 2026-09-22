@@ -40,7 +40,7 @@ const onCardClick = (item: BookStatistics) => {
 
 <template>
   <div class="stats-page">
-    <PageHeader title="统计" />
+    <PageHeader title="统计" large />
 
     <div class="page-body">
       <!-- 加载态 -->

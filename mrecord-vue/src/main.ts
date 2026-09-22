@@ -2,18 +2,19 @@ import {createApp} from 'vue'
 import {createPinia} from 'pinia'
 import './style.css'
 import '@varlet/ui/es/snackbar/style/index.mjs'
+import '@/styles/tokens.css'
+import '@/styles/themes/light.css'
+import '@/styles/themes/dark.css'
+import '@/styles/base.css'
+// Inter（仅 Latin 子集，自托管）：非 Apple 设备上对齐 SF Pro 的几何无衬线观感
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
 import App from './App.vue'
 import router from './router'
-import {StyleProvider} from '@varlet/ui'
 import {pushErrorLog} from './utils/errorLog'
-
-// 配置月衡 Mrecord 橙色主题
-StyleProvider({
-    '--color-primary': '#FF6500',
-    '--color-primary-container': '#FF6500',
-    '--color-on-primary': '#ffffff',
-    '--color-on-primary-container': '#ffffff',
-})
+import {useThemeStore} from './stores/theme'
 
 // ==================== 全局错误捕获（便于定位生产环境白屏问题） ====================
 // 每个钩子在保留原有「白屏兜底渲染」的同时，额外写入错误日志环形缓冲区
@@ -69,6 +70,9 @@ app.config.errorHandler = (err, _instance, info) => {
 
 app.use(createPinia())
 app.use(router)
+
+// 应用持久化的主题模式（跟随系统 / 浅色 / 深色），写入 data-theme 供 CSS 覆盖令牌
+useThemeStore()
 
 // 路由加载失败处理
 router.onError((error) => {

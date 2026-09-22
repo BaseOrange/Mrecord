@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -34,20 +35,22 @@ const switchTab = (tab: typeof tabs[number]) => {
     </div>
 
     <!-- 底部导航栏 -->
-    <div class="tab-bar-wrapper">
+    <nav class="tab-bar-wrapper" aria-label="主导航">
       <div class="tab-bar">
-        <div
+        <button
           v-for="tab in tabs"
           :key="tab.key"
+          type="button"
           class="tab-item"
           :class="{ active: activeTab === tab.key }"
+          :aria-current="activeTab === tab.key ? 'page' : undefined"
           @click="switchTab(tab)"
         >
-          <var-icon :name="tab.icon" :size="21" />
+          <AppIcon :name="tab.icon" :size="21" />
           <span class="tab-label">{{ tab.label }}</span>
-        </div>
+        </button>
       </div>
-    </div>
+    </nav>
   </div>
 </template>
 
@@ -56,7 +59,7 @@ const switchTab = (tab: typeof tabs[number]) => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
 }
 
 .layout-content {
@@ -71,7 +74,7 @@ const switchTab = (tab: typeof tabs[number]) => {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: var(--z-tab-bar);
   display: flex;
   justify-content: center;
   padding: 0 16px;
@@ -85,18 +88,16 @@ const switchTab = (tab: typeof tabs[number]) => {
   width: 100%;
   max-width: 300px;
   height: 52px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--header-bg);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--separator);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.07),
-    0 1px 4px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-md);
   padding: 0 4px;
 }
 
@@ -108,28 +109,28 @@ const switchTab = (tab: typeof tabs[number]) => {
   justify-content: center;
   width: 72px;
   height: 42px;
-  border-radius: 21px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  color: #b0b0b0;
+  color: var(--text-tertiary);
   position: relative;
-  transition: color 0.3s ease, background-color 0.3s ease;
+  transition: color var(--duration-base) var(--ease-out), background-color var(--duration-base) var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 
 /* 选中态：橙色胶囊高亮 */
 .tab-item.active {
-  color: #FF6500;
-  background-color: rgba(255, 101, 0, 0.1);
+  color: var(--brand);
+  background-color: var(--brand-soft);
 }
 
 .tab-label {
-  font-size: 10px;
+  font-size: var(--text-xs);
   margin-top: 2px;
   line-height: 1;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .tab-item.active .tab-label {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 </style>

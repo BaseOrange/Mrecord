@@ -9,6 +9,12 @@ import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 
+// 大标题副标题：当前年月
+const monthSubtitle = computed(() => {
+  const d = new Date()
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月`
+})
+
 
 const quickEntries = [
   { icon: 'plus-circle', label: '记账', color: '#FF6500', action: 'record' },
@@ -116,7 +122,7 @@ const onBookCardClick = (item: BookStatistics) => {
 <template>
   <div class="home-page">
     <!-- 顶部区域 -->
-    <PageHeader title="月衡">
+    <PageHeader title="月衡" large :subtitle="monthSubtitle">
       <template #right>
         <img :src="appIcon" alt="月衡 Logo" class="header-logo" />
       </template>

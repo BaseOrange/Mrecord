@@ -1,0 +1,60 @@
+/**
+ * 月衡 Mrecord · 设计令牌（主题无关部分）
+ *
+ * 色彩令牌见 themes/light.css 与 themes/dark.css，按 [data-theme] 切换。
+ * 组件内禁止裸 hex，一律引用本文件与主题文件中的令牌。
+ *
+ * 详见 docs/ui-refactor-plan.md 第 3 节。
+ */
+:root {
+    /* ==================== 字体 ==================== */
+    /* Apple 设备：SF Pro Text + 苹方（零加载）；其余平台 Latin 走自托管 Inter，CJK 走系统字体 */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+        'PingFang SC', 'Inter', 'Microsoft YaHei', sans-serif;
+
+    /* ==================== 间距（8pt 网格） ==================== */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 32px;
+    --space-8: 40px;
+    --page-padding: 16px;
+
+    /* ==================== 圆角（Apple continuous corners） ==================== */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 999px;
+
+    /* ==================== 字号 ==================== */
+    --text-large-title: 32px;
+    --text-title-1: 24px;
+    --text-title-2: 20px;
+    --text-title-3: 17px;
+    --text-body: 15px;
+    --text-sm: 13px;
+    --text-xs: 11px;
+    --text-money: 32px;
+
+    /* ==================== 字重 ==================== */
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    /* ==================== 动效 ==================== */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --duration-fast: 200ms;
+    --duration-base: 250ms;
+    --duration-slow: 350ms;
+
+    /* ==================== 层级 ==================== */
+    --z-header: 50;
+    --z-tab-bar: 100;
+    --z-overlay: 200;
+}

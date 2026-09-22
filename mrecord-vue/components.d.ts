@@ -12,13 +12,17 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AgreementPopup: typeof import('./src/components/AgreementPopup.vue')['default']
+    AppIcon: typeof import('./src/components/AppIcon.vue')['default']
     AuthLayout: typeof import('./src/components/AuthLayout.vue')['default']
+    BaseCard: typeof import('./src/components/BaseCard.vue')['default']
     BookCard: typeof import('./src/components/BookCard.vue')['default']
     DiagnosticSheet: typeof import('./src/components/DiagnosticSheet.vue')['default']
     IconPicker: typeof import('./src/components/IconPicker.vue')['default']
     PageHeader: typeof import('./src/components/PageHeader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    StateView: typeof import('./src/components/StateView.vue')['default']
+    ThemeSwitcher: typeof import('./src/components/ThemeSwitcher.vue')['default']
     TrendChart: typeof import('./src/components/TrendChart.vue')['default']
     VarActionSheet: typeof import('@varlet/ui')['_ActionSheetComponent']
     VarButton: typeof import('@varlet/ui')['_ButtonComponent']

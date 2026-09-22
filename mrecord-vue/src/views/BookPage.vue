@@ -233,7 +233,7 @@ const handleDelete = async () => {
     @touchend="onTouchEnd"
   >
     <!-- 顶部标题 -->
-    <PageHeader title="账簿">
+    <PageHeader title="账簿" large>
       <template #right>
         <button class="header-add-btn" @click="openCreateDialog">+</button>
       </template>

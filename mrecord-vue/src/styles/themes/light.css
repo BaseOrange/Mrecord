@@ -1,0 +1,55 @@
+/**
+ * 浅色主题（默认）
+ *
+ * 选择器用 html[data-theme] 提升 specificity（0,1,1），确保覆盖
+ * Varlet 在 :root（0,1,0）上声明的同名变量，不依赖 import 顺序。
+ * 色值取自 Apple System Colors。
+ */
+:root,
+html[data-theme='light'] {
+    /* ==================== 背景 ==================== */
+    --bg-canvas: #f2f2f7;          /* systemGroupedBackground，非纯白 */
+    --bg-surface: #ffffff;
+    --bg-surface-2: #f9f9f9;
+    --bg-elevated: #ffffff;
+    --header-bg: rgba(255, 255, 255, 0.78);  /* 毛玻璃吸顶栏 */
+
+    /* ==================== 文字 ==================== */
+    --text-primary: #1d1d1f;
+    --text-secondary: #8e8e93;
+    --text-tertiary: #aeaeb2;
+
+    /* ==================== 品牌 ==================== */
+    --brand: #ff6500;
+    --brand-soft: rgba(255, 101, 0, 0.10);
+
+    /* ==================== 语义色 ==================== */
+    --semantic-up: #ff3b30;        /* D1：正红负绿 */
+    --semantic-down: #34c759;
+    --semantic-danger: #ff3b30;
+    --semantic-warning: #ff9500;
+
+    /* ==================== 分割 / 遮罩 / 阴影 ==================== */
+    --separator: #e5e5ea;
+    --overlay: rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.12);
+
+    /* ==================== Varlet 桥接 ==================== */
+    --color-primary: var(--brand);
+    --color-on-primary: #ffffff;
+    --color-primary-container: var(--brand);
+    --color-on-primary-container: #ffffff;
+    --color-text: var(--text-primary);
+    --color-text-disabled: var(--text-tertiary);
+    --color-on-surface-variant: var(--text-secondary);
+    --color-surface-container: var(--bg-surface);
+    --color-surface-container-high: var(--bg-surface);
+    --color-surface-container-highest: var(--bg-surface);
+    --color-outline: var(--separator);
+    --color-danger: var(--semantic-danger);
+    --color-warning: var(--semantic-warning);
+    --color-success: var(--semantic-down);
+    --color-body: var(--bg-canvas);
+}

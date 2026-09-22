@@ -7,6 +7,7 @@ import { logout, canceledMyUser } from '@/api'
 import AgreementPopup from '@/components/AgreementPopup.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DiagnosticSheet from '@/components/DiagnosticSheet.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -76,7 +77,7 @@ const handleCancelAccount = async () => {
 <template>
   <div class="profile-page">
     <!-- 顶部标题（1.5 秒内点击 5 次打开诊断面板） -->
-    <PageHeader title="我的" @title-click="handleTitleTap" />
+    <PageHeader title="我的" large @title-click="handleTitleTap" />
 
     <div class="page-body">
       <!-- 用户信息卡片 -->
@@ -89,6 +90,12 @@ const handleCancelAccount = async () => {
           <div class="nickname">{{ userStore.userInfo?.nickname || '未设置昵称' }}</div>
           <div class="email">{{ userStore.userInfo?.email || '' }}</div>
         </div>
+      </div>
+
+      <!-- 外观切换（跟随系统 / 浅色 / 深色） -->
+      <div class="theme-card">
+        <span class="theme-label">外观</span>
+        <ThemeSwitcher />
       </div>
 
       <!-- 管理员入口 -->
@@ -269,6 +276,24 @@ const handleCancelAccount = async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 外观切换卡片 */
+.theme-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.theme-label {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  flex-shrink: 0;
 }
 
 /* 管理员入口卡片 */
