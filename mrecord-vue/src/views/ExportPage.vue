@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { listBooks } from '@/api/modules/book'
 import type { BookInfo } from '@/api/modules/book'
@@ -9,8 +8,6 @@ import type { ExportTaskInfo } from '@/api/modules/exportTask'
 import { getEmailConfig } from '@/api/modules/config'
 import { formatDate } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
-
-const router = useRouter()
 
 // ==================== 账簿选择 ====================
 const books = ref<BookInfo[]>([])

@@ -6,12 +6,15 @@ interface Props {
   title?: string
   showBack?: boolean
   backPath?: string
+  /** 返回前钩子：传入则由父组件全权接管返回逻辑（如未保存修改的二次确认），不传走默认逻辑 */
+  beforeBack?: () => void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
   showBack: false,
-  backPath: ''
+  backPath: '',
+  beforeBack: undefined
 })
 
 // 标题点击事件：供「我的」页面实现「1.5 秒内点击 5 次打开诊断面板」的彩蛋入口
@@ -28,12 +31,15 @@ const handleTitleClick = () => {
 
 /**
  * 返回逻辑（I11）：
+ * - 父组件传了 beforeBack（如未保存修改的二次确认）→ 全权交由它接管
  * - 有 backPath → replace 到指定路由（不往历史栈里追加记录）
  * - 无 backPath → 先判 window.history.length：深链接进入时（length ≤ 1）没有可返回的
  *   历史栈，router.back() 会退出应用或无响应，此时降级到 /home
  */
 const handleBack = () => {
-  if (props.backPath) {
+  if (props.beforeBack) {
+    props.beforeBack()
+  } else if (props.backPath) {
     router.replace(props.backPath)
   } else if (window.history.length <= 1) {
     router.replace('/home')

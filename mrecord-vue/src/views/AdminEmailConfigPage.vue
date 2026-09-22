@@ -67,8 +67,9 @@ const onSubmit = async () => {
   try {
     await updateEmailConfig({
       hostName: hostName.value.trim(),
-      sslSmtpPort: sslSmtpPort.value,
-      smtpPort: smtpPort.value,
+      // 端口已由上方 validatePort 校验为 1-65535 的整数，非空断言安全
+      sslSmtpPort: sslSmtpPort.value!,
+      smtpPort: smtpPort.value!,
       ssl: ssl.value,
       userName: userName.value.trim(),
       password: password.value.trim(),
@@ -93,7 +94,7 @@ const onSubmit = async () => {
  * @returns true 表示校验通过
  */
 function validatePort(val: number | string | undefined, label: string): boolean {
-  if (val === undefined || val === null || val === '' || val === NaN) {
+  if (val === undefined || val === null || val === '' || Number.isNaN(val)) {
     Snackbar.warning(`请输入${label}`)
     return false
   }

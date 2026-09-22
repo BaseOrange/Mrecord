@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { listOperateLogs, type OperateLogInfo } from '@/api'
 import type { PageResult, PageParams } from '@/api/types'
 import { formatDate } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
-
-const router = useRouter()
 
 const pageParams = reactive<PageParams>({
   pageNum: 1,

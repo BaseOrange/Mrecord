@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { listTempItems } from '@/api/modules/tempItem'
 import type { FinTemplateItem } from '@/api/modules/tempItem'
@@ -15,7 +15,6 @@ import PageHeader from '@/components/PageHeader.vue'
 import iconsUrl from '@/../public/icons.svg'
 
 const route = useRoute()
-const router = useRouter()
 
 const bookId = route.params.bookId as string
 const bookName = (route.query.name as string) || ''

@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { listUsers, enableOrDisableUser, deleteUser, adminResetPassword, type SysUser, type ListUsersParams } from '@/api'
 import type { PageResult } from '@/api/types'
 import PageHeader from '@/components/PageHeader.vue'
-
-const router = useRouter()
 
 // ==================== 搜索与分页 ====================
 const searchParams = reactive<ListUsersParams>({
@@ -109,7 +106,8 @@ async function confirmResetPassword() {
   }
   resetting.value = true
   try {
-    await adminResetPassword({ email: resetTarget.value.email, password: resetPassword.value })
+    // resetTarget 已由上方守卫保证非空，其 email 为必填字段，非空断言安全
+    await adminResetPassword({ email: resetTarget.value.email!, password: resetPassword.value })
     Snackbar.success('密码重置成功')
     closeResetDialog()
   } catch {

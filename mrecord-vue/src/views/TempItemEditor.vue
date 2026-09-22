@@ -325,8 +325,8 @@ const confirmBack = () => {
 
 <template>
   <div class="temp-editor">
-    <!-- 顶部导航（I11 + Q1：统一用 PageHeader，含历史栈兜底） -->
-    <PageHeader :title="`${bookName} · 账目模板`" show-back>
+    <!-- 顶部导航（I11 + Q1：统一用 PageHeader，含历史栈兜底；before-back 接 I6 未保存确认） -->
+    <PageHeader :title="`${bookName} · 账目模板`" show-back :before-back="goBack">
       <template #right>
         <button
           class="nav-save"

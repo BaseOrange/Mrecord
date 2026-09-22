@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { refreshCache } from '@/api'
 import PageHeader from '@/components/PageHeader.vue'
 
-const router = useRouter()
 const refreshing = ref(false)
 
 async function handleRefreshCache() {

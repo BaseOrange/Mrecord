@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { getBookDetailedStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
 import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
@@ -8,7 +8,6 @@ import TrendChart from '@/components/TrendChart.vue'
 import PageHeader from '@/components/PageHeader.vue'
 
 const route = useRoute()
-const router = useRouter()
 const bookId = route.params.bookId as string
 const bookName = (route.query.name as string) || '账簿详情'
 
