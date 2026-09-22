@@ -3,9 +3,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
-import { formatMoney, getChangeColor } from '@/utils/format'
+import { formatMoney } from '@/utils/format'
 import appIcon from '@/../public/app-icon.svg'
 import PageHeader from '@/components/PageHeader.vue'
+import SectionHeader from '@/components/SectionHeader.vue'
+import ListGroup from '@/components/ListGroup.vue'
+import ListCell from '@/components/ListCell.vue'
+import MoneyText from '@/components/MoneyText.vue'
+import StateView from '@/components/StateView.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 
@@ -15,25 +21,24 @@ const monthSubtitle = computed(() => {
   return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月`
 })
 
-
-const quickEntries = [
-  { icon: 'plus-circle', label: '记账', color: '#FF6500', action: 'record' },
-  { icon: 'calendar-month', label: '月报', color: '#4CAF50', action: 'stats' },
-  { icon: 'file-document-outline', label: '模板', color: '#2196F3', action: 'template' },
-  { icon: 'share', label: '导出', color: '#9C27B0', action: 'export' },
-  { icon: 'cog-outline', label: '设置', color: '#607D8B', action: 'profile' },
+// ==================== 快捷入口 ====================
+// 修掉原「记账」「模板」重复指向 /book 的问题（Q11）：模板编辑从账簿页操作菜单进入，
+// 快捷入口只留不重复的四项；图标统一走 AppIcon/Lucide，不再用跑偏的 Material 色。
+type QuickAction = 'record' | 'stats' | 'export' | 'profile'
+const quickEntries: { icon: string; label: string; action: QuickAction }[] = [
+  { icon: 'circle-plus', label: '记一笔', action: 'record' },
+  { icon: 'calendar-days', label: '月报', action: 'stats' },
+  { icon: 'download', label: '导出数据', action: 'export' },
+  { icon: 'settings', label: '设置', action: 'profile' },
 ]
 
-const onQuickEntry = (action: string) => {
+const onQuickEntry = (action: QuickAction) => {
   switch (action) {
     case 'record':
       router.push('/book')
       break
     case 'stats':
       router.push('/stats')
-      break
-    case 'template':
-      router.push('/book')
       break
     case 'export':
       router.push('/export')
@@ -88,6 +93,19 @@ const totalMonthOnMonth = computed(() => {
   return ((overview.value.netAsset - prevTotal) / Math.abs(prevTotal)) * 100
 })
 
+// Hero 卡上的环比展示：趋势图标 + 文案（渐变底色上用图标表达方向，不依赖红绿）
+const momTrendIcon = computed(() => {
+  const v = totalMonthOnMonth.value
+  if (v > 0) return 'trending-up'
+  if (v < 0) return 'trending-down'
+  return 'minus'
+})
+const momTrendText = computed(() => {
+  const v = totalMonthOnMonth.value
+  if (v === 0) return '与上月持平'
+  return (v > 0 ? '+' : '') + v.toFixed(2) + '% 环比'
+})
+
 const fetchOverview = async () => {
   loading.value = true
   try {
@@ -128,88 +146,82 @@ const onBookCardClick = (item: BookStatistics) => {
       </template>
     </PageHeader>
 
-    <!-- 快捷入口 -->
-    <div class="quick-section">
-      <div class="quick-scroll">
-        <div
-          v-for="(entry, idx) in quickEntries"
-          :key="idx"
-          class="quick-card"
-          @click="onQuickEntry(entry.action)"
-        >
-          <div class="quick-icon-wrap" :style="{ backgroundColor: entry.color + '15' }">
-            <var-icon :name="entry.icon" :size="28" :color="entry.color" />
-          </div>
-          <span class="quick-label">{{ entry.label }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 资产总览卡片 -->
-    <div class="overview-card">
-      <div class="overview-header">
-        <span class="overview-title">资产总览</span>
-      </div>
-
-      <!-- 加载 / 无数据 -->
-      <div v-if="loading" class="overview-loading">
-        <div class="mini-spinner"></div>
-      </div>
-      <div v-else-if="bookSnapshots.length === 0" class="overview-empty">
-        <p>暂无数据，去记一笔吧</p>
-      </div>
-
-      <template v-else>
-        <div class="overview-main">
-          <span class="overview-label">净资产</span>
-          <div class="overview-net-row">
-            <span class="overview-net-value">
-              {{ formatMoney(overview.netAsset) }}
-            </span>
-            <span
-              class="overview-mom-badge"
-              :style="{ color: getChangeColor(totalMonthOnMonth) }"
-            >
-              环比上月：{{ (totalMonthOnMonth > 0 ? '+' : '') + totalMonthOnMonth.toFixed(2) }}%
-            </span>
-          </div>
-        </div>
-        <div class="overview-sub">
-          <div class="overview-sub-item">
-            <span class="overview-sub-label">总资产</span>
-            <span class="overview-sub-num">{{ formatMoney(overview.totalAsset) }}</span>
-          </div>
-          <div class="overview-sub-divider"></div>
-          <div class="overview-sub-item">
-            <span class="overview-sub-label">总负债</span>
-            <span class="overview-sub-num" style="color: #ff3b30;">{{ formatMoney(overview.totalLiability) }}</span>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- 各账簿横向滚动 -->
-    <div v-if="bookSnapshots.length > 0" class="books-section">
-      <div class="section-title">账簿一览</div>
-      <div class="books-scroll">
-        <div
-          v-for="item in bookSnapshots"
-          :key="item.bookId"
-          class="book-mini-card"
-          @click="onBookCardClick(item)"
-        >
-          <span class="book-mini-name">{{ item.bookName }}</span>
-          <span class="book-mini-net">
-            {{ formatMoney(item.netAsset || 0) }}
-          </span>
-          <span
-            class="book-mini-mom"
-            :style="{ color: getChangeColor(item.monthOnMonth) }"
-          >
-            环比：{{ ((item.monthOnMonth || 0) > 0 ? '+' : '') + (item.monthOnMonth || 0).toFixed(2) }}%
+    <div class="home-body">
+      <!-- ==================== Hero 资产卡（Q9-④） ==================== -->
+      <section class="hero-card">
+        <div class="hero-top">
+          <span class="hero-label">净资产</span>
+          <span class="hero-mom">
+            <AppIcon :name="momTrendIcon" :size="13" :stroke-width="2.2" />
+            {{ momTrendText }}
           </span>
         </div>
-      </div>
+
+        <!-- 加载中 -->
+        <div v-if="loading && bookSnapshots.length === 0" class="hero-loading">
+          <div class="hero-spinner"></div>
+        </div>
+        <template v-else>
+          <div class="hero-money">
+            <MoneyText :value="overview.netAsset" size="hero" />
+          </div>
+          <div class="hero-divider"></div>
+          <div class="hero-sub">
+            <div class="hero-sub-item">
+              <span class="hero-sub-label">总资产</span>
+              <span class="hero-sub-value">{{ formatMoney(overview.totalAsset) }}</span>
+            </div>
+            <div class="hero-sub-item">
+              <span class="hero-sub-label">总负债</span>
+              <span class="hero-sub-value">{{ formatMoney(overview.totalLiability) }}</span>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- ==================== 常用功能 ==================== -->
+      <section class="home-section">
+        <SectionHeader title="常用功能" />
+        <ListGroup>
+          <ListCell
+            v-for="entry in quickEntries"
+            :key="entry.action"
+            :icon="entry.icon"
+            :label="entry.label"
+            @click="onQuickEntry(entry.action)"
+          />
+        </ListGroup>
+      </section>
+
+      <!-- ==================== 我的账簿 ==================== -->
+      <section v-if="bookSnapshots.length > 0" class="home-section">
+        <SectionHeader title="我的账簿" action-text="全部" @action="router.push('/book')" />
+        <ListGroup>
+          <ListCell
+            v-for="item in bookSnapshots"
+            :key="item.bookId"
+            icon="notebook-text"
+            :label="item.bookName || '未命名账簿'"
+            :value="'¥' + formatMoney(item.netAsset || 0)"
+            :sub-value="`${item.year}年${item.month}月`"
+            @click="onBookCardClick(item)"
+          />
+        </ListGroup>
+      </section>
+
+      <!-- 无账簿时的空状态 -->
+      <section v-else-if="!loading" class="home-section">
+        <StateView
+          state="empty"
+          empty-text="还没有账簿"
+          empty-sub="创建第一个账簿，开始记录每月的资产与负债"
+          empty-icon="notebook-text"
+        >
+          <template #empty-action>
+            <button class="create-btn" type="button" @click="router.push('/book')">去创建账簿</button>
+          </template>
+        </StateView>
+      </section>
     </div>
   </div>
 </template>
@@ -217,253 +229,133 @@ const onBookCardClick = (item: BookStatistics) => {
 <style scoped>
 .home-page {
   min-height: 100vh;
-  background: #f5f5f5;
-}
-
-.header-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  background: var(--bg-canvas);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 .header-logo {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   box-shadow: 0 6px 16px rgba(249, 114, 22, 0.18);
 }
 
-.header-en {
-  font-size: 14px;
-  font-weight: 400;
-  color: #999;
-  margin-left: 4px;
-}
-
-/* 快捷入口 */
-.quick-section {
-  padding: 16px 0 8px;
-}
-
-.quick-scroll {
-  display: flex;
-  gap: 12px;
-  padding: 0 16px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.quick-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.quick-card {
+.home-body {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  min-width: 72px;
-  scroll-snap-align: start;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.15s;
-}
-.quick-card:active {
-  transform: scale(0.92);
+  gap: var(--space-6);
 }
 
-.quick-icon-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+/* ==================== Hero 资产卡 ==================== */
+.hero-card {
+  margin: var(--space-3) var(--page-padding) 0;
+  background: linear-gradient(135deg, var(--brand) 0%, #ff8a3d 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(255, 101, 0, 0.22);
+  min-height: 132px;
+}
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+}
+
+.hero-label {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.hero-mom {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: #fff;
+}
+
+.hero-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 28px 0;
 }
 
-.quick-label {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-}
-
-/* ==================== 资产总览卡片 ==================== */
-.overview-card {
-  margin: 12px 16px;
-  background: #fff;
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
-.overview-header {
-  margin-bottom: 14px;
-}
-
-.overview-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.overview-loading {
-  display: flex;
-  justify-content: center;
-  padding: 16px 0;
-}
-
-.mini-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2.5px solid #e0e0e0;
-  border-top-color: #FF6500;
+.hero-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: hero-spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes hero-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.overview-empty {
-  text-align: center;
-  padding: 16px 0;
-  color: #aeaeb2;
-  font-size: 14px;
+.hero-money {
+  color: #fff;
 }
 
-.overview-main {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 14px;
+.hero-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.22);
+  margin: var(--space-4) 0;
 }
 
-.overview-label {
-  font-size: 13px;
-  color: #8e8e93;
-}
-
-.overview-net-row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.overview-net-value {
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -1px;
-}
-
-.overview-mom-badge {
-  display: inline-block;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.overview-sub {
+.hero-sub {
   display: flex;
   align-items: center;
-  background: #f9f9f9;
-  border-radius: 12px;
-  padding: 12px 0;
 }
 
-.overview-sub-item {
+.hero-sub-item {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 2px;
 }
 
-.overview-sub-label {
-  font-size: 11px;
-  color: #aeaeb2;
+.hero-sub-label {
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.75);
 }
 
-.overview-sub-num {
+.hero-sub-value {
   font-size: 15px;
-  font-weight: 600;
-  color: #333;
+  font-weight: var(--weight-semibold);
 }
 
-.overview-sub-divider {
-  width: 1px;
-  height: 28px;
-  background: #e0e0e0;
-}
-
-/* ==================== 账簿一览 ==================== */
-.books-section {
-  padding: 0 16px 24px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #8e8e93;
-  margin-bottom: 10px;
-}
-
-.books-scroll {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 4px;
-}
-
-.books-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.book-mini-card {
-  min-width: 140px;
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px;
+/* ==================== 分组区块 ==================== */
+.home-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  scroll-snap-align: start;
+}
+
+.create-btn {
+  height: 44px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: #fff;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  transition: all 0.15s;
   -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 14px rgba(255, 101, 0, 0.3);
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
-.book-mini-card:active {
-  transform: scale(0.97);
-  background: #fafafa;
-}
-
-.book-mini-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1d1d1f;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.book-mini-net {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.book-mini-mom {
-  font-size: 12px;
-  font-weight: 600;
+.create-btn:active {
+  transform: scale(0.96);
 }
 </style>

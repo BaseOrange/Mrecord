@@ -8,6 +8,9 @@ import {
     CircleAlert,
     CircleOff,
     TrendingUp,
+    TrendingDown,
+    Minus,
+    Plus,
     CalendarDays,
     Settings,
     Trash2,
@@ -76,6 +79,9 @@ const ICONS: Record<string, Component> = {
     'chevron-left': ChevronLeft,
     'chevron-right': ChevronRight,
     inbox: Inbox,
+    'trending-down': TrendingDown,
+    minus: Minus,
+    plus: Plus,
 }
 
 const props = withDefaults(
