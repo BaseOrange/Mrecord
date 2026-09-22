@@ -67,9 +67,11 @@ const parseAmount = (raw: string | undefined): number => {
 }
 
 // 金额输入校验：空值合法（视为 0）；非空时只接受非负的纯小数（拒绝 -5、1e3 等，B8）
-const isValidAmount = (raw: string | undefined): boolean => {
-  if (raw === undefined || raw === '') return true
-  return /^\d*\.?\d*$/.test(raw.trim())
+// 注意：输入框 type="number" 时 v-model 会自动把值转成数字（如 1 而非 "1"），
+// 因此参数可能是 number，必须先 String() 转换再 trim，否则数字调 .trim() 抛 TypeError
+const isValidAmount = (raw: string | number | undefined | null): boolean => {
+  if (raw === undefined || raw === null || raw === '') return true
+  return /^\d*\.?\d*$/.test(String(raw).trim())
 }
 
 // 实时汇总（累加的是与后端一致的「分」级值，避免浮点误差）
@@ -163,6 +165,14 @@ const fetchData = async () => {
   existingRecords.value = recRes.status === 'fulfilled' && Array.isArray(recRes.value) ? recRes.value.filter((x): x is FinMonthItemRecord => x != null) : []
   monthRecords.value = yearRes.status === 'fulfilled' && Array.isArray(yearRes.value) ? yearRes.value.filter((x): x is FinMonthRecord => x != null) : []
 
+  // [MR-SAVE] 诊断日志：记录数据加载结果（tplRes 若 rejected 说明模板项加载失败，保存按钮不会渲染）
+  console.log('[MR-SAVE] fetchData 结果:',
+    'templateItems=', templateItems.value.length,
+    'existingRecords=', existingRecords.value.length,
+    'tplRes=', tplRes.status, tplRes.status === 'rejected' ? String(tplRes.reason) : '',
+    'recRes=', recRes.status,
+    'bookId=', JSON.stringify(bookId))
+
   // 填充已有金额
   const values: Record<string, string> = {}
   for (const r of existingRecords.value) {
@@ -203,7 +213,8 @@ const isDirty = computed(() => {
   // 对比每个模板项的输入值
   for (const item of templateItems.value) {
     if (!item?.id) continue
-    if ((itemValues.value[item.id] ?? '') !== (serverMap.get(item.id) ?? '')) return true
+    // 输入框 type="number" 产出的是数字，服务端回填的是字符串，统一 String() 后比较
+    if (String(itemValues.value[item.id] ?? '') !== (serverMap.get(item.id) ?? '')) return true
   }
   // 对比备注
   const curRecord = recordIndex.value.get(`${currentYear.value}-${currentMonth.value}`)
@@ -239,6 +250,8 @@ const confirmSwitchMonth = () => {
 // ---- 保存 ----
 const handleSave = async () => {
   saving.value = true
+  // [MR-SAVE] 入口日志：确认按钮点击事件生效，记录模板项数量与当前输入值
+  console.log('[MR-SAVE] handleSave 被调用, templateItems.length=', templateItems.value.length, 'itemValues=', JSON.stringify(itemValues.value))
   try {
     // 后端 updateMonthItem 会在同一事务内按 id 有无自动执行「更新已有项 / 插入新增项」
     // （Rust: fin_month_item_record.rs 的 update 分支；Java: insertOrUpdateSelective），
@@ -248,8 +261,11 @@ const handleSave = async () => {
     for (const item of templateItems.value) {
       if (!item || !item.id) continue
       const raw = itemValues.value[item.id]
+      // [MR-SAVE] 逐项日志：记录每个模板项的输入原始值与校验结果
+      console.log('[MR-SAVE] 遍历项 id=', item.id, 'itemName=', item.itemName, 'raw=', JSON.stringify(raw), 'isValid=', isValidAmount(raw))
       // B8：拦截负数 / 科学计数法等非法输入，不静默钳制，明确提示用户修正
       if (!isValidAmount(raw)) {
+        console.warn('[MR-SAVE] 金额校验未通过，中止本次保存')
         Snackbar.warning(`「${item.itemName || '记账项'}」的金额格式不正确，请输入非负数`)
         return
       }
@@ -267,25 +283,31 @@ const handleSave = async () => {
       itemList.push(record)
     }
 
+    // [MR-SAVE] itemList 构建结果：若为 0 说明所有项被跳过（无 id 或校验未过）
+    console.log('[MR-SAVE] itemList 构建完成 length=', itemList.length, JSON.stringify(itemList))
+
     if (itemList.length === 0) {
       Snackbar.warning('没有可保存的记账项')
       return
     }
 
     // 单次请求完成整月保存，note 只随本次请求提交一次
-    await updateMonthItem({
+    console.log('[MR-SAVE] 即将调用 updateMonthItem, bookId=', JSON.stringify(bookId), 'year=', currentYear.value, 'month=', currentMonth.value)
+    const saveRes = await updateMonthItem({
       bookId,
       year: currentYear.value,
       month: currentMonth.value,
       itemList,
       note: note.value,
     })
+    console.log('[MR-SAVE] updateMonthItem 返回:', JSON.stringify(saveRes))
 
     Snackbar.success('保存成功')
     // 刷新数据
     await fetchData()
-  } catch {
-    // 拦截器已处理
+  } catch (e) {
+    // [MR-SAVE] 关键：此前这里把所有异常静默吞掉（「拦截器已处理」），现在打到控制台定位问题
+    console.error('[MR-SAVE] 保存流程抛出异常（此前被静默吞掉）:', e)
   } finally {
     saving.value = false
   }
