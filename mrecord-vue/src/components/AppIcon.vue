@@ -36,6 +36,7 @@ import {
     KeyRound,
     LockKeyhole,
     MailCheck,
+    PartyPopper,
 } from 'lucide-vue-next'
 
 /**
@@ -105,6 +106,7 @@ const ICONS: Record<string, Component> = {
     key: KeyRound,
     'lock-keyhole': LockKeyhole,
     'mail-check': MailCheck,
+    'party-popper': PartyPopper,
 }
 
 const props = withDefaults(

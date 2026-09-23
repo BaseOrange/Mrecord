@@ -416,7 +416,7 @@ function onEnterSystem() {
 
       <!-- 完成页 -->
       <div v-if="currentStep === 5" class="step-content complete-content">
-        <div class="complete-icon">🎉</div>
+        <div class="complete-icon"><AppIcon name="party-popper" :size="36" :stroke-width="1.8" /></div>
         <div class="complete-title">初始化完成</div>
         <div class="complete-desc">系统已准备就绪，现在可以开始使用了</div>
         <button class="primary-btn" @click="onEnterSystem">进入系统</button>
@@ -769,5 +769,17 @@ function onEnterSystem() {
   font-size: 14px;
   color: var(--text-tertiary);
   margin-bottom: 40px;
+}
+
+.complete-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
 }
 </style>
