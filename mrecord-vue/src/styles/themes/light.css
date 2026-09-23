@@ -59,4 +59,26 @@ html[data-theme='light'] {
     --color-warning: var(--semantic-warning);
     --color-success: var(--semantic-down);
     --color-body: var(--bg-canvas);
+
+    /* ---- 弹层 / 菜单类组件 ----
+       Varlet 的 action-sheet / dialog / picker 等组件自带硬编码浅色默认值
+       （如 --action-sheet-background: #fff、--action-sheet-action-item-color: #333），
+       不显式桥接的话深色模式下底部菜单仍是白底深字。 */
+    --color-surface-container-low: var(--bg-surface);
+    --action-sheet-background: var(--bg-elevated);
+    --action-sheet-action-item-color: var(--text-primary);
+    --action-sheet-title-color: var(--text-secondary);
+    --action-sheet-border-radius: 16px 16px 0 0;
+    --dialog-title-color: var(--text-primary);
+    --dialog-message-color: var(--text-secondary);
+    --dialog-border-radius: 14px;
+    --picker-background: var(--bg-elevated);
+    --picker-title-text-color: var(--text-primary);
+    --picker-option-text-color: var(--text-primary);
+    --picker-cancel-button-text-color: var(--text-secondary);
+    --date-picker-title-background: var(--bg-elevated);
+    --date-picker-body-background-color: var(--bg-elevated);
+    --date-picker-header-color: var(--text-primary);
+    --option-text-color: var(--text-primary);
+    --menu-option-text-color: var(--text-primary);
 }
