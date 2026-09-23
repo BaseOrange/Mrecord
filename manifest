@@ -1,5 +1,5 @@
 appname               = mrecord-fnos
-version               = 2.1.0
+version               = 2.2.0
 display_name          = Mrecord 月衡
 desc                  = 每月快照式个人记账应用：每月一次盘点各账户的资产与负债，自动汇总总资产、总负债与净资产，并给出同比、环比变化。支持多账簿管理、多用户数据隔离、资产趋势图、Excel 导出（邮件送达）与月度记账提醒，帮助你看清自己的财务状况。数据保存在本机，不上云。
 source                = thirdparty
