@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>账户激活 | MRecord 月衡</title>
     <style>
         * {
@@ -11,38 +12,53 @@
             box-sizing: border-box;
         }
         body {
-            font-family: "Microsoft YaHei", Arial, sans-serif;
-            background-color: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: #f2f2f7;
             padding: 20px;
-            color: #333;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
         }
         .email-container {
             max-width: 600px;
             margin: 0 auto;
             background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
             overflow: hidden;
         }
-        .email-header {
-            background-color: #FF7D00;
-            padding: 25px 30px;
+        .email-brand {
+            padding: 32px 30px 24px;
             text-align: center;
-            color: white;
+            border-bottom: 1px solid #f2f2f7;
         }
-        .email-header h1 {
-            font-size: 24px;
-            font-weight: 600;
+        .brand-mark {
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            line-height: 48px;
+            border-radius: 12px;
+            background-color: #FF6500;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1d1d1f;
+            letter-spacing: 2px;
         }
         .email-body {
-            padding: 40px 35px;
+            padding: 36px 35px 32px;
             line-height: 1.7;
-            position: relative;
         }
         .email-body h2 {
-            color: #FF7D00;
-            font-size: 20px;
-            margin-bottom: 15px;
+            color: #1d1d1f;
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 16px;
         }
         .email-body p {
             font-size: 15px;
@@ -50,69 +66,85 @@
             margin-bottom: 12px;
         }
         .info-box {
-            background-color: #fff6ec;
-            border-left: 4px solid #FF7D00;
-            padding: 20px 28px;
-            margin: 25px auto;
-            width: 85%;
-            border-radius: 6px;
+            background-color: #FFF6EE;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 22px 0;
+        }
+        .info-box p {
+            margin-bottom: 10px;
+        }
+        .info-box p:last-child {
+            margin-bottom: 0;
+        }
+        .info-box strong {
+            color: #1d1d1f;
         }
         .btn-box {
             text-align: center;
-            margin: 30px 0;
+            margin: 28px 0;
         }
         .login-btn {
             display: inline-block;
-            background-color: #FF7D00;
+            background-color: #FF6500;
             color: #fff !important;
             text-decoration: none !important;
-            padding: 12px 30px;
-            border-radius: 6px;
+            padding: 13px 32px;
+            border-radius: 24px;
             font-size: 15px;
-            font-weight: 500;
-        }
-        .login-btn:hover {
-            background-color: #e67000;
+            font-weight: 600;
         }
         .email-footer {
-            background-color: #f5f7fa;
-            padding: 25px 30px;
+            background-color: #f7f7fa;
+            padding: 24px 30px;
             text-align: center;
             font-size: 13px;
-            color: #888;
+            color: #8e8e93;
         }
         .email-footer a {
-            color: #FF7D00;
+            color: #FF6500;
             text-decoration: none;
+        }
+        .sign {
+            margin-top: 20px;
+            color: #1d1d1f;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="email-container">
-        <div class="email-header">
-            <h1>MRecord 月衡</h1>
+        <div class="email-brand">
+            <div class="brand-mark">月</div>
+            <div class="brand-name">MRecord 月衡</div>
         </div>
+
         <div class="email-body">
             <h2>欢迎注册，请激活你的账户</h2>
             <p>亲爱的${MR-UserName}，你好：</p>
             <p>感谢你注册<strong>MRecord 月衡</strong>，你的账户已创建成功，请点击下方按钮完成账户激活。</p>
+
             <div class="info-box">
                 <p><strong>注册账号：</strong>${MR-UserEmail}</p>
                 <p><strong>有效时间：</strong>链接 24 小时内有效，请尽快操作</p>
             </div>
+
             <p>激活成功后即可登录使用月度快照式记账功能，完整记录每月资产与负债数据。</p>
+
             <div class="btn-box">
                 <a href="${MR-ActivateUrl}" class="login-btn" target="_blank">立即激活账户</a>
             </div>
+
             <p>如你无法点击按钮，可复制以下链接到浏览器地址栏打开：</p>
-            <p style="word-break:break-all;color:#888;font-size:13px;">${MR-ActivateUrl}</p>
+            <p style="word-break:break-all;color:#8e8e93;font-size:13px;">${MR-ActivateUrl}</p>
             <p>如你没有发起注册申请，请忽略本邮件。</p>
-            <p style="margin-top:20px;">MRecord 月衡 团队</p>
+            <p class="sign">MRecord 月衡 团队</p>
         </div>
+
         <div class="email-footer">
             <p>本邮件由系统自动发送，请勿直接回复</p>
             <p>如需帮助，请联系：<a href="mailto:${MR-AdminMail}">${MR-AdminMail}</a></p>
-            <p>© ${MR-Year} MRecord 月衡 版权所有</p>
+            <p>&copy; ${MR-Year} MRecord 月衡 版权所有</p>
         </div>
     </div>
 </body>

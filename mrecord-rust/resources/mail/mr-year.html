@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>年度财务总结 | MRecord 月衡</title>
     <style>
         * {
@@ -11,107 +12,156 @@
             box-sizing: border-box;
         }
         body {
-            font-family: "Microsoft YaHei", Arial, sans-serif;
-            background-color: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: #f2f2f7;
             padding: 20px;
-            color: #333;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
         }
         .email-container {
             max-width: 600px;
             margin: 0 auto;
             background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
             overflow: hidden;
         }
-        .email-header {
-            background-color: #FF7D00; /* 橙色主题色 */
-            padding: 25px 30px;
+        .email-brand {
+            padding: 32px 30px 24px;
             text-align: center;
-            color: white;
+            border-bottom: 1px solid #f2f2f7;
         }
-        .email-header h1 {
-            font-size: 24px;
-            font-weight: 600;
+        .brand-mark {
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            line-height: 48px;
+            border-radius: 12px;
+            background-color: #FF6500;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1d1d1f;
+            letter-spacing: 2px;
         }
         .email-body {
-            padding: 40px 35px;
+            padding: 36px 35px 32px;
             line-height: 1.7;
-            position: relative;
         }
         .email-body h2 {
-            color: #FF7D00;
-            font-size: 20px;
-            margin-bottom: 15px;
+            color: #1d1d1f;
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 16px;
         }
         .email-body p {
             font-size: 15px;
             color: #555;
             margin-bottom: 12px;
         }
-        /* 卡片宽度 85%，居中显示 */
+        /* 年度核心数据卡：渐变品牌底，金额等宽 */
+        .hero-card {
+            background: linear-gradient(135deg, #FF6500 0%, #FF8A3D 100%);
+            border-radius: 14px;
+            padding: 24px 26px;
+            margin: 22px 0;
+            color: #ffffff;
+        }
+        .hero-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 6px;
+        }
+        .hero-money {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            font-variant-numeric: tabular-nums;
+            -moz-font-feature-settings: "tnum";
+        }
+        .hero-change {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+        /* 明细网格 */
         .info-box {
-            background-color: #fff6ec;
-            border-left: 4px solid #FF7D00;
-            padding: 20px 28px;
-            margin: 25px auto;
-            width: 85%;
-            border-radius: 6px;
+            background-color: #FFF6EE;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 16px 0 22px;
         }
         .info-box p {
             margin-bottom: 10px;
+            font-variant-numeric: tabular-nums;
         }
         .info-box p:last-child {
             margin-bottom: 0;
         }
+        .info-box strong {
+            color: #1d1d1f;
+        }
         .btn-box {
             text-align: center;
-            margin: 30px 0;
+            margin: 28px 0;
         }
         .login-btn {
             display: inline-block;
-            background-color: #FF7D00;
+            background-color: #FF6500;
             color: #fff !important;
             text-decoration: none !important;
-            padding: 12px 30px;
-            border-radius: 6px;
+            padding: 13px 32px;
+            border-radius: 24px;
             font-size: 15px;
-            font-weight: 500;
-        }
-        .login-btn:hover {
-            background-color: #e67000;
+            font-weight: 600;
         }
         .email-footer {
-            background-color: #f5f7fa;
-            padding: 25px 30px;
+            background-color: #f7f7fa;
+            padding: 24px 30px;
             text-align: center;
             font-size: 13px;
-            color: #888;
+            color: #8e8e93;
         }
         .email-footer a {
-            color: #FF7D00;
+            color: #FF6500;
             text-decoration: none;
+        }
+        .sign {
+            margin-top: 20px;
+            color: #1d1d1f;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="email-container">
-        <!-- 邮件头部 -->
-        <div class="email-header">
-            <h1>MRecord 月衡</h1>
+        <div class="email-brand">
+            <div class="brand-mark">月</div>
+            <div class="brand-name">MRecord 月衡</div>
         </div>
 
-        <!-- 邮件内容 -->
         <div class="email-body">
             <h2>${MR-SummaryYear} 年度财务总结 · 感谢一年的陪伴</h2>
             <p>亲爱的${MR-UserName}，你好：</p>
             <p>新的一年已经开启，月衡为你整理了 ${MR-SummaryYear} 年的财务足迹，快来看看这一年属于你的财富故事吧。</p>
 
+            <div class="hero-card">
+                <div class="hero-label">年末净资产</div>
+                <div class="hero-money">${MR-NetAsset}</div>
+                <div class="hero-change">年度变化 ${MR-NetAssetChange}（${MR-NetAssetChangeRate}）</div>
+            </div>
+
             <div class="info-box">
                 <p><strong>记账月数：</strong>${MR-RecordedMonths} 个月（${MR-BookCount} 个账簿 · ${MR-ItemCount} 条明细）</p>
                 <p><strong>年初净资产：</strong>${MR-NetAssetStart}</p>
-                <p><strong>年末净资产：</strong>${MR-NetAsset}</p>
-                <p><strong>年度变化：</strong>${MR-NetAssetChange}（${MR-NetAssetChangeRate}）</p>
                 <p><strong>年末总资产 / 总负债：</strong>${MR-TotalAsset} / ${MR-TotalLiability}</p>
             </div>
 
@@ -122,14 +172,13 @@
             </div>
 
             <p>感谢你一路相伴，祝你新的一年财务稳健，万事顺遂！</p>
-            <p style="margin-top:20px;">MRecord 月衡 团队</p>
+            <p class="sign">MRecord 月衡 团队</p>
         </div>
 
-        <!-- 邮件底部 -->
         <div class="email-footer">
             <p>本邮件由系统自动发送，请勿直接回复</p>
             <p>如需帮助，请联系：<a href="mailto:${MR-AdminMail}">${MR-AdminMail}</a></p>
-            <p>© ${MR-Year} MRecord 月衡 版权所有</p>
+            <p>&copy; ${MR-Year} MRecord 月衡 版权所有</p>
         </div>
     </div>
 </body>
