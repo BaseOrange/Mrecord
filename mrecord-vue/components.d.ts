@@ -31,7 +31,6 @@ declare module 'vue' {
     VarActionSheet: typeof import('@varlet/ui')['_ActionSheetComponent']
     VarButton: typeof import('@varlet/ui')['_ButtonComponent']
     VarDialog: typeof import('@varlet/ui')['_DialogComponent']
-    VarIcon: typeof import('@varlet/ui')['_IconComponent']
     VarInput: typeof import('@varlet/ui')['_InputComponent']
     VarLoading: typeof import('@varlet/ui')['_LoadingComponent']
     VarPopup: typeof import('@varlet/ui')['_PopupComponent']

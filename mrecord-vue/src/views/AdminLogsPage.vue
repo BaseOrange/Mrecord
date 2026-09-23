@@ -119,16 +119,16 @@ const onScroll = () => {
 
 // ==================== 操作类型映射 ====================
 const operateTypeMap: Record<string, { label: string; color: string }> = {
-  LOGIN: { label: '登录', color: '#1890ff' },
-  LOGOUT: { label: '登出', color: '#999' },
-  UPDATE: { label: '修改', color: '#faad14' },
-  EXPORT: { label: '导出', color: '#52c41a' },
-  CANCEL: { label: '注销', color: '#ff4d4f' },
-  RESET_PWD: { label: '重置密码', color: '#FF6500' },
+  LOGIN: { label: '登录', color: 'var(--info)' },
+  LOGOUT: { label: '登出', color: 'var(--text-tertiary)' },
+  UPDATE: { label: '修改', color: 'var(--amber)' },
+  EXPORT: { label: '导出', color: 'var(--semantic-down)' },
+  CANCEL: { label: '注销', color: 'var(--semantic-up)' },
+  RESET_PWD: { label: '重置密码', color: 'var(--brand)' },
 }
 
 function getTypeInfo(type?: string) {
-  return operateTypeMap[type || ''] || { label: type || '未知', color: '#999' }
+  return operateTypeMap[type || ''] || { label: type || '未知', color: 'var(--text-tertiary)' }
 }
 
 // ==================== 详情弹窗 ====================
@@ -254,7 +254,7 @@ onUnmounted(() => {
 <style scoped>
 .admin-logs-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -262,10 +262,10 @@ onUnmounted(() => {
 .stats-bar {
   padding: 10px 16px;
   font-size: 13px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 .stats-bar strong {
-  color: #FF6500;
+  color: var(--brand);
 }
 
 /* 下拉刷新 */
@@ -278,7 +278,7 @@ onUnmounted(() => {
 }
 .pull-refresh-text {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 /* 日志列表 */
@@ -289,11 +289,11 @@ onUnmounted(() => {
 .empty-state {
   text-align: center;
   padding: 40px 0;
-  color: #bbb;
+  color: var(--text-quaternary);
   font-size: 14px;
 }
 .log-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -305,7 +305,7 @@ onUnmounted(() => {
   transition: all 0.15s;
 }
 .log-card:active {
-  background: #fafafa;
+  background: var(--bg-surface-2);
 }
 .log-main {
   flex: 1;
@@ -337,7 +337,7 @@ onUnmounted(() => {
 }
 .log-time {
   font-size: 13px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 .user-icon {
   font-size: 16px;
@@ -347,7 +347,7 @@ onUnmounted(() => {
 .user-id {
   font-size: 15px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -362,7 +362,7 @@ onUnmounted(() => {
 }
 .log-arrow {
   font-size: 20px;
-  color: #ccc;
+  color: var(--text-quaternary);
   font-weight: 300;
   flex-shrink: 0;
   margin-left: 8px;
@@ -375,13 +375,13 @@ onUnmounted(() => {
 }
 .load-more-text {
   font-size: 12px;
-  color: #aeaeb2;
+  color: var(--text-tertiary);
 }
 
 /* 详情弹窗 */
 .detail-popup {
   max-height: 75vh;
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
@@ -391,13 +391,13 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px 14px;
-  border-bottom: 1px solid #f0e8e0;
+  border-bottom: 1px solid var(--separator);
   flex-shrink: 0;
 }
 .detail-title {
   font-size: 17px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   letter-spacing: 1px;
 }
 .detail-close {
@@ -408,15 +408,15 @@ onUnmounted(() => {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: #f5f0ec;
-  color: #999;
+  background: var(--bg-surface-2);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.2s;
   padding: 0;
 }
 .detail-close:active {
-  background: #e8ddd4;
-  color: #FF6500;
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 .detail-body {
   flex: 1;
@@ -427,7 +427,7 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-start;
   padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--separator);
 }
 .detail-row:last-child {
   border-bottom: none;
@@ -436,13 +436,13 @@ onUnmounted(() => {
   width: 72px;
   flex-shrink: 0;
   font-size: 14px;
-  color: #999;
+  color: var(--text-tertiary);
   padding-top: 1px;
 }
 .detail-value {
   flex: 1;
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.6;
   min-width: 0;
   word-break: break-all;

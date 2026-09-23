@@ -171,10 +171,10 @@ async function confirmDelete() {
 
 // ==================== 状态显示辅助 ====================
 const statusMap: Record<number, { label: string; color: string }> = {
-  0: { label: '正常', color: '#52c41a' },
-  1: { label: '停用', color: '#ff4d4f' },
-  2: { label: '注销中', color: '#faad14' },
-  3: { label: '已注销', color: '#999' },
+  0: { label: '正常', color: 'var(--semantic-down)' },
+  1: { label: '停用', color: 'var(--semantic-up)' },
+  2: { label: '注销中', color: 'var(--amber)' },
+  3: { label: '已注销', color: 'var(--text-tertiary)' },
 }
 
 function getStatusInfo(status?: number) {
@@ -260,7 +260,7 @@ onMounted(() => {
         <div v-for="user in pageResult.records" :key="user.id" class="user-card">
           <div class="user-main">
             <div class="user-avatar">
-              <span class="avatar-emoji">😊</span>
+              <span class="avatar-text">{{ (user.nickname || user.email || '?').trim()[0].toUpperCase() }}</span>
             </div>
             <div class="user-info">
               <div class="user-name-row">
@@ -365,15 +365,15 @@ onMounted(() => {
 <style scoped>
 .admin-users-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 搜索栏 */
 .search-bar {
-  background: #fff;
+  background: var(--bg-surface);
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--separator);
 }
 .search-inputs {
   display: flex;
@@ -386,30 +386,30 @@ onMounted(() => {
 .search-input {
   width: 100%;
   height: 38px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--separator);
   border-radius: 10px;
   padding: 0 12px;
   font-size: 13px;
-  color: #333;
-  background: #fafafa;
+  color: var(--text-primary);
+  background: var(--bg-surface-2);
   outline: none;
   transition: border-color 0.2s;
 }
 .search-input:focus {
-  border-color: #FF8C42;
-  background: #fff;
+  border-color: var(--brand-accent);
+  background: var(--bg-surface);
 }
 .select-wrapper {
   flex: 0 0 auto;
 }
 .search-select {
   height: 38px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--separator);
   border-radius: 10px;
   padding: 0 10px;
   font-size: 13px;
-  color: #333;
-  background: #fafafa;
+  color: var(--text-primary);
+  background: var(--bg-surface-2);
   outline: none;
   cursor: pointer;
   appearance: none;
@@ -424,7 +424,7 @@ onMounted(() => {
   height: 36px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #FF8C42, #FF6500);
+  background: linear-gradient(135deg, var(--brand-accent), var(--brand));
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -437,26 +437,26 @@ onMounted(() => {
 .reset-btn {
   width: 80px;
   height: 36px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--separator);
   border-radius: 10px;
-  background: #fff;
-  color: #666;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
 }
 .reset-btn:active {
-  background: #f5f5f5;
+  background: var(--bg-canvas);
 }
 
 /* 统计 */
 .stats-bar {
   padding: 10px 16px;
   font-size: 13px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 .stats-bar strong {
-  color: #FF6500;
+  color: var(--brand);
 }
 
 /* 用户列表 */
@@ -467,11 +467,11 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 40px 0;
-  color: #bbb;
+  color: var(--text-quaternary);
   font-size: 14px;
 }
 .user-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -491,14 +491,16 @@ onMounted(() => {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+  background: linear-gradient(135deg, var(--brand), var(--brand-accent));
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.avatar-emoji {
-  font-size: 22px;
+.avatar-text {
+  font-size: 20px;
+  font-weight: var(--weight-bold);
+  color: #fff;
   line-height: 1;
 }
 .user-info {
@@ -514,7 +516,7 @@ onMounted(() => {
 .user-nickname {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -523,7 +525,7 @@ onMounted(() => {
   font-size: 10px;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(135deg, #FF8C42, #FF6500);
+  background: linear-gradient(135deg, var(--brand-accent), var(--brand));
   padding: 1px 6px;
   border-radius: 8px;
   line-height: 1.5;
@@ -538,14 +540,14 @@ onMounted(() => {
 }
 .user-email {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .user-meta {
   font-size: 11px;
-  color: #bbb;
+  color: var(--text-quaternary);
   margin-top: 2px;
 }
 .action-btn {
@@ -556,16 +558,16 @@ onMounted(() => {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: #f5f5f5;
-  color: #999;
+  background: var(--bg-canvas);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.2s;
   padding: 0;
   flex-shrink: 0;
 }
 .action-btn:active {
-  background: #eee;
-  color: #FF6500;
+  background: var(--separator);
+  color: var(--brand);
 }
 
 /* 分页 */
@@ -579,10 +581,10 @@ onMounted(() => {
 .page-btn {
   height: 34px;
   padding: 0 14px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--separator);
   border-radius: 8px;
-  background: #fff;
-  color: #666;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
@@ -592,12 +594,12 @@ onMounted(() => {
   cursor: not-allowed;
 }
 .page-btn:active:not(:disabled) {
-  border-color: #FF6500;
-  color: #FF6500;
+  border-color: var(--brand);
+  color: var(--brand);
 }
 .page-info {
   font-size: 13px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 /* 弹窗内容 */
@@ -606,12 +608,12 @@ onMounted(() => {
 }
 .dialog-hint {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0 0 12px;
 }
 .dialog-hint strong {
-  color: #FF6500;
+  color: var(--brand);
 }
 .dialog-input-wrapper {
   margin-top: 4px;
@@ -619,31 +621,31 @@ onMounted(() => {
 .dialog-input {
   width: 100%;
   height: 42px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--separator);
   border-radius: 10px;
   padding: 0 12px;
   font-size: 14px;
-  color: #333;
-  background: #fafafa;
+  color: var(--text-primary);
+  background: var(--bg-surface-2);
   outline: none;
   transition: border-color 0.2s;
 }
 .dialog-input:focus {
-  border-color: #FF8C42;
-  background: #fff;
+  border-color: var(--brand-accent);
+  background: var(--bg-surface);
 }
 
 /* 自定义弹窗 */
 .custom-dialog {
   width: 300px;
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 16px;
   overflow: hidden;
 }
 .custom-dialog-title {
   font-size: 17px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   text-align: center;
   padding: 22px 20px 8px;
 }
@@ -652,7 +654,7 @@ onMounted(() => {
 }
 .custom-dialog-footer {
   display: flex;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--separator);
 }
 .dialog-btn {
   flex: 1;
@@ -673,20 +675,20 @@ onMounted(() => {
   cursor: not-allowed;
 }
 .dialog-btn--cancel {
-  color: #999;
-  border-right: 1px solid #f0f0f0;
+  color: var(--text-tertiary);
+  border-right: 1px solid var(--separator);
 }
 .dialog-btn--confirm {
   font-weight: 600;
 }
 .dialog-btn--orange {
-  color: #FF6500;
+  color: var(--brand);
 }
 .dialog-btn--red {
-  color: #ff4d4f;
+  color: var(--semantic-up);
 }
 .dialog-btn--green {
-  color: #52c41a;
+  color: var(--semantic-down);
 }
 .btn-loading {
   display: flex;

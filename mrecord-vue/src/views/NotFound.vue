@@ -10,7 +10,7 @@ const goHome = () => {
 
 <template>
   <div class="not-found">
-    <var-icon name="warning" :size="64" color="#999"/>
+    <AppIcon name="triangle-alert" :size="56" :stroke-width="1.4" class="not-found-icon" />
     <h2>页面不存在</h2>
     <p>您访问的页面已丢失</p>
     <var-button type="primary" block @click="goHome" class="back-btn">
@@ -27,17 +27,17 @@ const goHome = () => {
   align-items: center;
   justify-content: center;
   padding: 0 32px;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
 }
 
 .not-found h2 {
   margin: 16px 0 8px;
   font-size: 20px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .not-found p {
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 32px;
 }
@@ -45,5 +45,10 @@ const goHome = () => {
 .back-btn {
   width: 100%;
   max-width: 280px;
+}
+
+.not-found-icon {
+  color: var(--text-tertiary);
+  margin-bottom: 24px;
 }
 </style>

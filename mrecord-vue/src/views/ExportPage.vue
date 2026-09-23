@@ -194,14 +194,14 @@ onUnmounted(() => {
 
 // ==================== 工具函数 ====================
 const statusMap: Record<string, { label: string; color: string }> = {
-  WAIT: { label: '等待中', color: '#FF9500' },
-  RUN: { label: '执行中', color: '#007AFF' },
-  SUCCESS: { label: '成功', color: '#34C759' },
-  FAIL: { label: '失败', color: '#FF3B30' },
+  WAIT: { label: '等待中', color: 'var(--orange)' },
+  RUN: { label: '执行中', color: 'var(--info)' },
+  SUCCESS: { label: '成功', color: 'var(--semantic-down)' },
+  FAIL: { label: '失败', color: 'var(--semantic-up)' },
 }
 
 const formatStatus = (status?: string) => {
-  return statusMap[status || ''] || { label: status || '-', color: '#8e8e93' }
+  return statusMap[status || ''] || { label: status || '-', color: 'var(--text-tertiary)' }
 }
 
 // formatTime 已移除：与 utils/format.ts 的 formatDate 重复（且后者已修复 iOS 日期解析 Q4）
@@ -328,7 +328,7 @@ const onScroll = () => {
 <style scoped>
 .export-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -345,7 +345,7 @@ const onScroll = () => {
 /* 卡片通用 */
 .config-card,
 .tasks-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 16px;
   padding: 20px 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -353,7 +353,7 @@ const onScroll = () => {
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -379,18 +379,18 @@ const onScroll = () => {
 }
 .form-label {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 .form-select,
 .form-input {
   height: 44px;
   padding: 0 12px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--separator);
   border-radius: 10px;
   font-size: 15px;
-  color: #333;
-  background: #fafafa;
+  color: var(--text-primary);
+  background: var(--bg-surface-2);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -403,8 +403,8 @@ const onScroll = () => {
 }
 .form-select:focus,
 .form-input:focus {
-  border-color: #FF6500;
-  background: #fff;
+  border-color: var(--brand);
+  background: var(--bg-surface);
 }
 
 /* 导出按钮 */
@@ -414,7 +414,7 @@ const onScroll = () => {
   margin-top: 6px;
   border: none;
   border-radius: 12px;
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -423,7 +423,7 @@ const onScroll = () => {
   -webkit-tap-highlight-color: transparent;
 }
 .export-btn:active:not(:disabled) {
-  background: #e05800;
+  background: var(--brand-deep);
   transform: scale(0.98);
 }
 .export-btn--loading {
@@ -438,8 +438,8 @@ const onScroll = () => {
 .mini-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #e0e0e0;
-  border-top-color: #FF6500;
+  border: 2px solid var(--separator);
+  border-top-color: var(--brand);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -460,7 +460,7 @@ const onScroll = () => {
 }
 .tasks-empty-text {
   font-size: 14px;
-  color: #aeaeb2;
+  color: var(--text-tertiary);
 }
 
 /* 任务项 */
@@ -473,7 +473,7 @@ const onScroll = () => {
   align-items: center;
   justify-content: space-between;
   padding: 14px 0;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--separator);
 }
 .task-item:last-child {
   border-bottom: none;
@@ -493,7 +493,7 @@ const onScroll = () => {
 .task-book {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 .task-status {
   font-size: 12px;
@@ -504,13 +504,13 @@ const onScroll = () => {
 }
 .task-meta {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .task-time {
-  color: #bbb;
+  color: var(--text-quaternary);
 }
 .task-actions {
   flex-shrink: 0;
@@ -520,13 +520,13 @@ const onScroll = () => {
 }
 .task-mail-tip {
   font-size: 12px;
-  color: #34C759;
+  color: var(--semantic-down);
   font-weight: 500;
   white-space: nowrap;
 }
 .task-fail-reason {
   font-size: 12px;
-  color: #FF3B30;
+  color: var(--semantic-up);
   max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -543,6 +543,6 @@ const onScroll = () => {
 }
 .load-more-text {
   font-size: 12px;
-  color: #aeaeb2;
+  color: var(--text-tertiary);
 }
 </style>

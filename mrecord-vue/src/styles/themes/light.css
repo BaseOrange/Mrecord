@@ -32,6 +32,7 @@ html[data-theme='light'] {
     --semantic-down: #34c759;
     --orange: #ff8800;             /* 中间警示色（强度条） */
     --amber: #ffaa00;              /* 偏黄警示色（强度条） */
+    --info: #0a84ff;              /* 中性提示蓝（进行中/登录） */
     --semantic-danger: #ff3b30;
     --semantic-warning: #ff9500;
 

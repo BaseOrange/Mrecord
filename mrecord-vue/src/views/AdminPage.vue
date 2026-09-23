@@ -33,7 +33,7 @@ const menus = [
 <style scoped>
 .admin-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -45,7 +45,7 @@ const menus = [
 }
 
 .admin-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 14px;
   padding: 18px 16px;
   display: flex;
@@ -56,14 +56,14 @@ const menus = [
   transition: all 0.2s;
 }
 .admin-card:active {
-  background: #fafafa;
+  background: var(--bg-surface-2);
   transform: scale(0.98);
 }
 .card-icon {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+  background: var(--brand-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,17 +77,17 @@ const menus = [
 .card-label {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 .card-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   line-height: 1.4;
 }
 .card-arrow {
   font-size: 20px;
-  color: #ccc;
+  color: var(--text-quaternary);
   font-weight: 300;
   flex-shrink: 0;
 }

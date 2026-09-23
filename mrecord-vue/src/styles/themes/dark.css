@@ -30,6 +30,7 @@ html[data-theme='dark'] {
     --semantic-down: #30d158;
     --orange: #ff9f0a;             /* 中间警示色（强度条） */
     --amber: #ffb340;              /* 偏黄警示色（强度条） */
+    --info: #0a84ff;              /* 中性提示蓝（进行中/登录） */
     --semantic-danger: #ff453a;
     --semantic-warning: #ff9f0a;
 

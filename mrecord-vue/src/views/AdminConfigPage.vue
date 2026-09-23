@@ -54,7 +54,7 @@ async function handleRefreshCache() {
 <style scoped>
 .admin-config-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -63,7 +63,7 @@ async function handleRefreshCache() {
 }
 
 .config-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 14px;
   padding: 20px 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -80,7 +80,7 @@ async function handleRefreshCache() {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+  background: var(--brand-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,13 +95,13 @@ async function handleRefreshCache() {
 .config-label {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .config-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   line-height: 1.5;
 }
 
@@ -110,7 +110,7 @@ async function handleRefreshCache() {
   height: 44px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #FF8C42, #FF6500);
+  background: linear-gradient(135deg, var(--brand-accent), var(--brand));
   color: #fff;
   font-size: 15px;
   font-weight: 600;
