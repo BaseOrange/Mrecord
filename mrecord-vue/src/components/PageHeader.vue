@@ -34,10 +34,17 @@ const displayTitle = computed(() => props.title || document.title.split(' | ')[0
 // ==================== 大标题滚动折叠（Q9-①）====================
 // 页面滚动超过阈值时，大标题区收起，顶部栏转为毛玻璃并显示小标题。
 const COLLAPSE_THRESHOLD = 24
+/** 展开阈值低于折叠阈值，形成滞回区间，避免临界点附近折叠/展开来回横跳 */
+const EXPAND_THRESHOLD = 6
 const collapsed = ref(false)
 
 const onScroll = () => {
-    collapsed.value = window.scrollY > COLLAPSE_THRESHOLD
+    const y = window.scrollY
+    if (collapsed.value) {
+        if (y < EXPAND_THRESHOLD) collapsed.value = false
+    } else if (y > COLLAPSE_THRESHOLD) {
+        collapsed.value = true
+    }
 }
 
 onMounted(() => {
@@ -93,8 +100,13 @@ const handleBack = () => {
             >
                 {{ displayTitle }}
             </h2>
-            <!-- 右侧插槽：有内容则渲染，无内容且 showBack 时自动补 32px 占位保持视觉平衡 -->
-            <div v-if="$slots.right" class="header-right">
+            <!-- 右侧插槽：有内容则渲染，无内容且 showBack 时自动补 32px 占位保持视觉平衡。
+                 大标题静止时折叠（内容转移到下方大标题行），滚动后回到顶栏显示 -->
+            <div
+                v-if="$slots.right"
+                class="header-right"
+                :class="{ 'header-right--hidden': large && !collapsed }"
+            >
                 <slot name="right" />
             </div>
             <div v-else-if="showBack" class="header-placeholder"></div>
@@ -103,8 +115,16 @@ const handleBack = () => {
         <!-- 大标题区：仅 large 模式，随滚动平滑收起 -->
         <div v-if="large" class="header-large" @click="emit('title-click')">
             <div class="header-large-inner">
-                <h1 class="header-large-title">{{ displayTitle }}</h1>
-                <p v-if="subtitle" class="header-subtitle">{{ subtitle }}</p>
+                <div class="header-large-row">
+                    <div class="header-large-text">
+                        <h1 class="header-large-title">{{ displayTitle }}</h1>
+                        <p v-if="subtitle" class="header-subtitle">{{ subtitle }}</p>
+                    </div>
+                    <!-- 右侧插槽在大标题行内的展示位（App Store 式：按钮与大标题同行），点击不触发标题彩蛋 -->
+                    <div v-if="$slots.right" class="header-large-right" @click.stop>
+                        <slot name="right" />
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -120,6 +140,9 @@ const handleBack = () => {
     /* 大标题模式吸顶，内容从下方滚过时呈现毛玻璃穿透效果 */
     position: sticky;
     top: 0;
+    /* 关闭浏览器滚动锚定对本元素的补偿：折叠改变 header 高度时，
+       锚定补偿会回拨 scrollY 并触发展开/折叠来回横跳 */
+    overflow-anchor: none;
 }
 
 .header-bar {
@@ -174,15 +197,22 @@ const handleBack = () => {
     color: var(--text-primary);
     margin: 0;
     line-height: 1.2;
+    /* max-height 基准值：配合 --hidden 态的 max-height:0 做平滑折叠/展开过渡 */
+    max-height: 2rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: opacity var(--duration-fast) var(--ease-out);
+    transition:
+        opacity var(--duration-fast) var(--ease-out),
+        max-height var(--duration-base) var(--ease-out);
 }
 
-/* 大标题模式下，小标题在未滚动时隐藏（位置仍保留，作为折叠态占位） */
+/* 大标题模式下，小标题在未滚动时隐藏：透明 + 行高/高度一并折叠，
+   否则透明但仍占位，会在大标题上方留出一整条空白 */
 .header-title--hidden {
     opacity: 0;
+    max-height: 0;
+    line-height: 0;
 }
 
 .header-right {
@@ -190,6 +220,18 @@ const handleBack = () => {
     display: flex;
     align-items: center;
     gap: var(--space-1);
+    max-height: 48px;
+    transition:
+        opacity var(--duration-fast) var(--ease-out),
+        max-height var(--duration-base) var(--ease-out);
+}
+
+/* 大标题静止时顶栏内的右侧内容折叠：高度一并收起，顶栏不再被撑出空白 */
+.header-right--hidden {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
 
 .header-placeholder {
@@ -213,6 +255,25 @@ const handleBack = () => {
     overflow: hidden;
     min-height: 0;
     padding-bottom: var(--space-4);
+}
+
+/* 大标题行：标题居左，右侧插槽内容（logo/新建按钮）与大标题同一行 */
+.header-large-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.header-large-text {
+    min-width: 0;
+}
+
+.header-large-right {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
 }
 
 .is-collapsed .header-large {

@@ -38,17 +38,21 @@ const options: { value: ThemeMode; label: string }[] = [
     padding: 3px;
     background: var(--bg-surface-2);
     border-radius: var(--radius-pill);
+    /* 在卡片行内不被压缩，避免「跟随系统」被挤到换行 */
+    flex-shrink: 0;
 }
 
 .theme-switcher__item {
     flex: 1;
     height: 32px;
     min-height: 32px;
+    padding: 0 12px;
     border-radius: var(--radius-pill);
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
     color: var(--text-secondary);
     cursor: pointer;
+    white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
     transition:
         color var(--duration-fast) var(--ease-out),
