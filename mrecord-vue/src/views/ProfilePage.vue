@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
@@ -35,8 +35,20 @@ const cancelling = ref(false)
 const showDiagnostic = ref(false)
 const titleTapCount = ref(0)
 let titleTapTimer: ReturnType<typeof setTimeout> | null = null
+/**
+ * 连点冷却：面板打开（以及关闭后）的一小段时间内不再计数。
+ * 连点第 5 次弹出面板时，手指往往还有余下的点击，不加冷却会在关闭后立刻又弹出来。
+ */
+const TAP_COOLDOWN_MS = 1500
+let titleTapCooldownUntil = 0
 
 const handleTitleTap = () => {
+    // 面板已打开时不再计数；冷却期内的点击一律忽略
+    if (showDiagnostic.value) return
+    if (Date.now() < titleTapCooldownUntil) {
+        titleTapCount.value = 0
+        return
+    }
     titleTapCount.value += 1
     if (titleTapTimer) clearTimeout(titleTapTimer)
     // 1.5 秒内未点满 5 次则重置计数，防止缓慢连点误触发
@@ -46,9 +58,15 @@ const handleTitleTap = () => {
     if (titleTapCount.value >= 5) {
         titleTapCount.value = 0
         if (titleTapTimer) clearTimeout(titleTapTimer)
+        titleTapCooldownUntil = Date.now() + TAP_COOLDOWN_MS
         showDiagnostic.value = true
     }
 }
+
+/** 面板关闭后同样进入冷却，避免连点余波立刻重新弹出 */
+watch(showDiagnostic, (visible) => {
+    if (!visible) titleTapCooldownUntil = Date.now() + TAP_COOLDOWN_MS
+})
 
 const handleLogout = async () => {
   showLogoutConfirm.value = false

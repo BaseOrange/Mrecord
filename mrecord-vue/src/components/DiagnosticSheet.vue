@@ -31,6 +31,7 @@ watch(
     () => props.show,
     async (visible) => {
         if (!visible) return
+        closeGuardUntil = Date.now() + CLOSE_GUARD_MS
         loading.value = true
         try {
             diagnosticText.value = await collectDiagnosticText()
@@ -71,8 +72,19 @@ const handleGoGithub = () => {
     window.open(`${GITHUB_REPO}/issues/new`, '_blank')
 }
 
-/** 关闭弹层 */
+/**
+ * 关闭弹层。
+ *
+ * 注意：本弹层由「标题连点 5 次」触发，第 5 次之后手指通常还有余波，
+ * 若允许点击遮罩关闭，余波一下就会把刚打开的面板点没。因此：
+ * - 遮罩点击关闭已关闭（见模板 close-on-click-overlay=false），只能点右上角 ×
+ * - 打开后 800ms 内忽略一切关闭请求，吃掉连点余波；之后正常响应
+ */
+const CLOSE_GUARD_MS = 800
+let closeGuardUntil = 0
+
 const handleClose = () => {
+    if (Date.now() < closeGuardUntil) return
     emit('update:show', false)
 }
 </script>
@@ -82,6 +94,8 @@ const handleClose = () => {
     :show="props.show"
     position="bottom"
     round
+    :close-on-click-overlay="false"
+    :close-on-popstate="false"
     :overlay-style="{ background: 'rgba(0,0,0,0.5)' }"
     @update:show="handleClose"
   >
