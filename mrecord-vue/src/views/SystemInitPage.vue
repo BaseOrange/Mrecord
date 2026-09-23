@@ -11,6 +11,7 @@ import {isValidEmail} from '@/utils/security'
 import {md5} from 'js-md5'
 import agreementText from '@/assets/agreement.md?raw'
 import appIcon from '@/../public/app-icon.svg'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -273,16 +274,8 @@ function onEnterSystem() {
             <label class="form-label">密码</label>
             <div class="input-wrapper">
               <input v-model="adminPassword" :type="showPassword ? 'text' : 'password'" placeholder="至少6位" class="form-input" autocomplete="new-password" />
-              <button class="eye-btn" @click="showPassword = !showPassword" type="button">
-                <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                  <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
+              <button class="eye-btn" @click="showPassword = !showPassword" type="button" :aria-label="showPassword ? '隐藏密码' : '显示密码'">
+                <AppIcon :name="showPassword ? 'eye-off' : 'eye'" :size="20" :stroke-width="1.5" />
               </button>
             </div>
           </div>
@@ -326,7 +319,7 @@ function onEnterSystem() {
                 <div class="switch-label">开放注册</div>
                 <div class="switch-desc">关闭后登录页将不显示注册入口</div>
               </div>
-              <var-switch v-model="registerEnabled" :color="'#FF6500'" :close-color="'#e0e0e0'" size="22" />
+              <var-switch v-model="registerEnabled" :color="'var(--brand)'" :close-color="'var(--separator)'" size="22" />
             </div>
           </div>
         </div>
@@ -372,7 +365,7 @@ function onEnterSystem() {
                 <div class="switch-label">启用 SSL</div>
                 <div class="switch-desc">开启 SSL 加密连接</div>
               </div>
-              <var-switch v-model="ssl" :color="'#FF6500'" :close-color="'#e0e0e0'" size="22" />
+              <var-switch v-model="ssl" :color="'var(--brand)'" :close-color="'var(--separator)'" size="22" />
             </div>
           </div>
         </div>
@@ -436,7 +429,7 @@ function onEnterSystem() {
 .init-page {
   min-height: 100vh;
   min-height: 100dvh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   display: flex;
   justify-content: center;
   padding: 0 16px;
@@ -473,7 +466,7 @@ function onEnterSystem() {
   font-size: 42px;
   font-weight: 800;
   letter-spacing: 6px;
-  color: #FF6500;
+  color: var(--brand);
   text-shadow: 0 2px 20px rgba(255, 101, 0, 0.18);
   margin-bottom: 2px;
   line-height: 1.2;
@@ -482,14 +475,14 @@ function onEnterSystem() {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 4px;
-  color: #FF8C42;
+  color: var(--brand-accent);
   text-transform: uppercase;
   margin-bottom: 12px;
 }
 .brand-slogan {
   font-size: 13px;
   letter-spacing: 3px;
-  color: #bbb;
+  color: var(--text-quaternary);
   font-weight: 400;
 }
 
@@ -510,18 +503,18 @@ function onEnterSystem() {
   justify-content: center;
   font-size: 13px;
   font-weight: 600;
-  background: #e8e8e8;
-  color: #999;
+  background: var(--separator);
+  color: var(--text-tertiary);
   transition: all 0.3s;
   position: relative;
 }
 .step-dot--active {
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
   box-shadow: 0 2px 12px rgba(255, 101, 0, 0.3);
 }
 .step-dot--done {
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
   opacity: 0.7;
 }
@@ -531,7 +524,7 @@ function onEnterSystem() {
   right: 100%;
   width: 24px;
   height: 2px;
-  background: #e0e0e0;
+  background: var(--separator);
   top: 50%;
   transform: translateY(-50%);
 }
@@ -540,7 +533,7 @@ function onEnterSystem() {
   /* no override needed — line is between dots */
 }
 .step-dot--done + .step-dot::before {
-  background: #FF6500;
+  background: var(--brand);
   opacity: 0.5;
 }
 .step-check {
@@ -559,20 +552,20 @@ function onEnterSystem() {
 .step-title {
   font-size: 20px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 6px;
 }
 .step-desc {
   font-size: 13px;
-  color: #999;
+  color: var(--text-tertiary);
   text-align: center;
   margin-bottom: 20px;
 }
 
 /* 协议卡片 */
 .agreement-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   margin-bottom: 16px;
@@ -581,9 +574,9 @@ function onEnterSystem() {
 .agreement-title {
   font-size: 16px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   padding: 18px 20px 14px;
-  border-bottom: 1px solid #f0e8e0;
+  border-bottom: 1px solid var(--separator);
   letter-spacing: 1px;
 }
 .agreement-body {
@@ -592,31 +585,31 @@ function onEnterSystem() {
   padding: 16px 20px 20px;
   font-size: 13px;
   line-height: 1.8;
-  color: #444;
+  color: var(--text-primary);
 }
 .agreement-body :deep(h3) {
   font-size: 15px;
   font-weight: 700;
-  color: #FF6500;
+  color: var(--brand);
   margin: 18px 0 8px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #f5ede6;
+  border-bottom: 1px solid var(--separator);
 }
 .agreement-body :deep(h3:first-child) { margin-top: 0; }
 .agreement-body :deep(h4) {
   font-size: 14px;
   font-weight: 600;
-  color: #FF8C42;
+  color: var(--brand-accent);
   margin: 12px 0 6px;
 }
 .agreement-body :deep(p) { margin: 0 0 6px; text-align: justify; }
 .agreement-body :deep(ul) { margin: 4px 0 6px; padding-left: 16px; list-style: none; }
 .agreement-body :deep(li) { position: relative; padding-left: 6px; margin-bottom: 3px; }
-.agreement-body :deep(strong) { color: #333; font-weight: 600; }
+.agreement-body :deep(strong) { color: var(--text-primary); font-weight: 600; }
 
 /* 表单卡片 */
 .form-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 16px;
   padding: 20px 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -625,7 +618,7 @@ function onEnterSystem() {
 .section-title {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 16px;
 }
 .form-item {
@@ -635,7 +628,7 @@ function onEnterSystem() {
 .form-label {
   display: block;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
   margin-bottom: 8px;
 }
@@ -643,29 +636,29 @@ function onEnterSystem() {
   position: relative;
   display: flex;
   align-items: center;
-  background: #fafafa;
-  border: 1px solid #e8e8e8;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--separator);
   border-radius: 12px;
   padding: 0 12px;
   height: 48px;
   transition: all 0.2s;
 }
 .input-wrapper:focus-within {
-  border-color: #FF6500;
-  background: #fff;
+  border-color: var(--brand);
+  background: var(--bg-surface);
 }
 .form-input {
   flex: 1;
   height: 100%;
   font-size: 15px;
-  color: #333;
+  color: var(--text-primary);
   background: transparent;
   border: none;
   outline: none;
   letter-spacing: 0.5px;
   min-width: 0;
 }
-.form-input::placeholder { color: #bbb; }
+.form-input::placeholder { color: var(--text-quaternary); }
 
 .form-row {
   display: flex;
@@ -684,8 +677,8 @@ function onEnterSystem() {
   gap: 12px;
 }
 .switch-info { flex: 1; min-width: 0; }
-.switch-label { font-size: 15px; color: #333; font-weight: 500; }
-.switch-desc { font-size: 12px; color: #999; margin-top: 2px; }
+.switch-label { font-size: 15px; color: var(--text-primary); font-weight: 500; }
+.switch-desc { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
 
 /* 密码显隐 */
 .eye-btn {
@@ -700,10 +693,10 @@ function onEnterSystem() {
   cursor: pointer;
   flex-shrink: 0;
   padding: 0;
-  color: #c0a080;
+  color: var(--text-quaternary);
   transition: color 0.2s;
 }
-.eye-btn:active { color: #FF6500; }
+.eye-btn:active { color: var(--brand); }
 
 /* 按钮 */
 .primary-btn {
@@ -711,7 +704,7 @@ function onEnterSystem() {
   height: 48px;
   border: none;
   border-radius: 14px;
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -720,7 +713,7 @@ function onEnterSystem() {
   margin-top: 4px;
 }
 .primary-btn:active:not(:disabled) {
-  background: #e05800;
+  background: var(--brand-deep);
   transform: scale(0.98);
 }
 .primary-btn:disabled { opacity: 0.7; cursor: not-allowed; }
@@ -728,10 +721,10 @@ function onEnterSystem() {
 .secondary-btn {
   width: 100%;
   height: 44px;
-  border: 1.5px solid #FF6500;
+  border: 1.5px solid var(--brand);
   border-radius: 12px;
   background: transparent;
-  color: #FF6500;
+  color: var(--brand);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -749,13 +742,13 @@ function onEnterSystem() {
   height: 44px;
   border: none;
   background: transparent;
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 14px;
   cursor: pointer;
   margin-top: 4px;
   transition: color 0.2s;
 }
-.skip-btn:active { color: #FF6500; }
+.skip-btn:active { color: var(--brand); }
 
 /* 完成页 */
 .complete-content {
@@ -769,12 +762,12 @@ function onEnterSystem() {
 .complete-title {
   font-size: 24px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 10px;
 }
 .complete-desc {
   font-size: 14px;
-  color: #999;
+  color: var(--text-tertiary);
   margin-bottom: 40px;
 }
 </style>

@@ -9,6 +9,7 @@ html[data-theme='dark'] {
     --bg-canvas: #000000;          /* Apple 深色 systemGroupedBackground */
     --bg-surface: #1c1c1e;
     --bg-surface-2: #2c2c2e;
+    --bg-surface-translucent: rgba(28, 28, 30, 0.72); /* 毛玻璃卡片底 */
     --bg-elevated: #2c2c2e;
     --header-bg: rgba(28, 28, 30, 0.78);
 
@@ -21,11 +22,14 @@ html[data-theme='dark'] {
     --brand: #ff7a1f;
     --brand-soft: rgba(255, 122, 31, 0.18);
     --brand-accent: #ff9a52;         /* 品牌渐变亮端（深色下提亮一档） */
+    --brand-deep: #c04800;          /* 品牌渐变暗端（按钮按压、文字强调） */
 
     /* ==================== 语义色 ==================== */
     --semantic-up: #ff453a;
     --danger-soft: rgba(255, 69, 58, 0.16);    /* 危险操作底色 */
     --semantic-down: #30d158;
+    --orange: #ff9f0a;             /* 中间警示色（强度条） */
+    --amber: #ffb340;              /* 偏黄警示色（强度条） */
     --semantic-danger: #ff453a;
     --semantic-warning: #ff9f0a;
 

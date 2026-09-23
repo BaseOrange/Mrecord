@@ -28,6 +28,14 @@ import {
     EllipsisVertical,
     GripVertical,
     ChevronDown,
+    Mail,
+    Eye,
+    EyeOff,
+    Check,
+    RefreshCw,
+    KeyRound,
+    LockKeyhole,
+    MailCheck,
 } from 'lucide-vue-next'
 
 /**
@@ -88,6 +96,15 @@ const ICONS: Record<string, Component> = {
     'ellipsis-vertical': EllipsisVertical,
     'grip-vertical': GripVertical,
     'chevron-down': ChevronDown,
+    mail: Mail,
+    eye: Eye,
+    'eye-off': EyeOff,
+    'shield-check': ShieldCheck,
+    check: Check,
+    'refresh-cw': RefreshCw,
+    key: KeyRound,
+    'lock-keyhole': LockKeyhole,
+    'mail-check': MailCheck,
 }
 
 const props = withDefaults(

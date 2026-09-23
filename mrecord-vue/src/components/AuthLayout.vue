@@ -34,7 +34,7 @@ import appIcon from '@/../public/app-icon.svg'
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #ffffff;
+  background: var(--bg-canvas);
   /* D8：overflow-y:auto 允许小屏内容超高时滚动；安全区 padding 防刘海/圆角裁切 */
   overflow-y: auto;
   display: flex;
@@ -63,7 +63,7 @@ import appIcon from '@/../public/app-icon.svg'
   height: 340px;
   top: -80px;
   right: -60px;
-  background: radial-gradient(circle, #FF8C42 0%, #FFB380 50%, transparent 70%);
+  background: radial-gradient(circle, var(--brand-accent) 0%, rgba(255, 179, 128, 0.55) 50%, transparent 70%);
 }
 
 .bg-glow--bottom {
@@ -71,7 +71,7 @@ import appIcon from '@/../public/app-icon.svg'
   height: 280px;
   bottom: -40px;
   left: -40px;
-  background: radial-gradient(circle, #FFAB76 0%, #FFD4B8 50%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 171, 118, 0.9) 0%, rgba(255, 212, 184, 0.5) 50%, transparent 70%);
 }
 
 .bg-icon-wrapper {
@@ -118,7 +118,7 @@ import appIcon from '@/../public/app-icon.svg'
 .brand-logo {
   width: 42px;
   height: 42px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   box-shadow: 0 6px 16px rgba(249, 114, 22, 0.18);
   flex-shrink: 0;
 }
@@ -127,7 +127,7 @@ import appIcon from '@/../public/app-icon.svg'
   font-size: 42px;
   font-weight: 800;
   letter-spacing: 6px;
-  color: #FF6500;
+  color: var(--brand);
   text-shadow: 0 2px 20px rgba(255, 101, 0, 0.18);
   margin-bottom: 2px;
   line-height: 1.2;
@@ -137,7 +137,7 @@ import appIcon from '@/../public/app-icon.svg'
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 4px;
-  color: #FF8C42;
+  color: var(--brand-accent);
   text-transform: uppercase;
   margin-bottom: 12px;
 }
@@ -145,7 +145,7 @@ import appIcon from '@/../public/app-icon.svg'
 .brand-slogan {
   font-size: 13px;
   letter-spacing: 3px;
-  color: #bbb;
+  color: var(--text-tertiary);
   font-weight: 400;
 }
 
@@ -166,10 +166,10 @@ import appIcon from '@/../public/app-icon.svg'
 
 .auth-card {
   width: 100%;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--bg-surface-translucent);
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   border: 1px solid rgba(255, 160, 80, 0.15);
   padding: 32px 24px 28px;
   box-shadow:
@@ -187,9 +187,9 @@ import appIcon from '@/../public/app-icon.svg'
   position: relative;
   display: flex;
   align-items: center;
-  background: rgba(255, 245, 238, 0.6);
-  border: 1.5px solid rgba(255, 160, 100, 0.3);
-  border-radius: 14px;
+  background: var(--bg-surface-2);
+  border: 1.5px solid var(--separator);
+  border-radius: var(--radius-md);
   padding: 0 14px;
   height: 52px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -197,8 +197,8 @@ import appIcon from '@/../public/app-icon.svg'
 }
 
 .auth-input-wrapper:focus-within {
-  border-color: #FF8C42;
-  background: rgba(255, 250, 246, 0.85);
+  border-color: var(--brand-accent);
+  background: var(--bg-surface);
   box-shadow:
     0 0 0 3px rgba(255, 140, 66, 0.1),
     0 2px 8px rgba(255, 101, 0, 0.08);
@@ -208,7 +208,7 @@ import appIcon from '@/../public/app-icon.svg'
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: #FFa060;
+  color: var(--brand-accent);
   margin-right: 12px;
   opacity: 0.7;
   transition: opacity 0.3s;
@@ -216,14 +216,14 @@ import appIcon from '@/../public/app-icon.svg'
 
 .auth-input-wrapper:focus-within .auth-input-icon {
   opacity: 1;
-  color: #FF6500;
+  color: var(--brand);
 }
 
 .auth-input {
   flex: 1;
   height: 100%;
   font-size: 15px;
-  color: #333;
+  color: var(--text-primary);
   background: transparent;
   border: none;
   outline: none;
@@ -231,7 +231,7 @@ import appIcon from '@/../public/app-icon.svg'
 }
 
 .auth-input::placeholder {
-  color: #cca88a;
+  color: var(--text-quaternary);
   font-weight: 400;
 }
 
@@ -241,8 +241,8 @@ import appIcon from '@/../public/app-icon.svg'
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  color: #c0a080;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: color 0.2s;
   background: none;
@@ -252,7 +252,7 @@ import appIcon from '@/../public/app-icon.svg'
 }
 
 .auth-eye-btn:active {
-  color: #FF6500;
+  color: var(--brand);
 }
 
 .auth-submit-btn {
@@ -260,13 +260,13 @@ import appIcon from '@/../public/app-icon.svg'
   height: 52px;
   margin-top: 8px;
   border: none;
-  border-radius: 16px;
-  font-size: 17px;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-title-3);
   font-weight: 700;
   letter-spacing: 4px;
   color: #fff;
   cursor: pointer;
-  background: linear-gradient(135deg, #FF8C42 0%, #FF6500 50%, #E85500 100%);
+  background: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand) 50%, var(--brand-deep) 100%);
   box-shadow:
     0 6px 20px rgba(255, 101, 0, 0.3),
     0 2px 6px rgba(255, 101, 0, 0.15),
@@ -321,7 +321,7 @@ import appIcon from '@/../public/app-icon.svg'
 
 .auth-link {
   font-size: 13px;
-  color: #FF8C42;
+  color: var(--brand-accent);
   cursor: pointer;
   padding: 4px 2px;
   letter-spacing: 0.5px;
@@ -331,20 +331,20 @@ import appIcon from '@/../public/app-icon.svg'
 }
 
 .auth-link:active {
-  color: #E85500;
+  color: var(--brand-deep);
 }
 
 .auth-link-divider {
   width: 1px;
   height: 12px;
-  background: #e0cfc0;
+  background: var(--separator);
   margin: 0 12px;
   opacity: 0.6;
 }
 
 .auth-link-hint {
   font-size: 13px;
-  color: #bbb;
+  color: var(--text-tertiary);
 }
 
 /* Success card styles */
@@ -363,25 +363,25 @@ import appIcon from '@/../public/app-icon.svg'
 .auth-success-title {
   font-size: 20px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .auth-success-desc {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 8px;
 }
 
 .auth-success-desc strong {
-  color: #FF6500;
-  font-weight: 600;
+  color: var(--brand);
+  font-weight: var(--weight-semibold);
 }
 
 .auth-success-hint {
   font-size: 12px;
-  color: #bbb;
+  color: var(--text-tertiary);
   margin-bottom: 24px;
 }
 
@@ -401,13 +401,13 @@ import appIcon from '@/../public/app-icon.svg'
 .auth-status-title {
   font-size: 20px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .auth-status-desc {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 24px;
 }
@@ -417,33 +417,33 @@ import appIcon from '@/../public/app-icon.svg'
   width: 100%;
   height: 48px;
   margin-top: 12px;
-  border: 1.5px solid rgba(255, 160, 100, 0.35);
-  border-radius: 16px;
-  font-size: 15px;
+  border: 1.5px solid var(--separator);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-body);
   font-weight: 600;
   letter-spacing: 2px;
-  color: #FF8C42;
+  color: var(--brand-accent);
   cursor: pointer;
   background: transparent;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .auth-secondary-btn:active {
-  background: rgba(255, 140, 66, 0.06);
-  border-color: #FF8C42;
+  background: var(--brand-soft);
+  border-color: var(--brand-accent);
 }
 
 /* Card title/desc (for form cards with headers) */
 .auth-card-title {
   font-size: 18px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .auth-card-desc {
   font-size: 13px;
-  color: #999;
+  color: var(--text-tertiary);
   line-height: 1.5;
   margin-bottom: 24px;
 }

@@ -6,6 +6,7 @@ import {forgotPassword} from '@/api'
 import {isValidEmail} from '@/utils/security'
 import {useCountdown} from '@/composables/useCountdown'
 import AuthLayout from '@/components/AuthLayout.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 
@@ -58,10 +59,7 @@ const goLogin = () => {
 
         <div class="auth-input-group">
           <div class="auth-input-wrapper">
-            <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="2" y="4" width="20" height="16" rx="3" />
-              <path d="M2 7l10 6 10-6" />
-            </svg>
+            <AppIcon name="mail" :size="20" :stroke-width="1.5" class="auth-input-icon" />
             <input
               v-model="email"
               type="email"
@@ -96,11 +94,7 @@ const goLogin = () => {
       <!-- 发送成功提示 -->
       <div v-else key="success" class="auth-card auth-success-card">
         <div class="auth-success-icon">
-          <svg viewBox="0 0 64 64" width="64" height="64" fill="none">
-            <circle cx="32" cy="32" r="30" stroke="#FF6500" stroke-width="2.5" opacity="0.15" />
-            <circle cx="32" cy="32" r="24" fill="#FF6500" opacity="0.08" />
-            <path d="M20 32l4 0 4-8 8 16 4-8 4 0" stroke="#FF6500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <div class="status-ring"><AppIcon name="mail-check" :size="30" :stroke-width="2" /></div>
         </div>
         <h3 class="auth-success-title">邮件已发送</h3>
         <p class="auth-success-desc">
@@ -117,16 +111,28 @@ const goLogin = () => {
 
 <style scoped>
 .card-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #333;
+  font-size: var(--text-title-2);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .card-desc {
-  font-size: 13px;
-  color: #999;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
   line-height: 1.5;
   margin-bottom: 24px;
+}
+
+/* 状态环形图标 */
+.status-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

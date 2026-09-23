@@ -11,6 +11,7 @@ html[data-theme='light'] {
     --bg-canvas: #f2f2f7;          /* systemGroupedBackground，非纯白 */
     --bg-surface: #ffffff;
     --bg-surface-2: #f9f9f9;
+    --bg-surface-translucent: rgba(255, 255, 255, 0.72); /* 毛玻璃卡片底 */
     --bg-elevated: #ffffff;
     --header-bg: rgba(255, 255, 255, 0.78);  /* 毛玻璃吸顶栏 */
 
@@ -23,11 +24,14 @@ html[data-theme='light'] {
     --brand: #ff6500;
     --brand-soft: rgba(255, 101, 0, 0.10);
     --brand-accent: #ff8a3d;         /* 品牌渐变亮端（Hero 卡、主按钮） */
+    --brand-deep: #e85500;          /* 品牌渐变暗端（按钮按压、文字强调） */
 
     /* ==================== 语义色 ==================== */
     --semantic-up: #ff3b30;        /* D1：正红负绿 */
     --danger-soft: rgba(255, 59, 48, 0.10);    /* 危险操作底色 */
     --semantic-down: #34c759;
+    --orange: #ff8800;             /* 中间警示色（强度条） */
+    --amber: #ffaa00;              /* 偏黄警示色（强度条） */
     --semantic-danger: #ff3b30;
     --semantic-warning: #ff9500;
 

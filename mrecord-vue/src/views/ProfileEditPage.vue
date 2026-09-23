@@ -5,6 +5,7 @@ import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
 import { updateMyInfo } from '@/api'
 import PageHeader from '@/components/PageHeader.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -124,8 +125,8 @@ const confirmBack = () => {
             </div>
             <var-switch
               v-model="remindEnabled"
-              :color="'#FF6500'"
-              :close-color="'#e0e0e0'"
+              :color="'var(--brand)'"
+              :close-color="'var(--separator)'"
               size="22"
             />
           </div>
@@ -167,7 +168,7 @@ const confirmBack = () => {
       confirm-button-text="放弃并返回"
       cancel-button-text="继续编辑"
       confirm-button-text-color="#fff"
-      confirm-button-color="#e74c3c"
+      confirm-button-color="var(--semantic-danger)"
       @confirm="confirmBack"
     >
       <div class="back-confirm-tips">
@@ -180,7 +181,7 @@ const confirmBack = () => {
 <style scoped>
 .profile-edit-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -188,7 +189,7 @@ const confirmBack = () => {
 .header-save-btn {
   font-size: 15px;
   font-weight: 500;
-  color: #FF6500;
+  color: var(--brand);
   background: none;
   border: none;
   padding: 6px 12px;
@@ -203,7 +204,7 @@ const confirmBack = () => {
 /* I6：返回确认弹窗 */
 .back-confirm-tips {
   font-size: 14px;
-  color: #555;
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 
@@ -217,7 +218,7 @@ const confirmBack = () => {
 
 /* 表单卡片 */
 .form-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 16px;
   padding: 20px 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -226,7 +227,7 @@ const confirmBack = () => {
 .section-title {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 16px;
 }
 
@@ -239,7 +240,7 @@ const confirmBack = () => {
 .form-label {
   display: block;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
   margin-bottom: 8px;
 }
@@ -248,30 +249,30 @@ const confirmBack = () => {
   position: relative;
   display: flex;
   align-items: center;
-  background: #fafafa;
-  border: 1px solid #e8e8e8;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--separator);
   border-radius: 12px;
   padding: 0 12px;
   height: 48px;
   transition: all 0.2s;
 }
 .input-wrapper:focus-within {
-  border-color: #FF6500;
-  background: #fff;
+  border-color: var(--brand);
+  background: var(--bg-surface);
 }
 
 .form-input {
   flex: 1;
   height: 100%;
   font-size: 15px;
-  color: #333;
+  color: var(--text-primary);
   background: transparent;
   border: none;
   outline: none;
   letter-spacing: 0.5px;
 }
 .form-input::placeholder {
-  color: #bbb;
+  color: var(--text-quaternary);
 }
 
 /* 开关行 */
@@ -287,12 +288,12 @@ const confirmBack = () => {
 }
 .switch-label {
   font-size: 15px;
-  color: #333;
+  color: var(--text-primary);
   font-weight: 500;
 }
 .switch-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -300,7 +301,7 @@ const confirmBack = () => {
 .remind-day-item {
   margin-top: 12px;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--separator);
 }
 .day-picker {
   display: grid;
@@ -309,10 +310,10 @@ const confirmBack = () => {
 }
 .day-btn {
   height: 36px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--separator);
   border-radius: 8px;
-  background: #fafafa;
-  color: #333;
+  background: var(--bg-surface-2);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -323,15 +324,15 @@ const confirmBack = () => {
   transform: scale(0.95);
 }
 .day-btn--active {
-  background: #FF6500;
-  border-color: #FF6500;
+  background: var(--brand);
+  border-color: var(--brand);
   color: #fff;
 }
 
 .remind-day-hint {
   margin: 10px 0 0;
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   line-height: 1.5;
 }
 
@@ -341,7 +342,7 @@ const confirmBack = () => {
   height: 48px;
   border: none;
   border-radius: 14px;
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -350,7 +351,7 @@ const confirmBack = () => {
   -webkit-tap-highlight-color: transparent;
 }
 .submit-btn:active:not(:disabled) {
-  background: #e05800;
+  background: var(--brand-deep);
   transform: scale(0.98);
 }
 .submit-btn--loading {

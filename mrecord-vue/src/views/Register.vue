@@ -6,6 +6,7 @@ import {register} from '@/api'
 import {md5} from 'js-md5'
 import {checkPasswordStrength, isValidEmail} from '@/utils/security'
 import AuthLayout from '@/components/AuthLayout.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 
@@ -29,7 +30,7 @@ const strengthLabel = computed(() => {
 })
 
 const strengthColor = computed(() => {
-  const colors = ['', '#ff4444', '#ff8800', '#ffaa00', '#44bb44', '#22aa22']
+  const colors = ['', 'var(--semantic-up)', 'var(--orange)', 'var(--amber)', 'var(--semantic-down)', 'var(--semantic-down)']
   return colors[passwordStrength.value] || ''
 })
 
@@ -91,10 +92,7 @@ const goLogin = () => {
         <!-- 邮箱 -->
         <div class="auth-input-group">
           <div class="auth-input-wrapper">
-            <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="2" y="4" width="20" height="16" rx="3" />
-              <path d="M2 7l10 6 10-6" />
-            </svg>
+            <AppIcon name="mail" :size="20" :stroke-width="1.5" class="auth-input-icon" />
             <input
               v-model="email"
               type="email"
@@ -108,10 +106,7 @@ const goLogin = () => {
         <!-- 昵称 -->
         <div class="auth-input-group">
           <div class="auth-input-wrapper">
-            <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M20 21a8 8 0 10-16 0" />
-            </svg>
+            <AppIcon name="circle-user-round" :size="20" :stroke-width="1.5" class="auth-input-icon" />
             <input
               v-model="nickname"
               type="text"
@@ -125,11 +120,7 @@ const goLogin = () => {
         <!-- 密码 -->
         <div class="auth-input-group">
           <div class="auth-input-wrapper">
-            <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="11" width="18" height="11" rx="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" />
-              <circle cx="12" cy="16.5" r="1.5" fill="currentColor" stroke="none" />
-            </svg>
+            <AppIcon name="lock" :size="20" :stroke-width="1.5" class="auth-input-icon" />
             <input
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
@@ -137,16 +128,8 @@ const goLogin = () => {
               class="auth-input"
               autocomplete="new-password"
             />
-            <button class="auth-eye-btn" @click="showPassword = !showPassword" type="button">
-              <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
+            <button class="auth-eye-btn" @click="showPassword = !showPassword" type="button" :aria-label="showPassword ? '隐藏密码' : '显示密码'">
+              <AppIcon :name="showPassword ? 'eye-off' : 'eye'" :size="20" :stroke-width="1.5" />
             </button>
           </div>
           <!-- 密码强度条 -->
@@ -167,11 +150,7 @@ const goLogin = () => {
         <!-- 确认密码 -->
         <div class="auth-input-group">
           <div class="auth-input-wrapper">
-            <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M9 12l2 2 4-4" />
-              <rect x="3" y="11" width="18" height="11" rx="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" />
-            </svg>
+            <AppIcon name="lock-keyhole" :size="20" :stroke-width="1.5" class="auth-input-icon" />
             <input
               v-model="confirmPassword"
               :type="showConfirm ? 'text' : 'password'"
@@ -180,16 +159,8 @@ const goLogin = () => {
               autocomplete="new-password"
               @keydown.enter="onRegister"
             />
-            <button class="auth-eye-btn" @click="showConfirm = !showConfirm" type="button">
-              <svg v-if="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
+            <button class="auth-eye-btn" @click="showConfirm = !showConfirm" type="button" :aria-label="showConfirm ? '隐藏密码' : '显示密码'">
+              <AppIcon :name="showConfirm ? 'eye-off' : 'eye'" :size="20" :stroke-width="1.5" />
             </button>
           </div>
         </div>
@@ -219,11 +190,7 @@ const goLogin = () => {
       <!-- 注册成功提示 -->
       <div v-else key="success" class="auth-card auth-success-card">
         <div class="auth-success-icon">
-          <svg viewBox="0 0 64 64" width="64" height="64" fill="none">
-            <circle cx="32" cy="32" r="30" stroke="#FF6500" stroke-width="2.5" opacity="0.15" />
-            <circle cx="32" cy="32" r="24" fill="#FF6500" opacity="0.08" />
-            <path d="M22 33l7 7 13-14" stroke="#FF6500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <div class="success-ring"><AppIcon name="check" :size="32" :stroke-width="2.6" /></div>
         </div>
         <h3 class="auth-success-title">注册成功！</h3>
         <p class="auth-success-desc">
@@ -257,14 +224,26 @@ const goLogin = () => {
   height: 4px;
   flex: 1;
   border-radius: 2px;
-  background: #eee;
-  transition: background 0.3s;
+  background: var(--separator);
+  transition: background var(--duration-base);
 }
 
 .strength-label {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
   flex-shrink: 0;
   transition: color 0.3s;
+}
+
+/* 注册成功环形图标 */
+.success-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

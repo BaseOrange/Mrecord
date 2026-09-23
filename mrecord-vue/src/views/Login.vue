@@ -9,6 +9,7 @@ import {isValidEmail} from '@/utils/security'
 import {md5} from 'js-md5'
 import AuthLayout from '@/components/AuthLayout.vue'
 import AgreementPopup from '@/components/AgreementPopup.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -102,10 +103,7 @@ const showAgreement = ref(false)
       <!-- 邮箱 -->
       <div class="auth-input-group">
         <div class="auth-input-wrapper">
-          <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="2" y="4" width="20" height="16" rx="3" />
-            <path d="M2 7l10 6 10-6" />
-          </svg>
+          <AppIcon name="mail" :size="20" :stroke-width="1.5" class="auth-input-icon" />
           <input
             v-model="email"
             type="email"
@@ -119,11 +117,7 @@ const showAgreement = ref(false)
       <!-- 密码 -->
       <div class="auth-input-group">
         <div class="auth-input-wrapper">
-          <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
-            <circle cx="12" cy="16.5" r="1.5" fill="currentColor" stroke="none" />
-          </svg>
+          <AppIcon name="lock" :size="20" :stroke-width="1.5" class="auth-input-icon" />
           <input
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
@@ -132,16 +126,8 @@ const showAgreement = ref(false)
             autocomplete="current-password"
             @keydown.enter="onLogin"
           />
-          <button class="auth-eye-btn" @click="showPassword = !showPassword" type="button">
-            <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-              <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-              <line x1="1" y1="1" x2="23" y2="23" />
-            </svg>
+          <button class="auth-eye-btn" @click="showPassword = !showPassword" type="button" :aria-label="showPassword ? '隐藏密码' : '显示密码'">
+            <AppIcon :name="showPassword ? 'eye-off' : 'eye'" :size="20" :stroke-width="1.5" />
           </button>
         </div>
       </div>
@@ -186,7 +172,7 @@ const showAgreement = ref(false)
       confirm-button-text="撤销注销并登录"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#FF6500"
+      confirm-button-color="var(--brand)"
       :confirm-button-disabled="revoking"
       @confirm="onRevokeCancel"
       @cancel="showCancelRevoke = false"
@@ -202,8 +188,8 @@ const showAgreement = ref(false)
 <style scoped>
 .agreement-entry {
   text-align: center;
-  font-size: 11px;
-  color: #ccc;
+  font-size: var(--text-xs);
+  color: var(--text-quaternary);
   margin-top: 18px;
   letter-spacing: 0.3px;
 }
@@ -213,12 +199,12 @@ const showAgreement = ref(false)
 }
 
 .cancel-revoke-tips {
-  font-size: 14px;
-  color: #555;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 .cancel-revoke-tips b {
-  color: #FF6500;
-  font-weight: 600;
+  color: var(--brand);
+  font-weight: var(--weight-semibold);
 }
 </style>

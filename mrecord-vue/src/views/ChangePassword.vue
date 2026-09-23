@@ -6,6 +6,7 @@ import {useUserStore} from '@/stores/user'
 import {changePassword, logout} from '@/api'
 import {md5} from 'js-md5'
 import PageHeader from '@/components/PageHeader.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -160,7 +161,7 @@ const onSubmit = async () => {
 <style scoped>
 .change-password-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -171,7 +172,7 @@ const onSubmit = async () => {
 }
 
 .form-card {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 16px;
   padding: 20px 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -188,7 +189,7 @@ const onSubmit = async () => {
 .form-label {
   display: block;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
   margin-bottom: 8px;
 }
@@ -197,8 +198,8 @@ const onSubmit = async () => {
   position: relative;
   display: flex;
   align-items: center;
-  background: #fafafa;
-  border: 1px solid #e8e8e8;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--separator);
   border-radius: 12px;
   padding: 0 12px;
   height: 48px;
@@ -206,15 +207,15 @@ const onSubmit = async () => {
 }
 
 .input-wrapper:focus-within {
-  border-color: #FF6500;
-  background: #fff;
+  border-color: var(--brand);
+  background: var(--bg-surface);
 }
 
 .form-input {
   flex: 1;
   height: 100%;
   font-size: 15px;
-  color: #333;
+  color: var(--text-primary);
   background: transparent;
   border: none;
   outline: none;
@@ -222,7 +223,7 @@ const onSubmit = async () => {
 }
 
 .form-input::placeholder {
-  color: #bbb;
+  color: var(--text-quaternary);
 }
 
 .eye-btn {
@@ -232,7 +233,7 @@ const onSubmit = async () => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  color: #c0a080;
+  color: var(--text-quaternary);
   cursor: pointer;
   transition: color 0.2s;
   background: none;
@@ -242,7 +243,7 @@ const onSubmit = async () => {
 }
 
 .eye-btn:active {
-  color: #FF6500;
+  color: var(--brand);
 }
 
 .submit-btn {
@@ -250,7 +251,7 @@ const onSubmit = async () => {
   height: 48px;
   border: none;
   border-radius: 14px;
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -260,7 +261,7 @@ const onSubmit = async () => {
 }
 
 .submit-btn:active:not(:disabled) {
-  background: #e05800;
+  background: var(--brand-deep);
   transform: scale(0.98);
 }
 
