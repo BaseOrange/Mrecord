@@ -34,7 +34,7 @@ defineEmits<{
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    padding: 0 var(--page-padding);
+    /* 横向内边距由父级 section 提供（页面统一 --page-padding），此处不再自带，避免双重缩进 */
     margin-bottom: var(--space-2);
 }
 

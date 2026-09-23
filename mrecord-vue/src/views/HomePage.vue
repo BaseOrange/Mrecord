@@ -339,6 +339,8 @@ const onBookCardClick = (item: BookStatistics) => {
 .home-section {
   display: flex;
   flex-direction: column;
+  /* 与 Hero 卡对齐的页面横向内边距（此前缺失，分组卡全宽顶边） */
+  padding: 0 var(--page-padding);
 }
 
 .create-btn {
