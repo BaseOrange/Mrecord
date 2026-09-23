@@ -249,7 +249,7 @@ const onBookCardClick = (item: BookStatistics) => {
 /* ==================== Hero 资产卡 ==================== */
 .hero-card {
   margin: var(--space-3) var(--page-padding) 0;
-  background: linear-gradient(135deg, var(--brand) 0%, #ff8a3d 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-accent) 100%);
   border-radius: var(--radius-xl);
   padding: var(--space-5);
   color: #fff;

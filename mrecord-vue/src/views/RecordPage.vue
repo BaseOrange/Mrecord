@@ -10,6 +10,9 @@ import { getYearRecordList } from '@/api/modules/monthRecord'
 import type { FinMonthRecord } from '@/api/modules/monthRecord'
 import { formatMoney, getChangeText, getChangeColor, roundMoney } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
+import MoneyText from '@/components/MoneyText.vue'
+import StateView from '@/components/StateView.vue'
+import AppIcon from '@/components/AppIcon.vue'
 // 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
 // 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
 import iconsUrl from '@/../public/icons.svg'
@@ -322,28 +325,18 @@ const handleSave = async () => {
     <!-- 年月选择 -->
     <div class="month-selector" @click="openMonthPicker">
       <span class="month-text">{{ monthLabel }}</span>
-      <svg viewBox="0 0 24 24" width="16" height="16">
-        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <AppIcon name="chevron-down" :size="16" :stroke-width="2.2" />
     </div>
 
     <div class="page-body">
-      <!-- 加载态 -->
-      <div v-if="loading" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>加载中...</p>
-      </div>
-
-      <!-- 无模板项 -->
-      <div v-else-if="templateItems.length === 0" class="empty-state">
-        <svg class="empty-icon" viewBox="0 0 64 64" width="64" height="64">
-          <rect x="12" y="8" width="40" height="48" rx="4" fill="none" stroke="#ccc" stroke-width="2"/>
-          <line x1="22" y1="20" x2="42" y2="20" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-          <line x1="22" y1="28" x2="38" y2="28" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <p class="empty-text">还没有记账项</p>
-        <p class="empty-sub">请先编辑账目模板</p>
-      </div>
+      <!-- 加载 / 空状态 -->
+      <StateView
+        v-if="loading || templateItems.length === 0"
+        :state="loading ? 'loading' : 'empty'"
+        empty-text="还没有记账项"
+        empty-sub="请先编辑账目模板"
+        empty-icon="notebook-text"
+      />
 
       <!-- 记账表单 -->
       <template v-else>
@@ -351,17 +344,17 @@ const handleSave = async () => {
         <div class="summary-card">
           <div class="summary-item">
             <span class="summary-label">总资产</span>
-            <span class="summary-value asset">{{ formatMoney(totalAsset) }}</span>
+            <MoneyText :value="totalAsset" size="md" />
           </div>
           <div class="summary-divider"></div>
           <div class="summary-item">
             <span class="summary-label">总负债</span>
-            <span class="summary-value liability">{{ formatMoney(totalLiability) }}</span>
+            <MoneyText :value="totalLiability" size="md" />
           </div>
           <div class="summary-divider"></div>
           <div class="summary-item">
             <span class="summary-label">净资产</span>
-            <span class="summary-value net">{{ formatMoney(netAsset) }}</span>
+            <MoneyText :value="netAsset" size="md" />
           </div>
         </div>
 
@@ -474,9 +467,7 @@ const handleSave = async () => {
         <!-- 本月备注 -->
         <div class="note-card">
           <div class="note-header">
-            <svg class="note-icon" viewBox="0 0 24 24" width="16" height="16">
-              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <AppIcon name="file-text" :size="16" class="note-icon" />
             <span class="note-title">本月备注</span>
           </div>
           <textarea
@@ -542,7 +533,7 @@ const handleSave = async () => {
       confirm-button-text="放弃修改并切换"
       cancel-button-text="继续编辑"
       confirm-button-text-color="#fff"
-      confirm-button-color="#e74c3c"
+      confirm-button-color="var(--semantic-danger)"
       @confirm="confirmSwitchMonth"
     >
       <div class="switch-confirm-tips">
@@ -555,104 +546,56 @@ const handleSave = async () => {
 <style scoped>
 .record-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   display: flex;
   flex-direction: column;
 }
 
-/* 顶部导航样式已迁移至 PageHeader.vue（Q1） */
-
 /* I6：切换月份确认弹窗 */
 .switch-confirm-tips {
-  font-size: 14px;
-  color: #555;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 
 /* 年月选择 */
 .month-selector {
-  background: #fff;
-  padding: 10px 16px;
+  background: var(--bg-surface);
+  padding: var(--space-2) var(--space-4);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-1);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--separator);
 }
 .month-text {
-  font-size: 15px;
-  font-weight: 600;
-  color: #FF6500;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--brand);
 }
-.month-selector svg {
-  color: #FF6500;
-  transition: transform 0.2s;
+.month-selector :deep(svg) {
+  color: var(--brand);
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
 /* 页面主体 */
 .page-body {
   flex: 1;
-  padding: 16px;
+  padding: var(--space-3) var(--page-padding) 0;
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-}
-
-/* 加载态 */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 0 40px;
-  color: #8e8e93;
-  font-size: 14px;
-}
-.loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #FF6500;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0 40px;
-}
-.empty-icon {
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-.empty-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #8e8e93;
-}
-.empty-sub {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #aeaeb2;
 }
 
 /* 汇总卡片 */
 .summary-card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 16px 20px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   align-items: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-5);
 }
 .summary-item {
   flex: 1;
@@ -662,178 +605,171 @@ const handleSave = async () => {
   gap: 4px;
 }
 .summary-label {
-  font-size: 11px;
-  color: #aeaeb2;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
-.summary-value {
-  font-size: 16px;
-  font-weight: 700;
-}
-.summary-value.asset { color: #34c759; }
-.summary-value.liability { color: #ff3b30; }
-.summary-value.net { color: #FF6500; }
 .summary-divider {
   width: 1px;
   height: 28px;
-  background: #eee;
+  background: var(--separator);
 }
 
 /* 环比 / 同比对比卡片 */
 .compare-card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  margin-bottom: 10px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-2);
 }
 .compare-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
 }
 .compare-divider {
   height: 1px;
-  background: #f0f0f0;
+  background: var(--separator);
   margin: 2px 0;
 }
 .compare-label {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .compare-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d1d1f;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
 }
 .compare-sub {
-  font-size: 11px;
-  color: #aeaeb2;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 .compare-values {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: var(--space-2);
 }
 .compare-amount {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
 }
 .compare-rate {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   min-width: 56px;
   text-align: right;
 }
 
 /* 本月备注 */
 .note-card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  margin-bottom: 8px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-2);
 }
 .note-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 .note-icon {
-  color: #FF6500;
+  color: var(--brand);
   flex-shrink: 0;
 }
 .note-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d1d1f;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
 }
 .note-textarea {
   width: 100%;
-  border: 1.5px solid #e8e8e8;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
+  border: 1.5px solid var(--separator);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-body);
   line-height: 1.6;
-  color: #1d1d1f;
-  background: #fafafa;
+  color: var(--text-primary);
+  background: var(--bg-surface-2);
   resize: none;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: border-color var(--duration-fast), background-color var(--duration-fast);
   box-sizing: border-box;
 }
 .note-textarea:focus {
   outline: none;
-  border-color: #FF6500;
-  background: #fff;
+  border-color: var(--brand);
+  background: var(--bg-surface);
 }
 .note-textarea::placeholder {
-  color: #c2c2c7;
-  font-size: 13px;
+  color: var(--text-quaternary);
+  font-size: var(--text-sm);
 }
 .note-foot {
   display: flex;
   justify-content: flex-end;
-  margin-top: 6px;
+  margin-top: var(--space-1);
 }
 .note-count {
-  font-size: 11px;
-  color: #c2c2c7;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 
 /* 分组 */
 .item-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 .group-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding-left: 4px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding-left: var(--space-1);
 }
 .group-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
-.asset-dot { background: #34c759; }
-.liability-dot { background: #ff3b30; }
-.ignore-dot { background: #aeaeb2; }
+.asset-dot { background: var(--semantic-down); }
+.liability-dot { background: var(--semantic-up); }
+.ignore-dot { background: var(--text-tertiary); }
 .group-label {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
 }
 
 /* 记账项列表 */
 .item-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .item-row {
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px 14px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-xs);
 }
 .item-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   min-width: 0;
 }
 .item-icon {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  color: #FF6500;
+  color: var(--brand);
 }
 .item-icon-placeholder {
   width: 22px;
@@ -841,43 +777,43 @@ const handleSave = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  color: #FF6500;
+  font-size: var(--text-body);
+  color: var(--brand);
   flex-shrink: 0;
 }
 .item-name {
-  font-size: 15px;
-  color: #1d1d1f;
+  font-size: var(--text-body);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .item-input-wrapper {
   flex-shrink: 0;
-  margin-left: 12px;
+  margin-left: var(--space-3);
 }
 .item-input {
   width: 100px;
   height: 36px;
-  border: 1.5px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 0 10px;
-  font-size: 15px;
-  font-weight: 500;
-  color: #1d1d1f;
+  border: 1.5px solid var(--separator);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
   text-align: right;
-  background: #fafafa;
-  transition: border-color 0.2s;
+  background: var(--bg-surface-2);
+  transition: border-color var(--duration-fast), background-color var(--duration-fast);
   -webkit-appearance: none;
 }
 .item-input:focus {
   outline: none;
-  border-color: #FF6500;
-  background: #fff;
+  border-color: var(--brand);
+  background: var(--bg-surface);
 }
 .item-input::placeholder {
-  color: #ccc;
-  font-weight: 400;
+  color: var(--text-quaternary);
+  font-weight: var(--weight-regular);
 }
 /* 隐藏数字输入的上下箭头 */
 .item-input::-webkit-inner-spin-button,
@@ -895,24 +831,24 @@ const handleSave = async () => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 12px 24px;
+  padding: var(--space-3) var(--page-padding);
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(to top, #f5f5f5 60%, transparent);
+  background: linear-gradient(to top, var(--bg-canvas) 60%, transparent);
   z-index: 10;
 }
 .save-btn {
   width: 100%;
   height: 48px;
   border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #FF7A1A 0%, #FF5500 100%);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-accent) 100%);
   color: #fff;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
   letter-spacing: 0.5px;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(255, 85, 0, 0.35);
-  transition: all 0.2s ease;
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
 }
 .save-btn:active {
@@ -926,33 +862,33 @@ const handleSave = async () => {
 
 /* 年月选择弹窗 */
 .month-picker {
-  background: #fff;
-  border-radius: 14px 14px 0 0;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 .picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: var(--space-4) var(--space-4);
+  border-bottom: 1px solid var(--separator);
 }
 .picker-cancel {
-  font-size: 15px;
-  color: #8e8e93;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   background: none;
   border: none;
   cursor: pointer;
 }
 .picker-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1d1d1f;
+  font-size: var(--text-title-3);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
 }
 .picker-confirm {
-  font-size: 15px;
-  color: #FF6500;
-  font-weight: 600;
+  font-size: var(--text-body);
+  color: var(--brand);
+  font-weight: var(--weight-semibold);
   background: none;
   border: none;
   cursor: pointer;
@@ -967,17 +903,17 @@ const handleSave = async () => {
   -webkit-overflow-scrolling: touch;
 }
 .picker-option {
-  padding: 10px 0;
+  padding: var(--space-2) 0;
   text-align: center;
-  font-size: 15px;
-  color: #555;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 .picker-option.active {
-  color: #FF6500;
-  font-weight: 700;
-  background: rgba(255, 101, 0, 0.06);
+  color: var(--brand);
+  font-weight: var(--weight-bold);
+  background: var(--brand-soft);
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import AppIcon from './AppIcon.vue'
 // 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
 // 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
 import iconsUrl from '@/../public/icons.svg'
@@ -96,7 +97,7 @@ const onClose = () => {
       <!-- 标题栏 -->
       <div class="picker-header">
         <span class="picker-title">选择图标</span>
-        <button class="picker-close" @click="onClose" type="button">✕</button>
+        <button class="picker-close" @click="onClose" type="button" aria-label="关闭"><AppIcon name="x" :size="14" :stroke-width="2.4" /></button>
       </div>
 
       <!-- 分类 tab -->
@@ -136,8 +137,8 @@ const onClose = () => {
 
 <style scoped>
 .icon-picker {
-  background: #fff;
-  border-radius: 20px 20px 0 0;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   max-height: 65vh;
   display: flex;
@@ -153,7 +154,7 @@ const onClose = () => {
 .picker-title {
   font-size: 17px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--text-primary);
 }
 .picker-close {
   width: 28px;
@@ -162,10 +163,10 @@ const onClose = () => {
   align-items: center;
   justify-content: center;
   border: none;
-  background: #f0f0f0;
+  background: var(--bg-surface-2);
   border-radius: 50%;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -178,20 +179,20 @@ const onClose = () => {
 }
 .picker-tab {
   padding: 6px 16px;
-  border-radius: 20px;
-  border: 1px solid #e0e0e0;
-  background: #fff;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--separator);
+  background: var(--bg-surface);
   font-size: 13px;
   font-weight: 500;
-  color: #666;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 .picker-tab--active {
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
-  border-color: #FF6500;
+  border-color: var(--brand);
 }
 
 /* 图标网格 */
@@ -211,26 +212,26 @@ const onClose = () => {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   padding: 8px 0;
-  border-radius: 12px;
-  transition: background 0.15s;
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast);
 }
 .picker-item:active {
-  background: #f5f5f5;
+  background: var(--bg-surface-2);
 }
 .picker-item--selected .picker-icon-circle {
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
 }
 
 .picker-icon-circle {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  background: #f5f5f5;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 
@@ -244,7 +245,7 @@ const onClose = () => {
 
 .picker-label {
   font-size: 11px;
-  color: #8e8e93;
+  color: var(--text-tertiary);
   line-height: 1;
 }
 </style>

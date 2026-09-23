@@ -1,13 +1,31 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
-import { createBook, updateBook, deleteBook, listBooks } from '@/api/modules/book'
-import type { BookInfo } from '@/api/modules/book'
-import BookCard from '@/components/BookCard.vue'
+import { createBook, updateBook, deleteBook, listBooks, getMyDataStatistics } from '@/api/modules/book'
+import type { BookInfo, BookStatistics } from '@/api/modules/book'
+import { formatMoney, getChangeText } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
+import ListGroup from '@/components/ListGroup.vue'
+import ListCell from '@/components/ListCell.vue'
+import StateView from '@/components/StateView.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
+
+// ---- 账簿统计（用于在列表中显示净资产与环比） ----
+// BookInfo 只含账簿本身信息，净资产需由统计接口反查；两个请求并行发出。
+const statsMap = ref<Map<string, BookStatistics>>(new Map())
+
+const fetchStats = async () => {
+  try {
+    const res = await getMyDataStatistics()
+    const list: BookStatistics[] = res?.recordList ?? []
+    statsMap.value = new Map(list.filter((i) => i?.bookId).map((i) => [i.bookId as string, i]))
+  } catch {
+    // 拦截器已处理；统计缺失时列表只显示名称
+  }
+}
 
 // ---- 账簿列表（懒加载） ----
 const PAGE_SIZE = 10
@@ -48,7 +66,34 @@ const fetchBooks = async (reset = false) => {
   }
 }
 
-// 下拉刷新
+const viewState = computed<'loading' | 'empty' | 'idle'>(() => {
+  if (loading.value && books.value.length === 0) return 'loading'
+  if (!loading.value && books.value.length === 0) return 'empty'
+  return 'idle'
+})
+
+// ---- 列表行展示：从统计反查净资产与环比 ----
+const bookStats = (book: BookInfo) => statsMap.value.get(book.id || '')
+
+const bookValue = (book: BookInfo) => {
+  const s = bookStats(book)
+  return s ? '¥' + formatMoney(s.netAsset || 0) : ''
+}
+
+const bookMomText = (book: BookInfo) => {
+  const s = bookStats(book)
+  return s?.monthOnMonth !== undefined ? getChangeText(s.monthOnMonth) : ''
+}
+
+const bookMomColor = (book: BookInfo) => {
+  const v = bookStats(book)?.monthOnMonth
+  if (v === undefined) return undefined
+  if (v > 0) return 'var(--semantic-up)'
+  if (v < 0) return 'var(--semantic-down)'
+  return 'var(--text-tertiary)'
+}
+
+// ---- 下拉刷新 ----
 const pullDistance = ref(0)
 const pulling = ref(false)
 let touchStartY = 0
@@ -79,7 +124,7 @@ const onTouchEnd = async () => {
 
   if (pullDistance.value >= PULL_THRESHOLD && !refreshing.value) {
     refreshing.value = true
-    await fetchBooks(true)
+    await Promise.all([fetchBooks(true), fetchStats()])
     refreshing.value = false
   }
 
@@ -87,7 +132,7 @@ const onTouchEnd = async () => {
   pulling.value = false
 }
 
-// 滚动触底检测
+// ---- 滚动触底检测 ----
 const onScroll = () => {
   if (!hasMore.value || loading.value) return
   const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
@@ -101,6 +146,7 @@ const onScroll = () => {
 
 onMounted(() => {
   fetchBooks()
+  fetchStats()
   window.addEventListener('scroll', onScroll, { passive: true })
 })
 
@@ -235,7 +281,9 @@ const handleDelete = async () => {
     <!-- 顶部标题 -->
     <PageHeader title="账簿" large>
       <template #right>
-        <button class="header-add-btn" @click="openCreateDialog">+</button>
+        <button class="header-add-btn" type="button" aria-label="创建账簿" @click="openCreateDialog">
+          <AppIcon name="plus" :size="18" :stroke-width="2.4" />
+        </button>
       </template>
     </PageHeader>
 
@@ -247,34 +295,39 @@ const handleDelete = async () => {
         </span>
       </div>
 
-      <!-- 加载中 -->
-      <div v-if="loading && books.length === 0" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>加载中...</p>
-      </div>
+      <!-- 加载 / 空状态 -->
+      <StateView
+        v-if="viewState !== 'idle'"
+        :state="viewState"
+        empty-text="还没有账簿"
+        empty-sub="点击右上角 + 创建第一个账簿"
+        empty-icon="notebook-text"
+      />
 
-      <!-- 空状态 -->
-      <div v-else-if="!loading && books.length === 0" class="empty-state">
-        <svg class="empty-icon" viewBox="0 0 64 64" width="64" height="64">
-          <rect x="12" y="8" width="40" height="48" rx="4" fill="none" stroke="#ccc" stroke-width="2"/>
-          <line x1="22" y1="20" x2="42" y2="20" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-          <line x1="22" y1="28" x2="38" y2="28" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-          <line x1="22" y1="36" x2="34" y2="36" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <p class="empty-text">还没有账簿</p>
-        <p class="empty-sub">点击右上角 + 创建第一个账簿</p>
-      </div>
-
-      <!-- 账簿网格 -->
-      <div v-else class="books-grid">
-        <BookCard
+      <!-- 账簿列表 -->
+      <ListGroup v-else>
+        <ListCell
           v-for="book in books"
           :key="book.id"
-          :book="book"
-          @click="onBookClick"
-          @more="openActionMenu"
-        />
-      </div>
+          icon="notebook-text"
+          :label="book.bookName || '未命名账簿'"
+          :value="bookValue(book)"
+          :sub-value="bookMomText(book)"
+          :sub-value-color="bookMomColor(book)"
+          @click="onBookClick(book)"
+        >
+          <template #trailing>
+            <button
+              class="more-btn"
+              type="button"
+              aria-label="更多操作"
+              @click.stop="openActionMenu(book)"
+            >
+              <AppIcon name="ellipsis-vertical" :size="16" />
+            </button>
+          </template>
+        </ListCell>
+      </ListGroup>
 
       <!-- 底部加载状态 -->
       <div v-if="books.length > 0" class="load-more">
@@ -290,7 +343,7 @@ const handleDelete = async () => {
       confirm-button-text="创建"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#FF6500"
+      confirm-button-color="var(--brand)"
       :confirm-button-loading="creating"
       @confirm="handleCreate"
     >
@@ -304,13 +357,13 @@ const handleDelete = async () => {
       />
     </var-dialog>
 
-    <!-- 操作菜单 -->
+    <!-- 操作菜单（Apple 风：纯文本行，危险项红色） -->
     <var-action-sheet
       v-model:show="showActionMenu"
       :actions="[
-        { name: '编辑账目模板', icon: 'notebook', key: 'editTemplate' } as any,
-        { name: '修改账簿名称', icon: 'wrench', key: 'rename' } as any,
-        { name: '删除当前账簿', icon: 'delete', color: '#e74c3c', key: 'delete' } as any
+        { name: '编辑账目模板', key: 'editTemplate' } as any,
+        { name: '修改账簿名称', key: 'rename' } as any,
+        { name: '删除当前账簿', key: 'delete', color: 'var(--semantic-danger)' } as any
       ]"
       @select="onActionSelect"
     />
@@ -322,7 +375,7 @@ const handleDelete = async () => {
       confirm-button-text="保存"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#FF6500"
+      confirm-button-color="var(--brand)"
       :confirm-button-loading="renaming"
       @confirm="handleRename"
     >
@@ -343,7 +396,7 @@ const handleDelete = async () => {
       confirm-button-text="删除"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#e74c3c"
+      confirm-button-color="var(--semantic-danger)"
       :confirm-button-loading="deleting"
       @confirm="handleDelete"
     >
@@ -355,38 +408,32 @@ const handleDelete = async () => {
 <style scoped>
 .book-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 .header-add-btn {
   width: 32px;
   height: 32px;
-  margin: -7px 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 50%;
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 1;
-  padding: 0;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(255, 101, 0, 0.3);
-  transition: all 0.2s;
+  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
 }
 .header-add-btn:active {
-  background: #e05800;
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 /* 页面主体 */
 .page-body {
-  padding: 16px;
+  padding: var(--space-3) var(--page-padding) 0;
 }
 
 /* 下拉刷新 */
@@ -395,73 +442,39 @@ const handleDelete = async () => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: height 0.2s ease;
+  transition: height var(--duration-fast) ease;
 }
 .pull-refresh-text {
-  font-size: 12px;
-  color: #999;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
-/* 加载中 */
-.loading-state {
+/* 更多操作按钮 */
+.more-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 100px 0 40px;
-  color: #8e8e93;
-  font-size: 14px;
-}
-.loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #FF6500;
+  color: var(--text-tertiary);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--duration-fast);
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0 40px;
-}
-.empty-icon {
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-.empty-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #8e8e93;
-}
-.empty-sub {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #aeaeb2;
+.more-btn:active {
+  background-color: var(--bg-surface-2);
+  color: var(--text-primary);
 }
 
-/* 账簿网格 */
-.books-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-/* 底部加载提示 */
+/* 底部加载状态 */
 .load-more {
   text-align: center;
-  padding: 20px 0 8px;
+  padding: var(--space-5) 0 var(--space-2);
 }
 .load-more-text {
-  font-size: 13px;
-  color: #aeaeb2;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
 }
 </style>

@@ -47,6 +47,7 @@ defineEmits<{
                 :style="subValueColor ? { color: subValueColor } : undefined"
             >{{ subValue }}</span>
         </div>
+        <slot name="trailing" />
         <span v-if="arrow" class="cell-arrow" aria-hidden="true">
             <AppIcon name="chevron-right" :size="16" />
         </span>

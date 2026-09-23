@@ -20,9 +20,11 @@ html[data-theme='dark'] {
     /* ==================== 品牌 ==================== */
     --brand: #ff7a1f;
     --brand-soft: rgba(255, 122, 31, 0.18);
+    --brand-accent: #ff9a52;         /* 品牌渐变亮端（深色下提亮一档） */
 
     /* ==================== 语义色 ==================== */
     --semantic-up: #ff453a;
+    --danger-soft: rgba(255, 69, 58, 0.16);    /* 危险操作底色 */
     --semantic-down: #30d158;
     --semantic-danger: #ff453a;
     --semantic-warning: #ff9f0a;

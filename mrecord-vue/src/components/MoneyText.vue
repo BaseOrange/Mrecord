@@ -7,7 +7,7 @@ import { formatMoney } from '@/utils/format'
  *
  * - 等宽数字（tabular-nums），财务排版基本功
  * - 货币符号弱化（小一号、次级色）
- * - 可选语义着色：传入 change 时按 D1（正红负绿）给数字上色
+ * - 百分比变化（环比/同比）请用 ChangeText 组件，二者分工不混用
  */
 const props = withDefaults(
     defineProps<{
@@ -16,8 +16,6 @@ const props = withDefaults(
         decimals?: number
         /** 货币符号，默认 ¥；传空串则不显示 */
         symbol?: string
-        /** 变化值：传入则按红涨绿跌着色；不传为中性色 */
-        change?: number | null
         /** 尺寸档位 */
         size?: 'sm' | 'md' | 'lg' | 'hero'
     }>(),
@@ -29,18 +27,10 @@ const props = withDefaults(
 )
 
 const text = computed(() => formatMoney(props.value, props.decimals))
-
-const color = computed(() => {
-    if (props.change === undefined || props.change === null || Number.isNaN(props.change)) {
-        return undefined
-    }
-    if (props.change === 0) return 'var(--text-secondary)'
-    return props.change > 0 ? 'var(--semantic-up)' : 'var(--semantic-down)'
-})
 </script>
 
 <template>
-    <span class="money-text numeric" :class="`money-text--${size}`" :style="{ color }">
+    <span class="money-text numeric" :class="`money-text--${size}`">
         <span v-if="symbol" class="money-symbol">{{ symbol }}</span>{{ text }}
     </span>
 </template>

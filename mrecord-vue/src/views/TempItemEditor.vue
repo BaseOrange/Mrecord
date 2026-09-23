@@ -7,6 +7,8 @@ import type { FinTemplateItem } from '@/api/modules/tempItem'
 import draggable from 'vuedraggable'
 import IconPicker from '@/components/IconPicker.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import StateView from '@/components/StateView.vue'
+import AppIcon from '@/components/AppIcon.vue'
 // 图标雪碧图以模块方式引入，Vite 会自动拼上 BASE_URL 并加内容哈希，
 // 保证飞牛网关模式（--base=/app/mrecord-fnos/）下路径正确（D2）
 import iconsUrl from '@/../public/icons.svg'
@@ -227,10 +229,10 @@ const typeLabel = (type?: number) => {
 }
 const typeColor = (type?: number) => {
   switch (type) {
-    case 1: return '#34c759'
-    case -1: return '#ff3b30'
-    case 0: return '#aeaeb2'
-    default: return '#aeaeb2'
+    case 1: return 'var(--semantic-down)'
+    case -1: return 'var(--semantic-up)'
+    case 0: return 'var(--text-tertiary)'
+    default: return 'var(--text-tertiary)'
   }
 }
 
@@ -340,17 +342,14 @@ const confirmBack = () => {
     </PageHeader>
 
     <div class="editor-body">
-      <!-- 加载中 -->
-      <div v-if="loading" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>加载中...</p>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-else-if="items.length === 0" class="empty-state">
-        <p class="empty-text">暂无账目模板</p>
-        <p class="empty-sub">点击下方按钮添加第一个模板项</p>
-      </div>
+      <!-- 加载 / 空状态 -->
+      <StateView
+        v-if="loading || items.length === 0"
+        :state="loading ? 'loading' : 'empty'"
+        empty-text="暂无账目模板"
+        empty-sub="点击下方按钮添加第一个模板项"
+        empty-icon="notebook-text"
+      />
 
       <!-- 模板列表（可拖拽） -->
       <template v-else>
@@ -368,11 +367,7 @@ const confirmBack = () => {
             <div class="item-row" @click="onItemClick(index)">
               <!-- 拖拽手柄 -->
               <div class="drag-handle">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="#c7c7cc">
-                  <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-                  <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-                  <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-                </svg>
+                <AppIcon name="grip-vertical" :size="18" />
               </div>
               <!-- 新增标记 -->
               <span v-if="!element.id" class="new-badge">新</span>
@@ -395,10 +390,10 @@ const confirmBack = () => {
       </template>
 
       <!-- 添加按钮（非加载中时始终显示） -->
-      <div v-if="!loading" class="add-row" @click="openAddDialog">
-        <span class="add-icon">+</span>
+      <button v-if="!loading" class="add-row" type="button" @click="openAddDialog">
+        <span class="add-icon"><AppIcon name="plus" :size="16" :stroke-width="2.6" /></span>
         <span class="add-text">添加模板项</span>
-      </div>
+      </button>
     </div>
 
     <!-- 重命名弹窗（已有项，改名+改图标） -->
@@ -408,7 +403,7 @@ const confirmBack = () => {
       confirm-button-text="确定"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#FF6500"
+      confirm-button-color="var(--brand)"
       @confirm="handleRename"
     >
       <div class="add-form">
@@ -428,7 +423,7 @@ const confirmBack = () => {
             </svg>
           </div>
           <span v-else class="icon-select-hint">点击选择</span>
-          <span class="icon-select-arrow">›</span>
+          <span class="icon-select-arrow" aria-hidden="true"><AppIcon name="chevron-right" :size="15" /></span>
         </div>
         <button class="delete-new-btn" @click="openDeleteConfirm" type="button">
           删除此项
@@ -443,7 +438,7 @@ const confirmBack = () => {
       confirm-button-text="删除"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#e74c3c"
+      confirm-button-color="var(--semantic-danger)"
       :confirm-button-loading="deleting"
       @confirm="handleDeleteExisting"
     >
@@ -460,7 +455,7 @@ const confirmBack = () => {
       confirm-button-text="确定"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#FF6500"
+      confirm-button-color="var(--brand)"
       @confirm="handleEditNewSave"
     >
       <div class="add-form">
@@ -495,7 +490,7 @@ const confirmBack = () => {
             </svg>
           </div>
           <span v-else class="icon-select-hint">点击选择</span>
-          <span class="icon-select-arrow">›</span>
+          <span class="icon-select-arrow" aria-hidden="true"><AppIcon name="chevron-right" :size="15" /></span>
         </div>
         <button class="delete-new-btn" @click="handleDeleteNew" type="button">
           删除此项
@@ -510,7 +505,7 @@ const confirmBack = () => {
       confirm-button-text="添加"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#FF6500"
+      confirm-button-color="var(--brand)"
       @confirm="handleAdd"
     >
       <div class="add-form">
@@ -545,7 +540,7 @@ const confirmBack = () => {
             </svg>
           </div>
           <span v-else class="icon-select-hint">点击选择</span>
-          <span class="icon-select-arrow">›</span>
+          <span class="icon-select-arrow" aria-hidden="true"><AppIcon name="chevron-right" :size="15" /></span>
         </div>
       </div>
     </var-dialog>
@@ -564,7 +559,7 @@ const confirmBack = () => {
       confirm-button-text="放弃并返回"
       cancel-button-text="继续编辑"
       confirm-button-text-color="#fff"
-      confirm-button-color="#e74c3c"
+      confirm-button-color="var(--semantic-danger)"
       @confirm="confirmBack"
     >
       <div class="back-confirm-tips">
@@ -577,25 +572,25 @@ const confirmBack = () => {
 <style scoped>
 .temp-editor {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
 }
 
 /* 顶部导航样式已迁移至 PageHeader.vue（Q1）；保存按钮保留本页样式（在 right slot 中） */
 .nav-save {
   border: none;
   background: none;
-  font-size: 15px;
-  font-weight: 500;
-  color: #c7c7cc;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-tertiary);
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--duration-fast), background-color var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
 }
 .nav-save--active {
   color: #fff;
-  background: #FF6500;
+  background: var(--brand);
   box-shadow: 0 2px 8px rgba(255, 101, 0, 0.3);
 }
 .nav-save:disabled {
@@ -604,45 +599,45 @@ const confirmBack = () => {
 
 /* I6：返回确认弹窗 */
 .back-confirm-tips {
-  font-size: 14px;
-  color: #555;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 
 /* 编辑区域 */
 .editor-body {
-  padding: 16px;
+  padding: var(--space-3) var(--page-padding) 0;
 }
 
 .tip-text {
-  font-size: 13px;
-  color: #aeaeb2;
-  margin-bottom: 12px;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
 }
 
 /* 模板项行 */
 .item-row {
   display: flex;
   align-items: center;
-  background: #fff;
-  padding: 14px 16px;
+  background: var(--bg-surface);
+  padding: var(--space-3) var(--space-4);
   margin-bottom: 1px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
 }
 .item-row:first-child {
-  border-radius: 12px 12px 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 .item-row:last-child {
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   margin-bottom: 0;
 }
 .item-row:only-child {
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .item-row:active {
-  background: #f8f8f8;
+  background: var(--bg-surface-2);
 }
 
 .drag-handle {
@@ -652,6 +647,7 @@ const confirmBack = () => {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
+  color: var(--text-tertiary);
   cursor: grab;
   touch-action: none;
 }
@@ -661,10 +657,10 @@ const confirmBack = () => {
 
 .item-name {
   flex: 1;
-  font-size: 16px;
-  font-weight: 500;
-  color: #1d1d1f;
-  margin-left: 10px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  margin-left: var(--space-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -674,14 +670,14 @@ const confirmBack = () => {
 .item-icon-wrap {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background: #f5f5f5;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-left: 8px;
-  color: #666;
+  margin-left: var(--space-2);
+  color: var(--text-secondary);
 }
 .item-icon-wrap svg {
   fill: none;
@@ -691,25 +687,25 @@ const confirmBack = () => {
   stroke-linejoin: round;
 }
 .item-icon-wrap--empty {
-  border: 1px dashed #d0d0d0;
+  border: 1px dashed var(--separator);
   background: transparent;
 }
 .item-icon-placeholder {
-  font-size: 14px;
-  color: #c7c7cc;
+  font-size: var(--text-body);
+  color: var(--text-tertiary);
 }
 
 .item-type {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
   flex-shrink: 0;
-  margin-left: 8px;
+  margin-left: var(--space-2);
 }
 
 /* 拖拽幽灵样式 */
 .drag-ghost {
   opacity: 0.4;
-  background: #FFF3E0;
+  background: var(--brand-soft);
 }
 
 /* 新增标记 */
@@ -719,31 +715,34 @@ const confirmBack = () => {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: 6px;
-  background: #FF6500;
+  border-radius: var(--radius-sm);
+  background: var(--brand);
   color: #fff;
   font-size: 10px;
-  font-weight: 600;
-  margin-left: 6px;
+  font-weight: var(--weight-semibold);
+  margin-left: var(--space-1);
   flex-shrink: 0;
 }
 
 /* 添加按钮行 */
 .add-row {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 16px;
-  padding: 14px;
-  background: #fff;
-  border-radius: 12px;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: none;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
+  box-shadow: var(--shadow-sm);
 }
 .add-row:active {
-  background: #f8f8f8;
+  background: var(--bg-surface-2);
 }
 .add-icon {
   display: flex;
@@ -752,47 +751,45 @@ const confirmBack = () => {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #FF6500;
+  background: var(--brand);
   color: #fff;
-  font-size: 18px;
-  line-height: 1;
 }
 .add-text {
-  font-size: 15px;
-  font-weight: 500;
-  color: #FF6500;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--brand);
 }
 
 /* 添加弹窗表单 */
 .add-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 .type-selector {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .type-label {
-  font-size: 14px;
-  color: #666;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 .type-chips {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .type-chip {
   padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid #e0e0e0;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  color: #666;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--separator);
+  background: var(--bg-surface);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
 }
 .type-chip--active {
@@ -803,25 +800,25 @@ const confirmBack = () => {
 .icon-select-row {
   display: flex;
   align-items: center;
-  padding: 10px 0;
+  padding: var(--space-2) 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .icon-select-label {
-  font-size: 14px;
-  color: #666;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 .icon-select-preview {
   margin-left: auto;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: #f5f5f5;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: var(--text-secondary);
 }
 .icon-select-preview svg {
   fill: none;
@@ -832,78 +829,38 @@ const confirmBack = () => {
 }
 .icon-select-hint {
   margin-left: auto;
-  font-size: 14px;
-  color: #c7c7cc;
+  font-size: var(--text-body);
+  color: var(--text-tertiary);
 }
 .icon-select-arrow {
-  margin-left: 6px;
-  font-size: 18px;
-  color: #c7c7cc;
+  margin-left: var(--space-1);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
 }
 
 /* 删除新增项按钮 */
 .delete-new-btn {
   width: 100%;
-  padding: 10px;
+  padding: var(--space-2);
   border: none;
-  border-radius: 10px;
-  background: #fff5f5;
-  color: #ff3b30;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: var(--radius-md);
+  background: var(--danger-soft);
+  color: var(--semantic-danger);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
 }
 .delete-new-btn:active {
-  background: #ffe5e5;
+  opacity: 0.8;
 }
 
 /* 删除确认提示 */
 .delete-confirm-tips {
-  font-size: 14px;
-  color: #555;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   line-height: 1.8;
-}
-
-/* 加载中 */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 0 40px;
-  color: #8e8e93;
-  font-size: 14px;
-}
-.loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #FF6500;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 80px 0 40px;
-}
-.empty-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #8e8e93;
-}
-.empty-sub {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #aeaeb2;
 }
 </style>

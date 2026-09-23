@@ -25,6 +25,9 @@ import {
     X,
     Wrench,
     Inbox,
+    EllipsisVertical,
+    GripVertical,
+    ChevronDown,
 } from 'lucide-vue-next'
 
 /**
@@ -82,6 +85,9 @@ const ICONS: Record<string, Component> = {
     'trending-down': TrendingDown,
     minus: Minus,
     plus: Plus,
+    'ellipsis-vertical': EllipsisVertical,
+    'grip-vertical': GripVertical,
+    'chevron-down': ChevronDown,
 }
 
 const props = withDefaults(

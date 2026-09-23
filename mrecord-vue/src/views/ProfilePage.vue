@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Snackbar } from '@varlet/ui'
 import { useUserStore } from '@/stores/user'
@@ -8,9 +8,19 @@ import AgreementPopup from '@/components/AgreementPopup.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DiagnosticSheet from '@/components/DiagnosticSheet.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
+import ListGroup from '@/components/ListGroup.vue'
+import ListCell from '@/components/ListCell.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// 首字母头像（取代 emoji，Q1：Apple HIG 用字字符号/字母 monogram）
+const avatarText = computed(() => {
+  const name = userStore.userInfo?.nickname?.trim() || ''
+  if (name) return name[0].toUpperCase()
+  const email = userStore.userInfo?.email?.trim() || ''
+  return email ? email[0].toUpperCase() : '?'
+})
 const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 const showAgreement = ref(false)
@@ -83,7 +93,7 @@ const handleCancelAccount = async () => {
       <!-- 用户信息卡片 -->
       <div class="user-card">
         <div class="avatar">
-          <span class="avatar-emoji">😊</span>
+          <span class="avatar-text">{{ avatarText }}</span>
         </div>
         <div class="user-info">
           <div class="welcome">欢迎回来</div>
@@ -99,49 +109,28 @@ const handleCancelAccount = async () => {
       </div>
 
       <!-- 管理员入口 -->
-      <div v-if="userStore.userInfo?.admin === 1" class="menu-card admin-card" @click="router.push('/admin')">
-        <div class="menu-item">
-          <var-icon name="shield-outline" :size="22" class="menu-svg-icon" />
-          <span class="menu-text">
-            <span class="admin-label">管理中心</span>
-            <span class="admin-badge">管理员</span>
-          </span>
-          <span class="menu-arrow">›</span>
-        </div>
+      <div v-if="userStore.userInfo?.admin === 1" class="admin-card" @click="router.push('/admin')">
+        <span class="admin-badge">管理员</span>
+        <span class="admin-label">管理中心</span>
+        <span class="admin-arrow" aria-hidden="true">›</span>
       </div>
 
       <!-- 功能列表 -->
-      <div class="menu-card">
-        <div class="menu-item" @click="showAgreement = true">
-          <var-icon name="file-text-outline" :size="22" class="menu-svg-icon" />
-          <span class="menu-text">用户协议及隐私政策</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" @click="router.push('/export')">
-          <var-icon name="download-outline" :size="22" class="menu-svg-icon" />
-          <span class="menu-text">导出数据</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" @click="router.push('/profile-edit')">
-          <var-icon name="account-circle-outline" :size="22" class="menu-svg-icon" />
-          <span class="menu-text">个人资料</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" @click="router.push('/change-password')">
-          <var-icon name="lock-outline" :size="22" class="menu-svg-icon" />
-          <span class="menu-text">修改密码</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" @click="showCancelStep1 = true">
-          <var-icon name="alert-circle-outline" :size="22" class="menu-svg-icon danger-svg-icon" />
-          <span class="menu-text danger-text">注销账户</span>
-          <span class="menu-arrow">›</span>
-        </div>
-      </div>
+      <ListGroup>
+        <ListCell
+          icon="file-text"
+          label="用户协议及隐私政策"
+          @click="showAgreement = true"
+        />
+        <ListCell icon="download" label="导出数据" @click="router.push('/export')" />
+        <ListCell
+          icon="circle-user-round"
+          label="个人资料"
+          @click="router.push('/profile-edit')"
+        />
+        <ListCell icon="lock" label="修改密码" @click="router.push('/change-password')" />
+        <ListCell icon="circle-alert" label="注销账户" danger @click="showCancelStep1 = true" />
+      </ListGroup>
 
       <!-- 退出登录按钮 -->
       <button
@@ -161,7 +150,7 @@ const handleCancelAccount = async () => {
       confirm-button-text="退出"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#FF6500"
+      confirm-button-color="var(--brand)"
       @confirm="handleLogout"
       @cancel="showLogoutConfirm = false"
     >
@@ -175,7 +164,7 @@ const handleCancelAccount = async () => {
       confirm-button-text="继续注销"
       cancel-button-text="取消"
       confirm-button-text-color="#fff"
-      confirm-button-color="#e74c3c"
+      confirm-button-color="var(--semantic-danger)"
       @confirm="showCancelStep1 = false; showCancelStep2 = true"
       @cancel="showCancelStep1 = false"
     >
@@ -194,7 +183,7 @@ const handleCancelAccount = async () => {
       confirm-button-text="确认注销"
       cancel-button-text="我再想想"
       confirm-button-text-color="#fff"
-      confirm-button-color="#e74c3c"
+      confirm-button-color="var(--semantic-danger)"
       :confirm-button-disabled="cancelling"
       @confirm="handleCancelAccount"
       @cancel="showCancelStep2 = false"
@@ -216,39 +205,42 @@ const handleCancelAccount = async () => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 .page-body {
-  padding: 16px;
+  padding: var(--space-3) var(--page-padding) 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 /* 用户信息卡片 */
 .user-card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 20px 16px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-4);
   display: flex;
   align-items: center;
-  gap: 14px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
 }
 .avatar {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+  background: linear-gradient(135deg, var(--brand), var(--brand-accent));
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(255, 101, 0, 0.28);
 }
-.avatar-emoji {
-  font-size: 28px;
+.avatar-text {
+  font-size: 24px;
+  font-weight: var(--weight-bold);
+  color: #fff;
   line-height: 1;
 }
 .user-info {
@@ -256,22 +248,22 @@ const handleCancelAccount = async () => {
   min-width: 0;
 }
 .welcome {
-  font-size: 12px;
-  color: #FF6500;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--brand);
+  font-weight: var(--weight-medium);
   margin-bottom: 2px;
 }
 .nickname {
-  font-size: 17px;
-  font-weight: 600;
-  color: #333;
+  font-size: var(--text-title-3);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .email {
-  font-size: 13px;
-  color: #999;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
   margin-top: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -298,111 +290,76 @@ const handleCancelAccount = async () => {
 
 /* 管理员入口卡片 */
 .admin-card {
-  background: linear-gradient(135deg, #FFF8F0, #FFF0E0);
-  border: 1px solid rgba(255, 101, 0, 0.12);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.admin-card:active {
-  background: linear-gradient(135deg, #FFF0E0, #FFE8D0);
-  transform: scale(0.98);
-}
-.admin-label {
-  font-size: 15px;
-  font-weight: 600;
-  color: #FF6500;
-}
-.admin-badge {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #FF8C42, #FF6500);
-  padding: 1px 6px;
-  border-radius: 8px;
-  margin-left: 6px;
-  vertical-align: middle;
-  line-height: 1.5;
-}
-
-/* 功能菜单卡片 */
-.menu-card {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-.menu-item {
   display: flex;
   align-items: center;
-  padding: 15px 16px;
+  gap: var(--space-2);
+  background: linear-gradient(135deg, var(--brand-soft), rgba(255, 122, 31, 0.16));
+  border: 1px solid rgba(255, 101, 0, 0.18);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
   cursor: pointer;
-  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast);
 }
-.menu-item:active {
-  background: #f9f9f9;
+.admin-card:active {
+  transform: scale(0.98);
+  opacity: 0.85;
 }
-.menu-svg-icon {
-  margin-right: 12px;
-  color: #888;
-  flex-shrink: 0;
+.admin-label {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--brand);
 }
-.menu-svg-icon.danger-svg-icon {
-  color: #ff4d4f;
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-accent), var(--brand));
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  line-height: 1.4;
 }
-.menu-text {
-  flex: 1;
-  font-size: 15px;
-  color: #333;
-}
-.menu-arrow {
+.admin-arrow {
+  margin-left: auto;
   font-size: 18px;
-  color: #ccc;
+  color: var(--brand);
   font-weight: 300;
-}
-.menu-divider {
-  height: 1px;
-  background: #f5f5f5;
-  margin: 0 16px;
-}
-
-/* 注销账户危险项 */
-.danger-text {
-  color: #e74c3c;
-  font-weight: 500;
 }
 
 /* 注销确认弹窗提示文案 */
 .cancel-tips {
-  font-size: 14px;
-  color: #555;
+  font-size: var(--text-body);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 .cancel-tips b {
-  color: #e74c3c;
-  font-weight: 600;
+  color: var(--semantic-danger);
+  font-weight: var(--weight-semibold);
 }
 
 /* 退出登录按钮 */
 .logout-btn {
-  margin-top: 12px;
+  margin-top: var(--space-3);
   width: 100%;
   height: 48px;
   border: none;
-  border-radius: 14px;
-  background: #fff;
-  color: #e74c3c;
-  font-size: 16px;
-  font-weight: 500;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--semantic-danger);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast);
 }
 .logout-btn:active:not(:disabled) {
-  background: #fef0ef;
+  background: var(--bg-surface-2);
   transform: scale(0.98);
 }
 .logout-btn--loading {
-  color: #ccc;
+  color: var(--text-tertiary);
 }
 </style>

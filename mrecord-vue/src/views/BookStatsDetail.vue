@@ -3,9 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getBookDetailedStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
-import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
 import TrendChart from '@/components/TrendChart.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import MoneyText from '@/components/MoneyText.vue'
+import ChangeText from '@/components/ChangeText.vue'
+import StateView from '@/components/StateView.vue'
 
 const route = useRoute()
 const bookId = route.params.bookId as string
@@ -35,27 +37,33 @@ onMounted(() => {
   fetchDetail()
 })
 
+const viewState = computed<'loading' | 'empty' | 'idle'>(() => {
+  if (loading.value && records.value.length === 0) return 'loading'
+  if (!loading.value && records.value.length === 0) return 'empty'
+  return 'idle'
+})
+
 // 月份标签，如 "2024-01"
 const labels = computed(() =>
   records.value.map(r => `${r.year}-${String(r.month).padStart(2, '0')}`)
 )
 
-// 资产趋势图数据
+// 资产趋势图数据（语义色用令牌，深浅色模式自动切换）
 const assetDatasets = computed(() => [
   {
     label: '总资产',
     data: records.value.map(r => r.totalAsset || 0),
-    color: '#34c759',
+    color: 'var(--semantic-down)',
   },
   {
     label: '总负债',
     data: records.value.map(r => r.totalLiability || 0),
-    color: '#ff3b30',
+    color: 'var(--semantic-up)',
   },
   {
     label: '净资产',
     data: records.value.map(r => r.netAsset || 0),
-    color: '#2196F3',
+    color: 'var(--brand)',
   },
 ])
 
@@ -64,12 +72,12 @@ const changeDatasets = computed(() => [
   {
     label: '环比',
     data: records.value.map(r => r.monthOnMonth || 0),
-    color: '#2196F3',
+    color: 'var(--brand)',
   },
   {
     label: '同比',
     data: records.value.map(r => r.yearOnYear || 0),
-    color: '#9C27B0',
+    color: 'var(--text-tertiary)',
   },
 ])
 
@@ -86,22 +94,14 @@ const latest = computed(() => {
     <PageHeader :title="bookName" show-back />
 
     <div class="page-body">
-      <!-- 加载态 -->
-      <div v-if="loading && records.length === 0" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>加载中...</p>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-else-if="!loading && records.length === 0" class="empty-state">
-        <svg class="empty-icon" viewBox="0 0 64 64" width="64" height="64">
-          <rect x="12" y="8" width="40" height="48" rx="4" fill="none" stroke="#ccc" stroke-width="2"/>
-          <line x1="22" y1="20" x2="42" y2="20" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-          <line x1="22" y1="28" x2="38" y2="28" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-          <line x1="22" y1="36" x2="34" y2="36" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <p class="empty-text">暂无统计数据</p>
-      </div>
+      <!-- 加载 / 空状态 -->
+      <StateView
+        v-if="viewState !== 'idle'"
+        :state="viewState"
+        empty-text="暂无统计数据"
+        empty-sub="记录本月数据后可查看趋势"
+        empty-icon="trending-up"
+      />
 
       <template v-else>
         <!-- 最新一期汇总卡片 -->
@@ -113,27 +113,23 @@ const latest = computed(() => {
           <div class="summary-grid">
             <div class="summary-item">
               <span class="summary-label">总资产</span>
-              <span class="summary-value" style="color: #34c759;">{{ formatMoney(latest.totalAsset) }}</span>
+              <MoneyText :value="latest.totalAsset" size="sm" />
             </div>
             <div class="summary-item">
               <span class="summary-label">总负债</span>
-              <span class="summary-value" style="color: #ff3b30;">{{ formatMoney(latest.totalLiability) }}</span>
+              <MoneyText :value="latest.totalLiability" size="sm" />
             </div>
             <div class="summary-item">
               <span class="summary-label">净资产</span>
-              <span class="summary-value">{{ formatMoney(latest.netAsset) }}</span>
+              <MoneyText :value="latest.netAsset" size="sm" />
             </div>
             <div class="summary-item">
               <span class="summary-label">环比</span>
-              <span class="summary-value" :style="{ color: getChangeColor(latest.monthOnMonth) }">
-                {{ getChangeText(latest.monthOnMonth) }}
-              </span>
+              <ChangeText :value="latest.monthOnMonth" :icon="false" />
             </div>
             <div class="summary-item">
               <span class="summary-label">同比</span>
-              <span class="summary-value" :style="{ color: getChangeColor(latest.yearOnYear) }">
-                {{ getChangeText(latest.yearOnYear) }}
-              </span>
+              <ChangeText :value="latest.yearOnYear" :icon="false" />
             </div>
           </div>
         </div>
@@ -158,7 +154,7 @@ const latest = computed(() => {
 <style scoped>
 .book-stats-detail {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-canvas);
   display: flex;
   flex-direction: column;
 }
@@ -166,84 +162,43 @@ const latest = computed(() => {
 /* 页面主体 */
 .page-body {
   flex: 1;
-  padding: 16px;
+  padding: var(--space-3) var(--page-padding) 0;
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-/* 加载态 */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 0 40px;
-  color: #8e8e93;
-  font-size: 14px;
-}
-.loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #FF6500;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0 40px;
-}
-.empty-icon {
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-.empty-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #8e8e93;
+  gap: var(--space-4);
 }
 
 /* 汇总卡片 */
 .summary-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
 }
 .summary-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-4);
 }
 .summary-period {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
 }
 .summary-tag {
-  font-size: 11px;
-  font-weight: 600;
-  color: #FF6500;
-  background: rgba(255, 101, 0, 0.1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--brand);
+  background: var(--brand-soft);
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-pill);
 }
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
 }
 .summary-item {
   display: flex;
@@ -251,33 +206,28 @@ const latest = computed(() => {
   gap: 4px;
 }
 .summary-label {
-  font-size: 12px;
-  color: #aeaeb2;
-}
-.summary-value {
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 
 /* 图表卡片 */
 .chart-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 12px 12px 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
 }
 .chart-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-  padding: 4px 4px 8px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  padding: var(--space-1) var(--space-1) var(--space-2);
 }
 
 .chart-subtitle {
-  font-size: 12px;
-  color: #aeaeb2;
-  padding: 0 4px 12px;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  padding: 0 var(--space-1) var(--space-3);
   line-height: 1.5;
 }
 </style>

@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyDataStatistics } from '@/api/modules/book'
 import type { BookStatistics } from '@/api/modules/book'
-import { formatMoney, getChangeText, getChangeColor } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
+import MoneyText from '@/components/MoneyText.vue'
+import ChangeText from '@/components/ChangeText.vue'
+import StateView from '@/components/StateView.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const router = useRouter()
 
@@ -28,6 +31,12 @@ onMounted(() => {
   fetchList()
 })
 
+const viewState = computed<'loading' | 'empty' | 'idle'>(() => {
+  if (loading.value && list.value.length === 0) return 'loading'
+  if (!loading.value && list.value.length === 0) return 'empty'
+  return 'idle'
+})
+
 // 点击卡片 → 详情页
 const onCardClick = (item: BookStatistics) => {
   router.push({
@@ -43,28 +52,21 @@ const onCardClick = (item: BookStatistics) => {
     <PageHeader title="统计" large />
 
     <div class="page-body">
-      <!-- 加载态 -->
-      <div v-if="loading && list.length === 0" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>加载中...</p>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-else-if="!loading && list.length === 0" class="empty-state">
-        <svg class="empty-icon" viewBox="0 0 64 64" width="64" height="64">
-          <rect x="12" y="8" width="40" height="48" rx="4" fill="none" stroke="#ccc" stroke-width="2"/>
-          <line x1="22" y1="20" x2="42" y2="20" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-          <line x1="22" y1="28" x2="38" y2="28" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-          <line x1="22" y1="36" x2="34" y2="36" stroke="#ddd" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <p class="empty-text">暂无统计数据</p>
-      </div>
+      <!-- 加载 / 空状态 -->
+      <StateView
+        v-if="viewState !== 'idle'"
+        :state="viewState"
+        empty-text="暂无统计数据"
+        empty-sub="记录本月数据后，这里会显示统计概览"
+        empty-icon="trending-up"
+      />
 
       <!-- 账簿卡片列表 -->
       <div v-else class="stats-list">
-        <div
+        <button
           v-for="(item, index) in list"
           :key="item.bookId || index"
+          type="button"
           class="stats-card"
           @click="onCardClick(item)"
         >
@@ -73,45 +75,37 @@ const onCardClick = (item: BookStatistics) => {
               <span class="book-name">{{ item.bookName }}</span>
               <span class="period">{{ item.year }}年{{ item.month }}月</span>
             </div>
-            <div class="card-arrow">
-              <svg viewBox="0 0 24 24" width="16" height="16">
-                <path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
+            <span class="card-arrow" aria-hidden="true">
+              <AppIcon name="chevron-right" :size="16" />
+            </span>
           </div>
 
           <div class="card-body">
             <div class="main-value">
               <span class="main-label">净资产</span>
-              <span class="main-num">
-                {{ formatMoney(item.netAsset) }}
-              </span>
+              <MoneyText :value="item.netAsset" size="lg" />
             </div>
 
             <div class="sub-grid">
               <div class="sub-item">
                 <span class="sub-label">总资产</span>
-                <span class="sub-num">{{ formatMoney(item.totalAsset) }}</span>
+                <MoneyText :value="item.totalAsset" size="sm" />
               </div>
               <div class="sub-item">
                 <span class="sub-label">总负债</span>
-                <span class="sub-num">{{ formatMoney(item.totalLiability) }}</span>
+                <MoneyText :value="item.totalLiability" size="sm" />
               </div>
               <div class="sub-item">
                 <span class="sub-label">环比</span>
-                <span class="sub-num" :style="{ color: getChangeColor(item.monthOnMonth) }">
-                  {{ getChangeText(item.monthOnMonth) }}
-                </span>
+                <ChangeText :value="item.monthOnMonth" />
               </div>
               <div class="sub-item">
                 <span class="sub-label">同比</span>
-                <span class="sub-num" :style="{ color: getChangeColor(item.yearOnYear) }">
-                  {{ getChangeText(item.yearOnYear) }}
-                </span>
+                <ChangeText :value="item.yearOnYear" />
               </div>
             </div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   </div>
@@ -120,144 +114,95 @@ const onCardClick = (item: BookStatistics) => {
 <style scoped>
 .stats-page {
   min-height: 100vh;
-  background: #f5f5f5;
-}
-
-.page-body {
-  padding: 16px;
+  background: var(--bg-canvas);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
-/* 加载态 */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 0 40px;
-  color: #8e8e93;
-  font-size: 14px;
-}
-.loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #FF6500;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0 40px;
-}
-.empty-icon {
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-.empty-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #8e8e93;
+.page-body {
+  padding: var(--space-3) var(--page-padding) 0;
 }
 
 /* 卡片列表 */
 .stats-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .stats-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  text-align: left;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
   position: relative;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
 }
 .stats-card:active {
   transform: scale(0.985);
-  background: #fafafa;
+  background: var(--bg-surface-2);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 .card-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
 }
 .book-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1d1d1f;
+  font-size: var(--text-title-3);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
 }
 .period {
-  font-size: 13px;
-  color: #8e8e93;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .card-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .main-value {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .main-label {
-  font-size: 13px;
-  color: #8e8e93;
-}
-.main-num {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .sub-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: var(--space-2);
 }
 .sub-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: #f9f9f9;
-  border-radius: 10px;
-  padding: 10px 12px;
+  background: var(--bg-surface-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
 }
 .sub-label {
-  font-size: 11px;
-  color: #aeaeb2;
-}
-.sub-num {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 
 .card-arrow {
-  color: #c7c7cc;
+  color: var(--text-tertiary);
   display: flex;
   align-items: center;
   flex-shrink: 0;

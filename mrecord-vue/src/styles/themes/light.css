@@ -22,9 +22,11 @@ html[data-theme='light'] {
     /* ==================== 品牌 ==================== */
     --brand: #ff6500;
     --brand-soft: rgba(255, 101, 0, 0.10);
+    --brand-accent: #ff8a3d;         /* 品牌渐变亮端（Hero 卡、主按钮） */
 
     /* ==================== 语义色 ==================== */
     --semantic-up: #ff3b30;        /* D1：正红负绿 */
+    --danger-soft: rgba(255, 59, 48, 0.10);    /* 危险操作底色 */
     --semantic-down: #34c759;
     --semantic-danger: #ff3b30;
     --semantic-warning: #ff9500;

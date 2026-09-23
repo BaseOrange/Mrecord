@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { Snackbar } from '@varlet/ui'
 import { collectDiagnosticText } from '@/utils/diagnostic'
+import AppIcon from './AppIcon.vue'
 
 /**
  * 诊断信息弹层
@@ -87,7 +88,7 @@ const handleClose = () => {
     <div class="diagnostic-sheet">
       <div class="sheet-header">
         <span class="sheet-title">诊断信息</span>
-        <var-icon name="window-close" :size="20" class="sheet-close" @click="handleClose" />
+        <AppIcon name="x" :size="20" class="sheet-close" @click="handleClose" />
       </div>
 
       <div class="sheet-tip">
@@ -122,8 +123,8 @@ const handleClose = () => {
     max-height: 82vh;
     display: flex;
     flex-direction: column;
-    background: #fff;
-    border-radius: 16px 16px 0 0;
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .sheet-header {
@@ -136,29 +137,29 @@ const handleClose = () => {
 .sheet-title {
     font-size: 17px;
     font-weight: 600;
-    color: #1d1d1f;
+    color: var(--text-primary);
 }
 
 .sheet-close {
-    color: #999;
+    color: var(--text-tertiary);
     cursor: pointer;
     padding: 4px;
     border-radius: 50%;
 }
 
 .sheet-close:active {
-    background: #f0f0f0;
+    background: var(--bg-surface-2);
 }
 
 .sheet-tip {
     margin: 0 16px 10px;
     font-size: 12px;
-    color: #888;
+    color: var(--text-tertiary);
     line-height: 1.6;
 }
 
 .tip-link {
-    color: #FF6500;
+    color: var(--brand);
     font-weight: 500;
     text-decoration: underline;
 }
@@ -168,9 +169,9 @@ const handleClose = () => {
     min-height: 0;
     overflow-y: auto;
     margin: 0 16px;
-    background: #f7f7f8;
+    background: var(--bg-surface-2);
     border-radius: 10px;
-    border: 1px solid #f0f0f0;
+    border: 1px solid var(--separator);
 }
 
 .sheet-body pre {
@@ -179,7 +180,7 @@ const handleClose = () => {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 12px;
     line-height: 1.7;
-    color: #333;
+    color: var(--text-primary);
     white-space: pre-wrap;
     word-break: break-all;
 }
@@ -188,7 +189,7 @@ const handleClose = () => {
     padding: 24px;
     text-align: center;
     font-size: 13px;
-    color: #999;
+    color: var(--text-tertiary);
 }
 
 .sheet-actions {
@@ -213,18 +214,18 @@ const handleClose = () => {
 }
 
 .copy-btn {
-    background: #FF6500;
+    background: var(--brand);
     color: #fff;
 }
 
 .copy-btn:disabled {
-    background: #ffb98e;
+    background: var(--brand-accent); opacity: 0.6;
     cursor: not-allowed;
 }
 
 .github-btn {
-    background: #fff;
-    color: #333;
-    border: 1px solid #e0e0e0;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--separator);
 }
 </style>

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import agreementText from '@/assets/agreement.md?raw'
 import { parseMarkdown } from '@/utils/markdown'
+import AppIcon from './AppIcon.vue'
 
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits<{ 'update:show': [value: boolean] }>()
@@ -18,10 +19,7 @@ const showAgreement = computed({
       <div class="agreement-header">
         <span class="agreement-title">用户协议及隐私政策</span>
         <button class="agreement-close" @click="showAgreement = false">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <AppIcon name="x" :size="20" />
         </button>
       </div>
       <div class="agreement-body" v-html="parseMarkdown(agreementText)"></div>
@@ -34,23 +32,23 @@ const showAgreement = computed({
   max-height: 75vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 20px 20px 0 0;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .agreement-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid #f0e8e0;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--separator);
   flex-shrink: 0;
 }
 
 .agreement-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #333;
+  font-size: var(--text-title-3);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
   letter-spacing: 1px;
 }
 
@@ -62,34 +60,34 @@ const showAgreement = computed({
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: #f5f0ec;
-  color: #999;
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-fast);
   padding: 0;
 }
 
 .agreement-close:active {
-  background: #e8ddd4;
-  color: #FF6500;
+  opacity: 0.7;
+  color: var(--brand);
 }
 
 .agreement-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px 32px;
-  font-size: 14px;
+  padding: var(--space-4) var(--space-5) var(--space-8);
+  font-size: var(--text-body);
   line-height: 1.8;
-  color: #444;
+  color: var(--text-secondary);
 }
 
 .agreement-body :deep(h3) {
-  font-size: 16px;
-  font-weight: 700;
-  color: #FF6500;
-  margin: 20px 0 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f5ede6;
+  font-size: var(--text-title-3);
+  font-weight: var(--weight-bold);
+  color: var(--brand);
+  margin: var(--space-5) 0 var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--separator);
 }
 
 .agreement-body :deep(h3:first-child) {
@@ -97,19 +95,19 @@ const showAgreement = computed({
 }
 
 .agreement-body :deep(h4) {
-  font-size: 15px;
-  font-weight: 600;
-  color: #FF8C42;
-  margin: 14px 0 8px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--brand-accent);
+  margin: var(--space-4) 0 var(--space-2);
 }
 
 .agreement-body :deep(p) {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
   text-align: justify;
 }
 
 .agreement-body :deep(ul) {
-  margin: 4px 0 8px;
+  margin: var(--space-1) 0 var(--space-2);
   padding-left: 18px;
   list-style: none;
 }
@@ -121,7 +119,7 @@ const showAgreement = computed({
 }
 
 .agreement-body :deep(strong) {
-  color: #333;
-  font-weight: 600;
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
 }
 </style>

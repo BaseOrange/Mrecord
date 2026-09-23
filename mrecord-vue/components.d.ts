@@ -15,7 +15,7 @@ declare module 'vue' {
     AppIcon: typeof import('./src/components/AppIcon.vue')['default']
     AuthLayout: typeof import('./src/components/AuthLayout.vue')['default']
     BaseCard: typeof import('./src/components/BaseCard.vue')['default']
-    BookCard: typeof import('./src/components/BookCard.vue')['default']
+    ChangeText: typeof import('./src/components/ChangeText.vue')['default']
     DiagnosticSheet: typeof import('./src/components/DiagnosticSheet.vue')['default']
     IconPicker: typeof import('./src/components/IconPicker.vue')['default']
     ListCell: typeof import('./src/components/ListCell.vue')['default']
